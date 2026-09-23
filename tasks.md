@@ -1,77 +1,154 @@
-# DOMUS — Tarefas (documento de diagnóstico)
+# DOMUS — Plano de tarefas
 
-Checklist do que falta para fechar o Documento de Diagnóstico da Problemática e Plano de
-Intervenção, a partir do trabalho de coleta de dados (persona: corretor de imóveis).
+## Contexto
 
-## 1. Entrevista principal (persona)
+A DOMUS é uma proposta de solução digital para apoiar a organização da rotina de um corretor de imóveis. O projeto será fundamentado, nesta etapa, em um **estudo de caso único** com um familiar que atua como corretor.
 
-- [ ] Aplicar a reestruturação sugerida em `docs/modelos/entrevistas/domus-entrevista.md`
-      (adicionar Bloco 0 de perfil + perguntas fechadas/escala acopladas às abertas em cada bloco)
-- [ ] Reaplicar a entrevista com o corretor-persona usando a versão reestruturada
-- [ ] Registrar as respostas (documento ou planilha) para servir de baseline numérica
+O objetivo imediato é levantar evidências suficientes para preencher o documento de **Diagnóstico da Problemática e Plano de Intervenção (PDM e PE)** e definir um recorte viável para um MVP.
 
-## 2. Triangulação com outros corretores
+> **Delimitação:** os achados representam o contexto do participante investigado. Não devem ser apresentados como uma generalização para todos os corretores de imóveis.
 
-- [ ] Montar o formulário (`docs/modelos/entrevistas/domus-formulario-corretores.md`) no Google
-      Forms (ou similar)
-- [ ] Enviar para 5-10 contatos corretores (rede do parente / colegas de imobiliária / grupos)
-- [ ] Coletar respostas e calcular médias/porcentagens por pergunta
-- [ ] Comparar resultado com o que a persona relatou na entrevista principal
+---
 
-## 3. Mapa de jornada
+## Status atual
 
-- [ ] Preencher a tabela de etapas em `docs/modelos/domus-jornada-corretor.md` com o que a
-      entrevista/formulário trouxerem (ação, ferramenta usada, ponto de dor, dado de apoio)
-- [ ] Ajustar o diagrama Mermaid conforme os pontos de risco confirmados
-- [ ] Gerar versão em imagem do diagrama (print/Figma) para anexar
+| Item | Status | Evidência / arquivo |
+|---|---|---|
+| Organização inicial do repositório | Concluído | Estrutura `docs/`, `docs/entrevistas/` e `docs/modelos/` |
+| Modelo institucional do PDM e PE | Concluído | `docs/modelos/MODELO DIAGNÓSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO - PDM E PE.md` |
+| Roteiro geral de entrevista | Concluído | `docs/entrevistas/domus-entrevista.md` |
+| Formulário inicial para corretores | Concluído | `docs/entrevistas/domus-formulario-corretores.md` |
+| Jornada preliminar do corretor | Concluído | `docs/modelos/domus-jornada-corretor.md` |
+| Definição do método | Concluído | Estudo de caso único: entrevista + observação de uma tarefa |
+| Coleta com o participante | Pendente | Realizar antes da entrega |
+| Diagnóstico consolidado | Pendente | Preencher modelo PDM e PE após a entrevista |
+| Priorização do MVP | Pendente | Selecionar 1 problema principal |
 
-## 4. Evidências complementares
+---
 
-- [ ] Coletar print/exemplo (anonimizado) da planilha ou caderno que o corretor usa hoje
-- [ ] Levantamento rápido de concorrentes/CRMs imobiliários existentes (o que cobrem / o que
-      deixam a desejar para o perfil autônomo/pequeno)
-- [ ] Pesquisa breve de dados secundários do setor (CRECI, associações, matérias sobre
-      digitalização de corretores) para reforçar que o problema não é isolado
+## Objetivo da entrega
 
-## 5. Validação com o protótipo legado (insumo para Seção 4.3)
+Entregar um diagnóstico qualitativo, baseado em um participante, que identifique uma dificuldade real na rotina de um corretor de imóveis e proponha uma intervenção inicial por meio da DOMUS.
 
-- [ ] Mostrar as telas de `legacy/DOMUS/prototipo/` para o corretor-persona
-- [ ] Definir quem mais vai testar (ex.: outros corretores do formulário) e como o feedback será
-      coletado (roteiro de observação, formulário pós-teste, etc.)
-- [ ] Registrar o que fez sentido, o que faltou, o que não ficou claro
-- [ ] Ajustar escopo da solução com base no retorno
+### Pergunta norteadora
 
-## 6. Indicadores de impacto (Seção 4.4)
+> Como uma solução digital pode auxiliar o corretor participante do estudo de caso a organizar sua rotina comercial, reduzindo uma dificuldade prioritária relacionada a clientes, imóveis, retornos ou visitas?
 
-- [ ] Definir a lista final de indicadores de baseline a partir dos números coletados, por exemplo:
-  - Horas/semana gastas verificando situação dos imóveis
-  - % de clientes que desistem antes de fechar
-  - Nº de comissões mal registradas/atrasadas em 3 meses
-  - Nº de vendas perdidas por demora no envio de informação (6 meses)
-- [ ] Registrar os valores atuais (baseline) para comparação futura pós-solução
+---
 
-## 7. Ajustes na proposta inicial (Seção 5)
+## Plano de execução — entrega em um dia
 
-- [ ] Localizar/recuperar o documento da 1ª entrega (proposta inicial) — não está neste
-      repositório, só o template em `docs/modelos/MODELO PROPOSTA DE PROJETO - PDM E PE.docx.md`
-- [ ] Comparar ponto a ponto com o que foi aprendido na coleta: o que mudou na ideia inicial
-- [ ] Listar funcionalidades adicionadas ou removidas
-- [ ] Registrar mudanças no público-alvo (se houve, ex.: foco em corretor autônomo vs. imobiliária)
-- [ ] Justificar cada mudança com base nos dados coletados (entrevista/formulário/jornada)
+### 1. Preparar a coleta
 
-## 8. Redação do documento de diagnóstico
+- [ ] Definir um pseudônimo para o participante.
+- [ ] Informar que a participação é voluntária e que dados pessoais, dados de clientes, telefones, endereços e valores serão preservados.
+- [ ] Escolher uma tarefa da rotina para observar: responder cliente, localizar imóvel, agendar visita ou conferir retornos.
+- [ ] Preparar anotações ou gravação, caso o participante autorize.
 
-- [ ] Seção 1 — Diagnóstico detalhado (usar dados da entrevista + jornada + formulário)
-- [ ] Seção 2 — Análise do público-alvo/persona (usar Bloco 0 da entrevista + dados de
-      triangulação; incluir dores, necessidades, comportamentos, não só perfil demográfico)
-- [ ] Seção 3 — Justificativa da solução (usar levantamento de concorrentes)
-- [ ] Seção 4.1 — Aplicação da solução (onde será aplicada, quem vai usar, como será usada)
-- [ ] Seção 4.2 — Estratégia de implementação (etapas, recursos tecnológicos/humanos necessários)
-- [ ] Seção 4.3 — Validação com o público (usar o item 5 acima: como testado, quem testou, como
-      o feedback foi coletado)
-- [ ] Seção 4.4 — Medição de impacto (usar os indicadores do item 6 acima)
-- [ ] Seção 5 — Ajustes na proposta inicial (usar item 7 acima)
-- [ ] Seção 6 (opcional) — Anexos: prints de entrevista, link/prints do formulário, diagrama de
-      jornada, fotos de visita ao imóvel/acompanhamento, conversas registradas com o corretor
-- [ ] Revisão final comparando com `docs/modelos/MODELO DIAGNÓSTICO DA PROBLEMÁTICA E PLANO DE
-      INTERVENÇÃO - PDM E PE.md` item a item, conferindo que nenhuma resposta ficou genérica
+**Saída esperada:** identificação anonimizada do caso e instrumento de registro preparado.
+
+### 2. Realizar entrevista semiestruturada
+
+- [ ] Realizar conversa de aproximadamente 35 a 45 minutos.
+- [ ] Mapear um dia típico de trabalho.
+- [ ] Identificar canais e ferramentas utilizados.
+- [ ] Pedir exemplos recentes de atrasos, retrabalho, dificuldade para localizar informação ou esquecimento de retorno.
+- [ ] Identificar o problema que mais prejudica a rotina.
+- [ ] Perguntar quais funções seriam mais úteis em uma ferramenta nova.
+
+**Perguntas mínimas:**
+
+1. Como é um dia normal de trabalho?
+2. Como clientes chegam até você e onde essas informações são registradas?
+3. Quais ferramentas você usa para clientes, imóveis, visitas e negociações?
+4. Conte uma situação recente em que demorou para encontrar uma informação.
+5. Como você controla retornos? Já esqueceu ou atrasou algum?
+6. Como agenda e confirma visitas?
+7. Qual etapa gera mais tempo perdido ou retrabalho?
+8. Se uma ferramenta resolvesse apenas uma coisa, o que ela faria?
+9. Quais três funções seriam mais úteis?
+
+**Saída esperada:** anotações, pelo menos uma citação curta anonimizada e uma lista inicial de problemas.
+
+### 3. Observar uma tarefa real
+
+- [ ] Solicitar que o participante execute uma tarefa real ou simulada.
+- [ ] Registrar ferramentas abertas, etapas realizadas e informações procuradas.
+- [ ] Registrar dificuldades, contornos e duração aproximada.
+- [ ] Não registrar dados identificáveis de clientes ou imóveis.
+
+**Saída esperada:** evidência observável que complemente a entrevista.
+
+### 4. Consolidar o diagnóstico
+
+- [ ] Listar de 3 a 4 problemas identificados.
+- [ ] Registrar para cada problema: evidência, frequência percebida, impacto e possível solução.
+- [ ] Selecionar um problema prioritário.
+- [ ] Registrar uma justificativa baseada em frequência, impacto e viabilidade de implementação.
+
+#### Matriz de priorização
+
+Atribuir notas de 1 a 5 para cada critério.
+
+| Problema | Frequência | Impacto | Viabilidade no MVP | Total | Decisão |
+|---|---:|---:|---:|---:|---|
+|  |  |  |  |  |  |
+|  |  |  |  |  |  |
+|  |  |  |  |  |  |
+
+**Saída esperada:** um problema priorizado para orientar a intervenção.
+
+### 5. Preencher o PDM e PE
+
+- [ ] Caracterizar o participante usando pseudônimo, tipo de atuação, região ampla e ferramentas utilizadas.
+- [ ] Descrever a problemática com base na entrevista e observação.
+- [ ] Inserir uma citação curta anonimizada como evidência.
+- [ ] Formular a pergunta de pesquisa e o objetivo geral.
+- [ ] Descrever a metodologia como pesquisa qualitativa exploratória de estudo de caso único.
+- [ ] Apresentar os problemas identificados e justificar a prioridade escolhida.
+- [ ] Definir o plano de intervenção e as limitações do estudo.
+
+**Texto-base da metodologia:**
+
+> Foi realizada uma pesquisa qualitativa exploratória, estruturada como estudo de caso único. A coleta de dados ocorreu por meio de entrevista semiestruturada e observação de uma tarefa da rotina profissional do participante. Os registros foram analisados conforme frequência percebida, impacto no trabalho e viabilidade de resolução por meio de uma solução digital. Como o participante possui vínculo familiar com o pesquisador, foram adotados pseudônimo e anonimização de dados de terceiros.
+
+**Texto-base da limitação:**
+
+> O estudo envolveu apenas um participante, selecionado por acessibilidade, e não permite generalização estatística para todos os corretores de imóveis. Os achados representam o contexto investigado e orientam a construção inicial de um MVP, que poderá ser validado posteriormente com outros profissionais.
+
+**Saída esperada:** documento de Diagnóstico da Problemática e Plano de Intervenção preenchido.
+
+### 6. Definir a intervenção e o MVP
+
+- [ ] Transformar o problema priorizado em um fluxo de usuário simples.
+- [ ] Definir de 2 a 4 funções essenciais.
+- [ ] Criar um protótipo ou descrever as telas e regras do MVP.
+- [ ] Definir como o participante testará a proposta.
+
+#### Sugestões de recorte
+
+| Problema validado | Recorte do MVP | Funções essenciais |
+|---|---|---|
+| Retornos esquecidos | Controle de clientes e pendências | Cadastro de cliente, próxima ação, data de retorno e lista de pendências |
+| Informações de clientes dispersas | Histórico centralizado de atendimento | Cliente, necessidade, histórico e busca |
+| Visitas desorganizadas | Agenda de visitas | Cliente, imóvel, data/hora, status e confirmação |
+| Dificuldade para localizar imóveis | Catálogo básico de imóveis | Cadastro, características e filtros |
+
+---
+
+## Critérios de qualidade
+
+- [ ] Toda afirmação sobre a rotina é sustentada por relato ou observação do participante.
+- [ ] Não há dados pessoais, contatos, endereços completos, valores ou informações confidenciais no repositório.
+- [ ] A intervenção responde diretamente ao problema priorizado.
+- [ ] O MVP possui escopo pequeno e demonstrável.
+- [ ] O documento declara o estudo de caso único e sua limitação de generalização.
+
+---
+
+## Próxima etapa após a entrega
+
+- [ ] Validar o protótipo/MVP com o participante usando tarefas reais.
+- [ ] Registrar dificuldades, sugestões e percepção de utilidade.
+- [ ] Revisar o fluxo e as funções priorizadas.
+- [ ] Se houver disponibilidade, ampliar a validação com outros corretores para comparar perfis e testar a generalização dos achados.
