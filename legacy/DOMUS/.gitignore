@@ -1,0 +1,63 @@
+# pastas de dependências
+js/front/DomusFrontEnd/node_modules
+
+# Arquivos de log
+*.log
+*.tmp
+
+# Diretórios de saída
+bin/
+out/
+
+# Arquivos de configuração
+config.ini
+.env
+
+# Arquivos de IDE
+.idea/
+.vscode/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Pastas de dependências
+node_modules/
+venv/
+
+# Arquivos sensíveis
+credentials.json
+senha.txt
+
+# Exceções
+!important.log
+!**/logs/important_log.txt
+
+# Outros exemplos
+.sw[po]
+!.jar
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
