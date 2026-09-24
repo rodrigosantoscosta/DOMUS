@@ -40,21 +40,21 @@ Entregar um diagnóstico qualitativo, baseado em um participante, que identifiqu
 
 ### 1. Preparar a coleta
 
-- [ ] Definir um pseudônimo para o participante.
-- [ ] Informar que a participação é voluntária e que dados pessoais, dados de clientes, telefones, endereços e valores serão preservados.
+- [x] Definir um pseudônimo para o participante.
+- [x] Informar que a participação é voluntária e que dados pessoais, dados de clientes, telefones, endereços e valores serão preservados.
 - [ ] Escolher uma tarefa da rotina para observar: responder cliente, localizar imóvel, agendar visita ou conferir retornos.
-- [ ] Preparar anotações ou gravação, caso o participante autorize.
+- [x] Preparar anotações ou gravação, caso o participante autorize.
 
 **Saída esperada:** identificação anonimizada do caso e instrumento de registro preparado.
 
 ### 2. Realizar entrevista semiestruturada
 
-- [ ] Realizar conversa de aproximadamente 35 a 45 minutos.
+- [x] Realizar conversa de aproximadamente 35 a 45 minutos.
 - [ ] Mapear um dia típico de trabalho.
-- [ ] Identificar canais e ferramentas utilizados.
-- [ ] Pedir exemplos recentes de atrasos, retrabalho, dificuldade para localizar informação ou esquecimento de retorno.
-- [ ] Identificar o problema que mais prejudica a rotina.
-- [ ] Perguntar quais funções seriam mais úteis em uma ferramenta nova.
+- [x] Identificar canais e ferramentas utilizados.
+- [x] Pedir exemplos recentes de atrasos, retrabalho, dificuldade para localizar informação ou esquecimento de retorno.
+- [x] Identificar o problema que mais prejudica a rotina.
+- [x] Perguntar quais funções seriam mais úteis em uma ferramenta nova.
 
 **Perguntas mínimas:**
 
@@ -139,7 +139,7 @@ Atribuir notas de 1 a 5 para cada critério.
 ## Critérios de qualidade
 
 - [ ] Toda afirmação sobre a rotina é sustentada por relato ou observação do participante.
-- [ ] Não há dados pessoais, contatos, endereços completos, valores ou informações confidenciais no repositório.
+- [x] Não há dados pessoais, contatos, endereços completos, valores ou informações confidenciais no repositório.
 - [ ] A intervenção responde diretamente ao problema priorizado.
 - [ ] O MVP possui escopo pequeno e demonstrável.
 - [ ] O documento declara o estudo de caso único e sua limitação de generalização.
