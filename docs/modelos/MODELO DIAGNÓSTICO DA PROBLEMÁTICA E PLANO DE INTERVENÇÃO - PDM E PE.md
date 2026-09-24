@@ -128,3 +128,8 @@ Inserir imagens ou esboços abaixo:
 * Deve manter coerência entre problema, público e solução;  
 * Evitar respostas genéricas.
 
+**REFERÊNCIAS**
+
+Código e documentação de projeto anterior. Repositório GitHub contendo protótipo e documentação de versão anterior da DOMUS. Disponível em: https://github.com/rodrigosantoscosta/DOMUS. Acesso em: 23 set. 2026.
+
+
