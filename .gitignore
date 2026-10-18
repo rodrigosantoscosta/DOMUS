@@ -27,6 +27,13 @@ Desktop.ini
 # Serena/opencode
 .serena/
 .opencode/
+.worktrees/
+
+# Database & Test artifacts
+*.db
+*.db-journal
+coverage/
 
 # Package manager noise
 .DS_Store
+

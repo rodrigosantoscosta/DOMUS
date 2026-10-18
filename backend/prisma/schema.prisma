@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           Int           @id @default(autoincrement())
+  nome         String
+  login        String        @unique
+  cpf          String?       @unique
+  email        String        @unique
+  senhaHash    String
+  perfis       String        @default("CORRETOR") // CSV: "CORRETOR", "CADASTRADOR"
+  ativo        Boolean       @default(true)
+  ultimoLogin  DateTime?
+  criadoEm     DateTime      @default(now())
+  atualizadoEm DateTime      @updatedAt
+
+  imoveisCaptados Imovel[]      @relation("CorretorCaptador")
+  agendamentos    Agendamento[] @relation("CorretorAgendamento")
+  avisos          Aviso[]
+}
+
+model Cliente {
+  id                    Int           @id @default(autoincrement())
+  nomeCompleto          String
+  cpfDocumento          String        @unique
+  tipoDocumento         String        @default("CPF") // CPF | CNPJ
+  telefone              String
+  celular               String?
+  email                 String?
+  canalPrincipalContato String        @default("WHATSAPP") // WHATSAPP | TELEFONE | REDE_SOCIAL | EMAIL | PRESENCIAL
+  observacoes           String?
+  criadoEm              DateTime      @default(now())
+  atualizadoEm          DateTime      @updatedAt
+
+  imoveisProprios  Imovel[]      @relation("ProprietarioImovel")
+  imoveisInteresse Imovel[]      @relation("InteresseClienteImovel")
+  agendamentos     Agendamento[]
+}
+
+model Imovel {
+  id                 Int           @id @default(autoincrement())
+  numeroInscricao    String?       @unique
+  tipoImovel         String        @default("APARTAMENTO") // CASA | APARTAMENTO | TERRENO | COMERCIAL
+  finalidade         String        @default("VENDA") // VENDA | ALUGUEL | AMBOS
+  cep                String?
+  endereco           String
+  bairro             String?
+  numero             String?
+  complemento        String?
+  areaTotal          Float?
+  comodos            Int           @default(1)
+  banheiros          Int           @default(1)
+  valor              Float         @default(0)
+  posicoes           String?       // Ex: "NASCENTE,NORTE"
+  statusImovel       String        @default("DISPONIVEL") // DISPONIVEL | RESERVADO | VENDIDO | ALUGADO | INATIVO
+  proprietarioId     Int?
+  corretorCaptadorId Int?
+  criadoEm           DateTime      @default(now())
+  atualizadoEm       DateTime      @updatedAt
+
+  proprietario         Cliente?      @relation("ProprietarioImovel", fields: [proprietarioId], references: [id], onDelete: SetNull)
+  corretorCaptador     Usuario?      @relation("CorretorCaptador", fields: [corretorCaptadorId], references: [id], onDelete: SetNull)
+  clientesInteressados Cliente[]     @relation("InteresseClienteImovel")
+  agendamentos         Agendamento[]
+}
+
+model Agendamento {
+  id                        Int           @id @default(autoincrement())
+  titulo                    String
+  descricao                 String?
+  descricaoCurta            String?
+  tipo                      String        @default("ATENDIMENTO") // VISITA | RETORNO | ATENDIMENTO
+  status                    String        @default("PENDENTE") // PENDENTE | CONFIRMADO | CONCLUIDO | CANCELADO
+  dataHora                  DateTime?
+  duracaoMinutos            Int           @default(60)
+  observacao                String?
+  canalContato              String?       // WHATSAPP | TELEFONE | REDE_SOCIAL | EMAIL | PRESENCIAL
+  proximaAcao               String?
+  dataRetorno               DateTime?
+  sincronizarGoogleCalendar Boolean       @default(false)
+  googleCalendarEventId     String?
+  googleCalendarUrl         String?
+  clienteId                 Int
+  imovelId                  Int?
+  corretorId                Int?
+  agendamentoOrigemId       Int?
+  criadoEm                  DateTime      @default(now())
+  atualizadoEm              DateTime      @updatedAt
+
+  cliente            Cliente       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  imovel             Imovel?       @relation(fields: [imovelId], references: [id], onDelete: SetNull)
+  corretor           Usuario?      @relation("CorretorAgendamento", fields: [corretorId], references: [id], onDelete: SetNull)
+  agendamentoOrigem  Agendamento?  @relation("HistoricoRetorno", fields: [agendamentoOrigemId], references: [id], onDelete: SetNull)
+  retornosDerivados  Agendamento[] @relation("HistoricoRetorno")
+  avisos             Aviso[]
+}
+
+model Aviso {
+  id            Int         @id @default(autoincrement())
+  tipoAviso     String      // COMPROMISSO_PROXIMO | RETORNO_ATRASADO | TAREFA_SEM_DATA
+  titulo        String
+  mensagem      String
+  status        String      @default("PENDENTE") // PENDENTE | DISPENSADO
+  agendamentoId Int
+  usuarioId     Int?
+  disparadoEm   DateTime    @default(now())
+  dispensadoEm  DateTime?
+
+  agendamento   Agendamento @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+  usuario       Usuario?    @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@unique([agendamentoId, tipoAviso])
+}
