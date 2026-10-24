@@ -1,0 +1,24 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: domus-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=file:./prisma/dev.db
+      - JWT_SECRET=domus-chave-secreta-academica-uniesp-2026
+      - JWT_EXPIRES_IN=8h
+    volumes:
+      # Monta o diretorio prisma para manter o banco SQLite (dev.db) persistente no host
+      - ./backend/prisma:/app/prisma
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/avisos/proximos || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

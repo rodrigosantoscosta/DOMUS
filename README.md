@@ -40,10 +40,10 @@ A proposta e fornecer uma ferramenta simples, direta e acessivel via dispositivo
 
 O sistema e estruturado em uma arquitetura desacoplada cliente-servidor:
 
-- **Mobile (Frontend):** Desenvolvido em **React Native**, priorizando o uso em smartphones por corretores em deslocamento e visitas a campo.
-- **Backend (API):** Desenvolvido em **Node.js** com **TypeScript** e **NestJS**, seguindo principios de arquitetura modular, injecao de dependencias e validacao estrita por DTOs.
-- **Banco de Dados e Persistencia:** **Prisma ORM**, configurado para ambiente de desenvolvimento rapido com SQLite (zero-config) e compativel com MySQL para producao.
-- **Testes e Qualidade:** Cobertura de testes unitarios e ponta a ponta (E2E) com **Jest** e **Supertest**, alem de linter com **ESLint**.
+- **Mobile (Frontend):** Desenvolvido em **React Native** com **Expo SDK 58** e **TypeScript**, priorizando uso em smartphones por corretores em deslocamento e suporte multiplataforma (Android, iOS e Web).
+- **Backend (API):** Desenvolvido em **Node.js 22** com **TypeScript** e **NestJS 11**, seguindo principios de arquitetura modular, injecao de dependencias e validacao estrita por DTOs.
+- **Banco de Dados e Persistencia:** **Prisma ORM** com **SQLite** persistente (`dev.db`) e historico de **Migrations SQL versionadas**, permitindo execucao zero-config tanto nativa quanto via Docker.
+- **Testes e Qualidade:** Cobertura de testes unitarios e ponta a ponta (E2E) com **Jest** e **Supertest**, alem de tipagem estrita com **TypeScript**.
 
 ---
 
@@ -51,24 +51,35 @@ O sistema e estruturado em uma arquitetura desacoplada cliente-servidor:
 
 ```text
 DOMUS/
-├── backend/        # API RESTful (NestJS, TypeScript, Prisma ORM)
-│   ├── prisma/     # Schema do banco de dados e script de seed
-│   ├── src/        # Codigo-fonte (modulos de negocio, auth e controladores)
-│   ├── test/       # Testes unitarios e testes E2E
-│   └── README.md   # Documentacao tecnica detalhada da API
-├── docs/           # Documentacao do projeto extensionista
-│   ├── entrevistas/# Transcricoes e validacoes do estudo de caso
-│   ├── modelos/    # Diagnostico institucional e jornada do usuario
-│   └── superpowers/# Especificacoes tecnicas e planos de implementacao
-├── legacy/         # Prototipos anteriores e versoes exploratorias
-└── README.md       # Visao geral do projeto DOMUS (este arquivo)
+├── backend/          # API RESTful (NestJS, TypeScript, Prisma ORM, SQLite)
+│   ├── prisma/       # Migrations SQL versionadas, schema e seed inicial
+│   ├── src/          # Modulos de negocio, auth JWT, usuarios e agendamentos
+│   ├── test/         # Testes unitarios, testes E2E e setup isolado
+│   ├── Dockerfile    # Imagem de producao multi-stage Node 22 Alpine
+│   └── README.md     # Documentacao tecnica detalhada da API
+├── mobile/           # Aplicativo Movel (React Native, Expo SDK 58, TypeScript)
+│   ├── src/          # Telas (Clientes), componentes, servicos e contexto
+│   ├── App.tsx       # Componente raiz integrado ao contexto global
+│   └── README.md     # Guia do aplicativo movel e preview web
+├── docs/             # Documentacao do projeto extensionista
+│   ├── guia-apresentacao-academica.md # Roteiro detalhado para apresentacao em sala
+│   ├── entrevistas/  # Transcricoes e validacoes do estudo de caso
+│   ├── modelos/      # Diagnostico institucional e jornada do usuario
+│   ├── prototipos/   # Wireframes e especificacoes visuais das telas
+│   └── superpowers/  # Especificacoes tecnicas e planos de implementacao
+├── docker-compose.yml# Orquestracao do backend com volume persistente SQLite
+└── README.md         # Visao geral do projeto DOMUS (este arquivo)
 ```
 
 ---
 
-## Execucao do Backend
+## Como Executar o Projeto
 
-Para rodar a API localmente:
+### 1. Execucao do Backend (API e Banco de Dados)
+
+O backend pode ser executado de forma **nativa (sem Docker)** ou **containerizada (com Docker Compose)**. Ambas utilizam exatamente o mesmo banco SQLite persistente (`backend/prisma/dev.db`):
+
+#### Opcao A: Execucao Direta Local (Sem Docker - Rapido e Leve)
 
 ```powershell
 # 1. Entrar na pasta do backend
@@ -77,8 +88,8 @@ cd backend
 # 2. Instalar dependencias
 npm install
 
-# 3. Gerar o banco SQLite e aplicar o schema
-npx prisma db push
+# 3. Aplicar as migrations do Prisma no banco SQLite (dev.db)
+npx prisma migrate deploy
 
 # 4. Popular dados iniciais de teste (Persona Junior)
 npm run prisma:seed
@@ -87,23 +98,95 @@ npm run prisma:seed
 npm run start:dev
 ```
 
+#### Opcao B: Via Docker Compose (Containerizado)
+
+```powershell
+# Na raiz do projeto, suba o container em background:
+docker compose up -d
+
+# Visualizar logs em tempo real:
+docker compose logs -f backend
+```
+
 - **Acesso da API:** `http://localhost:3000/api`
 - **Documentacao Interativa Swagger:** `http://localhost:3000/api/docs`
+- **Painel Visual do Banco (Prisma Studio):** `npm run prisma:studio` na pasta `backend` (disponivel em `http://localhost:5555`)
 
-### Execucao dos Testes
+---
 
+### 2. Execucao do Mobile (React Native / Expo)
+
+Em outro terminal, execute o aplicativo movel:
+
+```powershell
+# 1. Entrar na pasta do mobile
+cd mobile
+
+# 2. Instalar dependencias (se primeira vez)
+npm install
+
+# 3. Iniciar o servidor de desenvolvimento Expo:
+npm start
+
+# (Opcional) Para abrir direto no navegador web:
+npm run web
+```
+
+#### Como visualizar a aplicacao:
+- **No Celular Físico (Expo Go):**
+  - **Android:** Abra o app **Expo Go** e escaneie o QR Code exibido no terminal.
+  - **iOS:** Abra a câmera nativa, aponte para o QR Code e toque no link do Expo Go.
+- **No Navegador Web:** Pressione `w` no terminal do Expo ou acesse `http://localhost:8081`.
+
+#### Conectando o Celular ao Backend:
+- O app possui **deteccao automatica do IP da maquina** na rede local.
+- **Badge Interativa no Cabecalho:** Toque na badge de status no topo da tela ("Modo Demo Local" ou "API Online") para abrir o **Modal de Conexao**. Nele voce pode:
+  - Verificar a URL ativa da API;
+  - Digitar um novo IP (caso use Wi-Fi ou roteador de dados moveis);
+  - Testar o ping da API em tempo real;
+  - Alternar entre comunicacao online com o banco e o modo demo offline.
+
+---
+
+### 3. Roteiro para Apresentacao na Disciplina (UNIESP)
+
+Para realizar a apresentacao ao vivo para a banca e o professor:
+1. Deixe o backend rodando no notebook (`npm run start:dev` ou `docker compose up -d`).
+2. Abra o **Prisma Studio** no navegador do notebook (`npm run prisma:studio` em `http://localhost:5555`) e projete no telao.
+3. Conecte o celular via cabo USB com `adb reverse tcp:3000 tcp:3000` (ou na mesma rede Wi-Fi/4G).
+4. No celular, cadastre um cliente: a gravacao sera feita em tempo real e a nova linha aparecera no telao no Prisma Studio.
+5. Consulte o guia completo com solucoes de contorno em [docs/guia-apresentacao-academica.md](docs/guia-apresentacao-academica.md).
+
+---
+
+## Execucao dos Testes Automatizados
+
+O projeto conta com suítes de testes automatizados com protecao de integridade:
+
+### Testes do Backend (Jest / Supertest)
 ```powershell
 cd backend
 
-# Testes unitarios das regras de negocio
+# Executa testes unitarios das regras de negocio em banco isolado (test.db)
 npm test
 
-# Testes de ponta a ponta (E2E)
+# Executa testes de ponta a ponta (E2E)
 npm run test:e2e
 
-# Verificacao de tipos e linter
+# Checagem de tipos estrita e linter
 npm run lint
 npm run build
+```
+
+### Testes do Mobile (Jest / React Test Renderer)
+```powershell
+cd mobile
+
+# Executa testes unitarios de componentes, telas e regras
+npm test
+
+# Verificacao estrita de tipos TypeScript
+npm run typecheck
 ```
 
 ---
@@ -124,7 +207,7 @@ Durante a fase de desenho do backend, foi considerada a utilizacao do **PocketBa
 - **Visoes Agrupadas:** O painel exige agregacao simultanea por cliente e por imovel, necessitando de views SQL manuais no PocketBase.
 - **Alinhamento Curricular:** Por se tratar de um projeto academico de Sistemas para Internet, o NestJS proporciona maior visibilidade sobre camadas de servico, tipagem estatica, injecao de dependencias e execucao formal de testes automatizados.
 
-Dessa forma, optou-se pelo NestJS para garantir controle pleno sobre a logica de negocio, extensibilidade futura e conformidade com as boas praticas de engenharia de software.
+Dessa forma, optou-se pelo NestJS com Prisma ORM e SQLite para garantir controle pleno sobre a logica de negocio, extensibilidade futura e conformidade com as boas praticas de engenharia de software.
 
 ---
 
@@ -132,4 +215,6 @@ Dessa forma, optou-se pelo NestJS para garantir controle pleno sobre a logica de
 
 - Diagnostico da Problematica e Plano de Intervencao: `docs/MODELO DIAGNOSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO.docx`
 - Especificacao Funcional do Backend: `docs/superpowers/specs/2026-10-17-domus-backend-nestjs-design.md`
+- Roteiro de Apresentacao Academica: `docs/guia-apresentacao-academica.md`
 - Guia Tecnico da API: `backend/README.md`
+- Guia do Aplicativo Mobile: `mobile/README.md`

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.git/
+.expo/
+.expo-shared/
+web-build/
+*.log
+.env
+.env.local
+.vscode/
+.idea/
+.worktrees/
+.serena/
+.opencode/

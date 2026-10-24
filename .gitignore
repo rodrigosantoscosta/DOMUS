@@ -4,6 +4,19 @@ node_modules/
 # Build output
 dist/
 build/
+out/
+
+# Expo / React Native
+.expo/
+.expo-shared/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+*.tsbuildinfo
 
 # Vite
 .vite/
@@ -11,29 +24,46 @@ build/
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Environment
 .env
 .env.*
 !.env.example
 
-# Editors/OS
+# Editors / OS
 .vscode/
 .idea/
 *.swp
+*.swo
+*~
 Thumbs.db
 Desktop.ini
+.DS_Store
 
-# Serena/opencode
+# Agentic & Workflow tools
 .serena/
 .opencode/
 .worktrees/
+.workflow/
+.agy/
 
 # Database & Test artifacts
 *.db
 *.db-journal
+*.sqlite
+*.sqlite3
 coverage/
+.nyc_output/
 
-# Package manager noise
-.DS_Store
+# Cache & Temporary
+.cache/
+.turbo/
+tmp/
+temp/
 
+# Generated screenshots and visual previews
+docs/prototipos/print-*.png
