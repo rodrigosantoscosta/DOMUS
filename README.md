@@ -34,6 +34,14 @@ A proposta e fornecer uma ferramenta simples, direta e acessivel via dispositivo
 - **Integracao de Calendario:** Geracao de eventos compativeis com o Google Calendar.
 - **Controle de Acesso:** Autenticacao segura via JWT com perfis de Corretor e Cadastrador.
 
+### Interface do Aplicativo Mobile (Prototipo Atual)
+
+A tela de **Cadastro de Clientes** implementada em React Native com Expo SDK 58 e integrada a API:
+
+<p align="center">
+  <img src="docs/prototipos/expo/tela-clientes-atual-expo.png" alt="Tela de Cadastro de Clientes no Expo Go" width="360" />
+</p>
+
 ---
 
 ## Arquitetura e Tecnologias
@@ -145,17 +153,6 @@ npm run web
   - Digitar um novo IP (caso use Wi-Fi ou roteador de dados moveis);
   - Testar o ping da API em tempo real;
   - Alternar entre comunicacao online com o banco e o modo demo offline.
-
----
-
-### 3. Roteiro para Apresentacao na Disciplina (UNIESP)
-
-Para realizar a apresentacao ao vivo para a banca e o professor:
-1. Deixe o backend rodando no notebook (`npm run start:dev` ou `docker compose up -d`).
-2. Abra o **Prisma Studio** no navegador do notebook (`npm run prisma:studio` em `http://localhost:5555`) e projete no telao.
-3. Conecte o celular via cabo USB com `adb reverse tcp:3000 tcp:3000` (ou na mesma rede Wi-Fi/4G).
-4. No celular, cadastre um cliente: a gravacao sera feita em tempo real e a nova linha aparecera no telao no Prisma Studio.
-5. Consulte o guia completo com solucoes de contorno em [docs/guia-apresentacao-academica.md](docs/guia-apresentacao-academica.md).
 
 ---
 

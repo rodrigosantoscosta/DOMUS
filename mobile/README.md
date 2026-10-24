@@ -6,6 +6,10 @@ Protótipo mobile do sistema **DOMUS**, desenvolvido em **React Native** com **E
 
 ## 1. Tela Entregue: Cadastro de Cliente
 
+<p align="center">
+  <img src="../docs/prototipos/expo/tela-clientes-atual-expo.png" alt="Tela Atual de Cadastro de Clientes no Expo Go" width="360" />
+</p>
+
 Conforme o direcionamento da primeira entrega na **Seção 4.1 do Diagnóstico**, a aplicação apresenta:
 - **Cabeçalho Institucional (`DomusHeader`):** Topo âmbar (`#FFE099`), ícone de casa, marca `DOMUS` e indicador de modo.
 - **Barra de Navegação (`DomusNavBar`):** Barra grafite (`#262626`) com as abas e destaque ativo laranja (`#FFA347`) em "Clientes".
