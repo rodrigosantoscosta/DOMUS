@@ -1,3 +1,4 @@
+import * as bcrypt from 'bcryptjs';
 import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -86,12 +87,19 @@ describe('AuthService & UsuariosService (RN01, RN02, RN03)', () => {
   });
 
   it('RN03: deve autenticar por username (login ou email), atualizar ultimoLogin e permitir alterar senha', async () => {
-    const criado = await usuariosService.create({
-      nome: 'Junior',
-      login: 'junior',
-      email: 'junior@domus.com',
-      senha: 'SenhaInicial123',
-      perfis: ['CORRETOR', 'CADASTRADOR'],
+    // Provisionamento de usuario privilegiado agora ocorre fora da rota publica
+    // (mesmo mecanismo do seed em backend/prisma/seed.ts). O escopo deste teste
+    // e a autenticacao (RN03), nao a criacao via POST /api/usuarios.
+    const criado = await prisma.usuario.create({
+      data: {
+        nome: 'Junior',
+        login: 'junior',
+        cpf: null,
+        email: 'junior@domus.com',
+        senhaHash: await bcrypt.hash('SenhaInicial123', 10),
+        perfis: 'CORRETOR,CADASTRADOR',
+        ativo: true,
+      },
     });
 
     const loginPorUsername = await authService.login({

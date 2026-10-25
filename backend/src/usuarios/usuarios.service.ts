@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -102,6 +103,12 @@ export class UsuariosService {
       if (cpfNormalizado && existentePorLoginOuEmail.cpf === cpfNormalizado) {
         throw new ConflictException('Já existe um usuário com este CPF');
       }
+    }
+
+    if (dto.perfis?.includes('CADASTRADOR')) {
+      throw new ForbiddenException(
+        'Acesso negado: o perfil CADASTRADOR so pode ser concedido por um CADASTRADOR autenticado',
+      );
     }
 
     const senhaHash = await bcrypt.hash(dto.senha, 10);
