@@ -42,7 +42,7 @@ export class UsuariosController {
     return this.usuariosService.findOne(id);
   }
 
-  @Roles('CORRETOR', 'CADASTRADOR')
+  @Roles('CADASTRADOR')
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar dados de um usuário' })
   update(
