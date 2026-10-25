@@ -24,6 +24,10 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio"
   },
+  "overrides": {
+    "multer": "2.5.0",
+    "js-yaml": "^5.4.1"
+  },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
