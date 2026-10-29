@@ -48,7 +48,7 @@ A tela de **Cadastro de Clientes** implementada em React Native com Expo SDK 58 
 
 O sistema e estruturado em uma arquitetura desacoplada cliente-servidor:
 
-- **Mobile (Frontend):** Desenvolvido em **React Native** com **Expo SDK 58** e **TypeScript**, priorizando uso em smartphones por corretores em deslocamento e suporte multiplataforma (Android, iOS e Web).
+- **Mobile (Frontend):** Desenvolvido em **React Native** com **Expo SDK 58** e **TypeScript**, priorizando uso em smartphones por corretores em deslocamento e suporte multiplataforma (Android, iOS e Web). Os padrões de arquitetura, ergonomia Apple HIG, física de gestos e persistência offline-first estão detalhados em [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md).
 - **Backend (API):** Desenvolvido em **Node.js 22** com **TypeScript** e **NestJS 11**, seguindo principios de arquitetura modular, injecao de dependencias e validacao estrita por DTOs.
 - **Banco de Dados e Persistencia:** **Prisma ORM** com **SQLite** persistente (`dev.db`) e historico de **Migrations SQL versionadas**, permitindo execucao zero-config tanto nativa quanto via Docker.
 - **Testes e Qualidade:** Cobertura de testes unitarios e ponta a ponta (E2E) com **Jest** e **Supertest**, alem de tipagem estrita com **TypeScript**.
@@ -70,6 +70,7 @@ DOMUS/
 │   ├── App.tsx       # Componente raiz integrado ao contexto global
 │   └── README.md     # Guia do aplicativo movel e preview web
 ├── docs/             # Documentacao do projeto extensionista
+│   ├── MOBILE_SYSTEM_DESIGN.md        # Arquitetura e system design do modulo mobile
 │   ├── guia-apresentacao-academica.md # Roteiro detalhado para apresentacao em sala
 │   ├── entrevistas/  # Transcricoes e validacoes do estudo de caso
 │   ├── modelos/      # Diagnostico institucional e jornada do usuario
@@ -209,6 +210,8 @@ Dessa forma, optou-se pelo NestJS com Prisma ORM e SQLite para garantir controle
 ---
 
 ## Referencias
+
+- Arquitetura e System Design do Modulo Mobile: [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md)
 
 - Diagnostico da Problematica e Plano de Intervencao: `docs/MODELO DIAGNOSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO.docx`
 - Especificacao Funcional do Backend: `docs/superpowers/specs/2026-10-17-domus-backend-nestjs-design.md`
