@@ -202,7 +202,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
         triggerErrorHaptic();
         setMensagemFeedback({
           tipo: 'erro',
-          texto: '[FALHA] Servidor inacessível na porta 3000. Verifique se o backend NestJS está iniciado.',
+          texto: '[FALHA] Servidor inacessível ou não autenticado na porta 3000. Verifique se o backend NestJS está iniciado com banco populado (npm run prisma:seed).',
         });
       }
     } catch (err: any) {

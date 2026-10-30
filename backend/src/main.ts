@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { PrismaService } from './prisma/prisma.service';
 
 export function configurarApp(app: INestApplication) {
   app.setGlobalPrefix('api');
@@ -40,6 +41,15 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`DOMUS Backend rodando em: http://localhost:${port}/api`);
   console.log(`Swagger Docs disponível em: http://localhost:${port}/api/docs`);
+  try {
+    const prisma = app.get(PrismaService);
+    const usuariosCount = await prisma.usuario.count();
+    if (usuariosCount === 0) {
+      console.warn('[DOMUS Backend] AVISO: Banco de dados SQLite sem usuários. Execute "npm run prisma:seed" para popular a Persona Junior.');
+    }
+  } catch {
+    // ignorar caso prisma nao esteja conectado
+  }
 }
 
 if (require.main === module) {

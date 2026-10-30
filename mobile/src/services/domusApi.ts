@@ -105,6 +105,17 @@ export function formatarDataGoogle(date: Date): string {
     .replace(/\.\d{3}Z$/, 'Z');
 }
 
+export function normalizarApiUrl(url?: string | null): string {
+  if (!url || !url.trim()) {
+    return 'http://localhost:3000/api';
+  }
+  const limpa = url.trim().replace(/\/+$/, '');
+  if (!limpa.endsWith('/api')) {
+    return `${limpa}/api`;
+  }
+  return limpa;
+}
+
 export function obterApiBaseUrlPadrao(): string {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
@@ -143,7 +154,7 @@ export class DomusApiService {
   private memoriaSenhas = new Map<string, string>();
 
   constructor(config?: { baseUrl?: string; forcarOffline?: boolean }) {
-    this.apiBaseUrl = config?.baseUrl || obterApiBaseUrlPadrao();
+    this.apiBaseUrl = normalizarApiUrl(config?.baseUrl || obterApiBaseUrlPadrao());
     this.forcarOffline = config?.forcarOffline ?? false;
     this.memoriaSenhas.set('junior.corretor', 'Domus@2026');
     this.memoriaSenhas.set('junior@domus.com.br', 'Domus@2026');
@@ -162,7 +173,7 @@ export class DomusApiService {
   }
 
   async testarConexao(urlTeste?: string): Promise<{ ok: boolean; mensagem: string; status?: number }> {
-    const alvo = (urlTeste || this.apiBaseUrl).replace(/\/$/, '');
+    const alvo = normalizarApiUrl(urlTeste || this.apiBaseUrl);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 3000);
 
@@ -197,7 +208,7 @@ export class DomusApiService {
 
   async configurarModo(opcoes: { baseUrl?: string; forcarOffline?: boolean }): Promise<void> {
     if (opcoes.baseUrl !== undefined) {
-      this.apiBaseUrl = opcoes.baseUrl;
+      this.apiBaseUrl = normalizarApiUrl(opcoes.baseUrl);
     }
     if (opcoes.forcarOffline !== undefined) {
       this.forcarOffline = opcoes.forcarOffline;
