@@ -8,6 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { PrismaService } from '../../prisma/prisma.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 export function obterSegredoJwt(): string {
@@ -28,6 +29,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -41,20 +43,60 @@ export class JwtAuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<Request>();
     const token = this.extractTokenFromHeader(request);
-    if (!token) {
+
+    const authDesabilitado = process.env.DISABLE_AUTH === 'true';
+
+    if (token) {
+      try {
+        const payload = await this.jwtService.verifyAsync(token, {
+          secret: obterSegredoJwt(),
+        });
+        (request as any).user = payload;
+        return true;
+      } catch {
+        if (!authDesabilitado) {
+          throw new UnauthorizedException('Token de autenticação inválido ou expirado');
+        }
+      }
+    }
+
+    if (!authDesabilitado) {
       throw new UnauthorizedException('Token de autenticação não fornecido');
     }
 
+    // Modo desenvolvimento rápido: injeta usuário padrão (Persona Junior)
+    await this.injetarUsuarioDesenvolvimento(request);
+    return true;
+  }
+
+  private async injetarUsuarioDesenvolvimento(request: Request): Promise<void> {
     try {
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: obterSegredoJwt(),
+      const usuario = await this.prisma.usuario.findFirst({
+        where: { ativo: true },
+        orderBy: { id: 'asc' },
       });
-      (request as any).user = payload;
+
+      if (usuario) {
+        (request as any).user = {
+          sub: usuario.id,
+          id: usuario.id,
+          login: usuario.login,
+          email: usuario.email,
+          perfis: usuario.perfis.split(',').map((p) => p.trim()),
+        };
+        return;
+      }
     } catch {
-      throw new UnauthorizedException('Token de autenticação inválido ou expirado');
+      // Ignora erro de acesso ao banco e usa fallback mock
     }
 
-    return true;
+    (request as any).user = {
+      sub: 1,
+      id: 1,
+      login: 'junior.corretor',
+      email: 'junior@domus.com.br',
+      perfis: ['CORRETOR', 'CADASTRADOR'],
+    };
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {
