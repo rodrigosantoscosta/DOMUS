@@ -9,12 +9,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiQuery,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AgendamentosService } from './agendamentos.service';
 import { ConcluirAgendamentoDto } from './dto/concluir-agendamento.dto';
@@ -77,9 +72,7 @@ export class AgendamentosController {
   })
   @ApiQuery({ name: 'corretorId', required: false, type: Number })
   obterVisaoGeral(@Query('corretorId') corretorId?: string) {
-    return this.agendamentosService.obterVisaoGeral(
-      corretorId ? Number(corretorId) : undefined,
-    );
+    return this.agendamentosService.obterVisaoGeral(corretorId ? Number(corretorId) : undefined);
   }
 
   @Get(':id')
@@ -96,22 +89,15 @@ export class AgendamentosController {
     summary:
       'Programar um retorno associado a uma visita ou atendimento existente (Seção 4.1 e 4.3 do .docx — RN09)',
   })
-  programarRetorno(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: ProgramarRetornoDto,
-  ) {
+  programarRetorno(@Param('id', ParseIntPipe) id: number, @Body() dto: ProgramarRetornoDto) {
     return this.agendamentosService.programarRetorno(id, dto);
   }
 
   @Patch(':id/concluir')
   @ApiOperation({
-    summary:
-      'Marcar agendamento/atendimento como concluído e registrar próxima ação (RN12)',
+    summary: 'Marcar agendamento/atendimento como concluído e registrar próxima ação (RN12)',
   })
-  concluir(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: ConcluirAgendamentoDto,
-  ) {
+  concluir(@Param('id', ParseIntPipe) id: number, @Body() dto: ConcluirAgendamentoDto) {
     return this.agendamentosService.concluir(id, dto);
   }
 

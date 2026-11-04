@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateImovelDto } from './dto/create-imovel.dto';
 import { UpdateImovelDto } from './dto/update-imovel.dto';
@@ -100,12 +96,8 @@ export class ImoveisService {
       where: {
         ...(filtros?.finalidade ? { finalidade: filtros.finalidade } : {}),
         ...(filtros?.tipoImovel ? { tipoImovel: filtros.tipoImovel } : {}),
-        ...(filtros?.bairro
-          ? { bairro: { contains: filtros.bairro } }
-          : {}),
-        ...(filtros?.statusImovel
-          ? { statusImovel: filtros.statusImovel }
-          : {}),
+        ...(filtros?.bairro ? { bairro: { contains: filtros.bairro } } : {}),
+        ...(filtros?.statusImovel ? { statusImovel: filtros.statusImovel } : {}),
         ...(filtros?.proprietarioId !== undefined
           ? { proprietarioId: filtros.proprietarioId }
           : {}),
@@ -147,9 +139,7 @@ export class ImoveisService {
     await this.findOne(id);
 
     const inscricaoNormalizada =
-      dto.numeroInscricao !== undefined
-        ? dto.numeroInscricao?.trim() || null
-        : undefined;
+      dto.numeroInscricao !== undefined ? dto.numeroInscricao?.trim() || null : undefined;
 
     if (inscricaoNormalizada) {
       const conflito = await this.prisma.imovel.findFirst({
@@ -168,24 +158,14 @@ export class ImoveisService {
     const atualizado = await this.prisma.imovel.update({
       where: { id },
       data: {
-        ...(inscricaoNormalizada !== undefined
-          ? { numeroInscricao: inscricaoNormalizada }
-          : {}),
+        ...(inscricaoNormalizada !== undefined ? { numeroInscricao: inscricaoNormalizada } : {}),
         ...(dto.tipoImovel !== undefined ? { tipoImovel: dto.tipoImovel } : {}),
         ...(dto.finalidade !== undefined ? { finalidade: dto.finalidade } : {}),
         ...(dto.cep !== undefined ? { cep: dto.cep?.trim() || null } : {}),
-        ...(dto.endereco !== undefined
-          ? { endereco: dto.endereco.trim() }
-          : {}),
-        ...(dto.bairro !== undefined
-          ? { bairro: dto.bairro?.trim() || null }
-          : {}),
-        ...(dto.numero !== undefined
-          ? { numero: dto.numero?.trim() || null }
-          : {}),
-        ...(dto.complemento !== undefined
-          ? { complemento: dto.complemento?.trim() || null }
-          : {}),
+        ...(dto.endereco !== undefined ? { endereco: dto.endereco.trim() } : {}),
+        ...(dto.bairro !== undefined ? { bairro: dto.bairro?.trim() || null } : {}),
+        ...(dto.numero !== undefined ? { numero: dto.numero?.trim() || null } : {}),
+        ...(dto.complemento !== undefined ? { complemento: dto.complemento?.trim() || null } : {}),
         ...(dto.areaTotal !== undefined ? { areaTotal: dto.areaTotal } : {}),
         ...(dto.comodos !== undefined ? { comodos: dto.comodos } : {}),
         ...(dto.banheiros !== undefined ? { banheiros: dto.banheiros } : {}),
@@ -193,17 +173,11 @@ export class ImoveisService {
         ...(dto.posicoes !== undefined
           ? {
               posicoes:
-                dto.posicoes.length > 0
-                  ? Array.from(new Set(dto.posicoes)).join(',')
-                  : null,
+                dto.posicoes.length > 0 ? Array.from(new Set(dto.posicoes)).join(',') : null,
             }
           : {}),
-        ...(dto.statusImovel !== undefined
-          ? { statusImovel: dto.statusImovel }
-          : {}),
-        ...(dto.proprietarioId !== undefined
-          ? { proprietarioId: dto.proprietarioId }
-          : {}),
+        ...(dto.statusImovel !== undefined ? { statusImovel: dto.statusImovel } : {}),
+        ...(dto.proprietarioId !== undefined ? { proprietarioId: dto.proprietarioId } : {}),
         ...(dto.corretorCaptadorId !== undefined
           ? { corretorCaptadorId: dto.corretorCaptadorId }
           : {}),

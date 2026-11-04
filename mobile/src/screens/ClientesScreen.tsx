@@ -1,29 +1,14 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  RefreshControl,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, ScrollView, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { DomusInput } from '../components/DomusInput';
 import { DomusButton } from '../components/DomusButton';
 import { useDomus, DomusContextData } from '../context/DomusContext';
-import {
-  DOMUS_THEME,
-  DOMUS_SPACING,
-  DOMUS_RADIUS,
-} from '../theme/tokens';
+import { DOMUS_THEME, DOMUS_SPACING, DOMUS_RADIUS } from '../theme/tokens';
 import { CanalContato, Cliente, Imovel } from '../types/domus';
 import { formatarCpfCnpj, formatarMoedaBrl, formatarTelefone } from '../utils/formatters';
-import {
-  triggerSelectionHaptic,
-  triggerSuccessHaptic,
-  triggerErrorHaptic,
-} from '../utils/haptics';
+import { triggerSelectionHaptic, triggerSuccessHaptic, triggerErrorHaptic } from '../utils/haptics';
 
 export interface ClientesScreenProps {
   context?: DomusContextData;
@@ -72,10 +57,7 @@ export const CanalChipButton = React.memo<CanalChipButtonProps>(
 
     return (
       <TouchableOpacity
-        style={[
-          styles.canalChip,
-          selecionado && styles.canalChipSelected,
-        ]}
+        style={[styles.canalChip, selecionado && styles.canalChipSelected]}
         onPress={handlePress}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         testID={`chip-canal-${canal.id}`}
@@ -83,22 +65,13 @@ export const CanalChipButton = React.memo<CanalChipButtonProps>(
         accessibilityState={{ selected: selecionado }}
         accessibilityLabel={`Canal ${canal.label}`}
       >
-        <Ionicons
-          name={canal.icon}
-          size={15}
-          color={selecionado ? '#C2410C' : '#475569'}
-        />
-        <Text
-          style={[
-            styles.canalChipText,
-            selecionado && styles.canalChipTextSelected,
-          ]}
-        >
+        <Ionicons name={canal.icon} size={15} color={selecionado ? '#C2410C' : '#475569'} />
+        <Text style={[styles.canalChipText, selecionado && styles.canalChipTextSelected]}>
           {canal.label}
         </Text>
       </TouchableOpacity>
     );
-  }
+  },
 );
 CanalChipButton.displayName = 'CanalChipButton';
 
@@ -117,10 +90,7 @@ export const ImovelInteresseChip = React.memo<ImovelInteresseChipProps>(
 
     return (
       <TouchableOpacity
-        style={[
-          styles.imovelChip,
-          selecionado && styles.imovelChipSelected,
-        ]}
+        style={[styles.imovelChip, selecionado && styles.imovelChipSelected]}
         onPress={handlePress}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         testID={`chip-imovel-${imovel.id}`}
@@ -135,10 +105,7 @@ export const ImovelInteresseChip = React.memo<ImovelInteresseChipProps>(
         />
         <View style={styles.imovelChipInfo}>
           <Text
-            style={[
-              styles.imovelChipTitle,
-              selecionado && styles.imovelChipTitleSelected,
-            ]}
+            style={[styles.imovelChipTitle, selecionado && styles.imovelChipTitleSelected]}
             numberOfLines={1}
           >
             {imovel.tipoImovel} - {imovel.bairro || imovel.endereco}
@@ -150,7 +117,7 @@ export const ImovelInteresseChip = React.memo<ImovelInteresseChipProps>(
         </View>
       </TouchableOpacity>
     );
-  }
+  },
 );
 ImovelInteresseChip.displayName = 'ImovelInteresseChip';
 
@@ -159,107 +126,86 @@ interface ClienteCardItemProps {
   onAgendar: (cliente: Cliente) => void;
 }
 
-export const ClienteCardItem = React.memo<ClienteCardItemProps>(
-  ({ cliente, onAgendar }) => {
-    const imoveisVinculados = cliente.imoveisInteresse || [];
-    const iniciais = extrairIniciais(cliente.nomeCompleto);
+export const ClienteCardItem = React.memo<ClienteCardItemProps>(({ cliente, onAgendar }) => {
+  const imoveisVinculados = cliente.imoveisInteresse || [];
+  const iniciais = extrairIniciais(cliente.nomeCompleto);
 
-    return (
-      <View
-        style={styles.clienteCard}
-        testID={`card-cliente-${cliente.id}`}
-      >
-        <View style={styles.cardHeaderRow}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{iniciais}</Text>
-          </View>
-          <View style={styles.cardHeaderTextColumn}>
-            <Text style={styles.clienteNome} numberOfLines={1}>
-              {cliente.nomeCompleto}
-            </Text>
-            <View style={styles.canalBadge}>
-              <Ionicons
-                name="chatbubble-ellipses"
-                size={11}
-                color={DOMUS_THEME.success}
-              />
-              <Text style={styles.canalBadgeText}>
-                {cliente.canalPrincipalContato}
-              </Text>
-            </View>
-          </View>
+  return (
+    <View style={styles.clienteCard} testID={`card-cliente-${cliente.id}`}>
+      <View style={styles.cardHeaderRow}>
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarText}>{iniciais}</Text>
         </View>
-
-        <View style={styles.clienteDetailsRow}>
-          <View style={styles.detailItem}>
-            <Ionicons name="call-outline" size={13} color={DOMUS_THEME.textSecondary} />
-            <Text style={styles.detailText}>{cliente.telefone}</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Ionicons name="card-outline" size={13} color={DOMUS_THEME.textSecondary} />
-            <Text style={styles.detailText}>{cliente.cpfDocumento}</Text>
-          </View>
-        </View>
-
-        {cliente.email ? (
-          <View style={styles.detailItemSingle}>
-            <Ionicons name="mail-outline" size={13} color={DOMUS_THEME.textSecondary} />
-            <Text style={styles.detailText}>{cliente.email}</Text>
-          </View>
-        ) : null}
-
-        {cliente.observacoes ? (
-          <View style={styles.obsContainer}>
-            <Text style={styles.observacaoText} numberOfLines={2}>
-              Obs: {cliente.observacoes}
-            </Text>
-          </View>
-        ) : null}
-
-        {imoveisVinculados.length > 0 ? (
-          <View style={styles.imoveisBadgeRow}>
-            <Ionicons name="home-outline" size={13} color={DOMUS_THEME.primary} />
-            <Text style={styles.imoveisBadgeText}>
-              {`${imoveisVinculados.length} ${
-                imoveisVinculados.length === 1
-                  ? 'imóvel de interesse'
-                  : 'imóveis de interesse'
-              }`}
-            </Text>
-          </View>
-        ) : null}
-
-        <TouchableOpacity
-          style={styles.btnAgendarAtalho}
-          onPress={() => onAgendar(cliente)}
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          testID={`btn-agendar-cliente-${cliente.id}`}
-          accessibilityRole="button"
-          accessibilityLabel={`Agendar Visita ou Retorno para ${cliente.nomeCompleto}`}
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={15}
-            color="#C2410C"
-          />
-          <Text style={styles.btnAgendarAtalhoText}>
-            Agendar Visita / Retorno
+        <View style={styles.cardHeaderTextColumn}>
+          <Text style={styles.clienteNome} numberOfLines={1}>
+            {cliente.nomeCompleto}
           </Text>
-        </TouchableOpacity>
+          <View style={styles.canalBadge}>
+            <Ionicons name="chatbubble-ellipses" size={11} color={DOMUS_THEME.success} />
+            <Text style={styles.canalBadgeText}>{cliente.canalPrincipalContato}</Text>
+          </View>
+        </View>
       </View>
-    );
-  }
-);
+
+      <View style={styles.clienteDetailsRow}>
+        <View style={styles.detailItem}>
+          <Ionicons name="call-outline" size={13} color={DOMUS_THEME.textSecondary} />
+          <Text style={styles.detailText}>{cliente.telefone}</Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Ionicons name="card-outline" size={13} color={DOMUS_THEME.textSecondary} />
+          <Text style={styles.detailText}>{cliente.cpfDocumento}</Text>
+        </View>
+      </View>
+
+      {cliente.email ? (
+        <View style={styles.detailItemSingle}>
+          <Ionicons name="mail-outline" size={13} color={DOMUS_THEME.textSecondary} />
+          <Text style={styles.detailText}>{cliente.email}</Text>
+        </View>
+      ) : null}
+
+      {cliente.observacoes ? (
+        <View style={styles.obsContainer}>
+          <Text style={styles.observacaoText} numberOfLines={2}>
+            Obs: {cliente.observacoes}
+          </Text>
+        </View>
+      ) : null}
+
+      {imoveisVinculados.length > 0 ? (
+        <View style={styles.imoveisBadgeRow}>
+          <Ionicons name="home-outline" size={13} color={DOMUS_THEME.primary} />
+          <Text style={styles.imoveisBadgeText}>
+            {`${imoveisVinculados.length} ${
+              imoveisVinculados.length === 1 ? 'imóvel de interesse' : 'imóveis de interesse'
+            }`}
+          </Text>
+        </View>
+      ) : null}
+
+      <TouchableOpacity
+        style={styles.btnAgendarAtalho}
+        onPress={() => onAgendar(cliente)}
+        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        testID={`btn-agendar-cliente-${cliente.id}`}
+        accessibilityRole="button"
+        accessibilityLabel={`Agendar Visita ou Retorno para ${cliente.nomeCompleto}`}
+      >
+        <Ionicons name="calendar-outline" size={15} color="#C2410C" />
+        <Text style={styles.btnAgendarAtalhoText}>Agendar Visita / Retorno</Text>
+      </TouchableOpacity>
+    </View>
+  );
+});
 ClienteCardItem.displayName = 'ClienteCardItem';
 
 /* =========================================================================
    Tela Principal ClientesScreen
    ========================================================================= */
 
-export const ClientesScreen: React.FC<ClientesScreenProps> = ({
-  context,
-  onAgendarCliente,
-}) => {
+export const ClientesScreen: React.FC<ClientesScreenProps> = ({ context, onAgendarCliente }) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const domusHook = context ? null : useDomus();
   const domus = context || domusHook!;
 
@@ -295,9 +241,7 @@ export const ClientesScreen: React.FC<ClientesScreenProps> = ({
 
   const toggleImovelInteresse = useCallback((imovelId: number) => {
     setImoveisInteresseIds((prev) =>
-      prev.includes(imovelId)
-        ? prev.filter((id) => id !== imovelId)
-        : [...prev, imovelId]
+      prev.includes(imovelId) ? prev.filter((id) => id !== imovelId) : [...prev, imovelId],
     );
   }, []);
 
@@ -334,8 +278,7 @@ export const ClientesScreen: React.FC<ClientesScreenProps> = ({
         email: email.trim() || undefined,
         canalPrincipalContato: canalPrincipal,
         observacoes: observacoes.trim() || undefined,
-        imoveisInteresseIds:
-          imoveisInteresseIds.length > 0 ? imoveisInteresseIds : undefined,
+        imoveisInteresseIds: imoveisInteresseIds.length > 0 ? imoveisInteresseIds : undefined,
       });
 
       const mensagemSucesso = `[OK] Cliente "${novoCliente.nomeCompleto}" cadastrado com sucesso!`;
@@ -395,7 +338,7 @@ export const ClientesScreen: React.FC<ClientesScreenProps> = ({
         domus.setAbaAtiva('Agendar');
       }
     },
-    [onAgendarCliente, domus]
+    [onAgendarCliente, domus],
   );
 
   const keyExtractor = useCallback((item: Cliente) => String(item.id), []);
@@ -404,7 +347,7 @@ export const ClientesScreen: React.FC<ClientesScreenProps> = ({
     ({ item }: { item: Cliente }) => (
       <ClienteCardItem cliente={item} onAgendar={handleAgendarParaCliente} />
     ),
-    [handleAgendarParaCliente]
+    [handleAgendarParaCliente],
   );
 
   const handlePullToRefresh = useCallback(async () => {

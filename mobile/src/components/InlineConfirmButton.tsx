@@ -1,19 +1,7 @@
 import React from 'react';
-import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  StyleProp,
-  ViewStyle,
-  View,
-} from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, StyleProp, ViewStyle, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  DOMUS_COLORS,
-  DOMUS_SPACING,
-  DOMUS_RADIUS,
-  DOMUS_TYPOGRAPHY,
-} from '../theme/tokens';
+import { DOMUS_COLORS, DOMUS_SPACING, DOMUS_RADIUS, DOMUS_TYPOGRAPHY } from '../theme/tokens';
 import { triggerLightImpact, triggerMediumImpact } from '../utils/haptics';
 import { useSafeState, useSafeRef, useSafeEffect } from '../utils/safeHooks';
 
@@ -118,20 +106,13 @@ export const InlineConfirmButton: React.FC<InlineConfirmButtonProps> = ({
       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={
-        accessibilityLabel || (confirming ? confirmLabel : label)
-      }
+      accessibilityLabel={accessibilityLabel || (confirming ? confirmLabel : label)}
       accessibilityState={{ selected: confirming }}
       activeOpacity={0.85}
     >
       <View style={styles.contentRow}>
         {currentIcon ? (
-          <Ionicons
-            name={currentIcon}
-            size={16}
-            color={getTextColor()}
-            style={styles.icon}
-          />
+          <Ionicons name={currentIcon} size={16} color={getTextColor()} style={styles.icon} />
         ) : null}
         <Text style={[styles.label, { color: getTextColor() }]}>
           {confirming ? confirmLabel : label}

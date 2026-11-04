@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { StyleSheet, View, StatusBar } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -15,30 +15,32 @@ import { DOMUS_THEME } from './src/theme/tokens';
 import { Cliente, Imovel } from './src/types/domus';
 
 export const DomusAppContent: React.FC = () => {
-  const {
-    modoOffline,
-    usuario,
-    resetarDemo,
-    logout,
-    abaAtiva,
-    setAbaAtiva,
-    toast,
-    fecharToast,
-  } = useDomus();
+  const { modoOffline, usuario, resetarDemo, logout, abaAtiva, setAbaAtiva, toast, fecharToast } =
+    useDomus();
 
   const [modalConexaoVisivel, setModalConexaoVisivel] = useState<boolean>(false);
-  const [clientePreSelecionadoId, setClientePreSelecionadoId] = useState<number | undefined>(undefined);
-  const [imovelPreSelecionadoId, setImovelPreSelecionadoId] = useState<number | undefined>(undefined);
+  const [clientePreSelecionadoId, setClientePreSelecionadoId] = useState<number | undefined>(
+    undefined,
+  );
+  const [imovelPreSelecionadoId, setImovelPreSelecionadoId] = useState<number | undefined>(
+    undefined,
+  );
 
-  const handleAgendarCliente = (cliente: Cliente) => {
-    setClientePreSelecionadoId(cliente.id);
-    setAbaAtiva('Agendar');
-  };
+  const handleAgendarCliente = useCallback(
+    (cliente: Cliente) => {
+      setClientePreSelecionadoId(cliente.id);
+      setAbaAtiva('Agendar');
+    },
+    [setAbaAtiva],
+  );
 
-  const handleAgendarImovel = (imovel: Imovel) => {
-    setImovelPreSelecionadoId(imovel.id);
-    setAbaAtiva('Agendar');
-  };
+  const handleAgendarImovel = useCallback(
+    (imovel: Imovel) => {
+      setImovelPreSelecionadoId(imovel.id);
+      setAbaAtiva('Agendar');
+    },
+    [setAbaAtiva],
+  );
 
   const telaAtiva = useMemo(() => {
     switch (abaAtiva) {
@@ -58,7 +60,14 @@ export const DomusAppContent: React.FC = () => {
       default:
         return <ClientesScreen onAgendarCliente={handleAgendarCliente} />;
     }
-  }, [abaAtiva, clientePreSelecionadoId, imovelPreSelecionadoId]);
+  }, [
+    abaAtiva,
+    clientePreSelecionadoId,
+    imovelPreSelecionadoId,
+    handleAgendarCliente,
+    handleAgendarImovel,
+    setAbaAtiva,
+  ]);
 
   return (
     <SafeAreaView style={styles.container} testID="app-main-container">

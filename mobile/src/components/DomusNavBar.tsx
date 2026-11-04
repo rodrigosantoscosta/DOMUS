@@ -1,17 +1,7 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  StyleProp,
-  ViewStyle,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  DOMUS_THEME,
-  DOMUS_SPACING,
-} from '../theme/tokens';
+import { DOMUS_THEME, DOMUS_SPACING } from '../theme/tokens';
 import { AbaDomus } from '../types/domus';
 import { triggerSelectionHaptic } from '../utils/haptics';
 
@@ -25,7 +15,12 @@ export interface TabConfig {
 export const DOMUS_TABS: TabConfig[] = [
   { id: 'Agendar', label: 'Agendar', iconName: 'calendar-outline', iconActive: 'calendar' },
   { id: 'Imoveis', label: 'Imoveis', iconName: 'business-outline', iconActive: 'business' },
-  { id: 'Atendimentos', label: 'Atendimentos', iconName: 'clipboard-outline', iconActive: 'clipboard' },
+  {
+    id: 'Atendimentos',
+    label: 'Atendimentos',
+    iconName: 'clipboard-outline',
+    iconActive: 'clipboard',
+  },
   { id: 'Clientes', label: 'Clientes', iconName: 'people-outline', iconActive: 'people' },
 ];
 
@@ -71,10 +66,7 @@ export const DomusNavBar: React.FC<DomusNavBarProps> = ({
               style={styles.tabIcon}
             />
             <Text
-              style={[
-                styles.tabLabel,
-                estaAtiva ? styles.tabLabelActive : styles.tabLabelInactive,
-              ]}
+              style={[styles.tabLabel, estaAtiva ? styles.tabLabelActive : styles.tabLabelInactive]}
               numberOfLines={1}
             >
               {tab.label}

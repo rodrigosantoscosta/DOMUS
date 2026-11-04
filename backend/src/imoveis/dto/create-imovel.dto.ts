@@ -10,28 +10,10 @@ import {
   Min,
 } from 'class-validator';
 
-export const TIPOS_IMOVEL = [
-  'CASA',
-  'APARTAMENTO',
-  'TERRENO',
-  'COMERCIAL',
-] as const;
+export const TIPOS_IMOVEL = ['CASA', 'APARTAMENTO', 'TERRENO', 'COMERCIAL'] as const;
 export const FINALIDADES_IMOVEL = ['VENDA', 'ALUGUEL', 'AMBOS'] as const;
-export const POSICOES_IMOVEL = [
-  'NORTE',
-  'SUL',
-  'LESTE',
-  'OESTE',
-  'NASCENTE',
-  'POENTE',
-] as const;
-export const STATUS_IMOVEL = [
-  'DISPONIVEL',
-  'RESERVADO',
-  'VENDIDO',
-  'ALUGADO',
-  'INATIVO',
-] as const;
+export const POSICOES_IMOVEL = ['NORTE', 'SUL', 'LESTE', 'OESTE', 'NASCENTE', 'POENTE'] as const;
+export const STATUS_IMOVEL = ['DISPONIVEL', 'RESERVADO', 'VENDIDO', 'ALUGADO', 'INATIVO'] as const;
 
 export class CreateImovelDto {
   @ApiPropertyOptional({

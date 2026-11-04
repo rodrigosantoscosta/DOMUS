@@ -63,10 +63,7 @@ export interface DomusProviderProps {
   autoLoginDemo?: boolean;
 }
 
-export const DomusProvider: React.FC<DomusProviderProps> = ({
-  children,
-  autoLoginDemo = true,
-}) => {
+export const DomusProvider: React.FC<DomusProviderProps> = ({ children, autoLoginDemo = true }) => {
   const montadoRef = React.useRef<boolean>(true);
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [abaAtiva, setAbaAtiva] = useState<AbaDomus>('Clientes');
@@ -79,7 +76,9 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
   const [modoOffline, setModoOffline] = useState<boolean>(true);
   const [carregando, setCarregando] = useState<boolean>(false);
   const [erro, setErro] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ texto: string; tipo: 'sucesso' | 'erro' | 'info' } | null>(null);
+  const [toast, setToast] = useState<{ texto: string; tipo: 'sucesso' | 'erro' | 'info' } | null>(
+    null,
+  );
 
   const recarregarDados = useCallback(async () => {
     try {
@@ -135,7 +134,7 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
         setCarregando(false);
       }
     },
-    [recarregarDados]
+    [recarregarDados],
   );
 
   const logout = useCallback(async () => {
@@ -184,7 +183,7 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
       await recarregarDados();
       return novo;
     },
-    [recarregarDados]
+    [recarregarDados],
   );
 
   const criarImovel = useCallback(
@@ -193,7 +192,7 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
       await recarregarDados();
       return novo;
     },
-    [recarregarDados]
+    [recarregarDados],
   );
 
   const criarAgendamento = useCallback(
@@ -202,7 +201,7 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
       await recarregarDados();
       return novo;
     },
-    [recarregarDados]
+    [recarregarDados],
   );
 
   const programarRetorno = useCallback(
@@ -211,7 +210,7 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
       await recarregarDados();
       return retorno;
     },
-    [recarregarDados]
+    [recarregarDados],
   );
 
   const concluirAgendamento = useCallback(
@@ -220,7 +219,7 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
       await recarregarDados();
       return concluido;
     },
-    [recarregarDados]
+    [recarregarDados],
   );
 
   const sincronizarGoogleCalendar = useCallback(
@@ -229,25 +228,22 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
       await recarregarDados();
       return sync;
     },
-    [recarregarDados]
+    [recarregarDados],
   );
 
-  const cadastrarUsuario = useCallback(
-    async (input: CreateUsuarioInput): Promise<Usuario> => {
-      setCarregando(true);
-      setErro(null);
-      try {
-        const novo = await domusApi.cadastrarUsuario(input);
-        return novo;
-      } catch (err: any) {
-        setErro(err.message || 'Erro ao cadastrar usuário');
-        throw err;
-      } finally {
-        setCarregando(false);
-      }
-    },
-    []
-  );
+  const cadastrarUsuario = useCallback(async (input: CreateUsuarioInput): Promise<Usuario> => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const novo = await domusApi.cadastrarUsuario(input);
+      return novo;
+    } catch (err: any) {
+      setErro(err.message || 'Erro ao cadastrar usuário');
+      throw err;
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
 
   const configurarModo = useCallback(
     async (opcoes: { baseUrl?: string; forcarOffline?: boolean }) => {
@@ -264,7 +260,7 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
         setCarregando(false);
       }
     },
-    [recarregarDados]
+    [recarregarDados],
   );
 
   useEffect(() => {

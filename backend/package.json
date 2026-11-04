@@ -8,6 +8,11 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test:db:prepare": "prisma generate && node -e \"process.env.DATABASE_URL='file:./test.db'; require('child_process').execSync('npx prisma migrate deploy', { stdio: 'inherit' })\"",
+    "pretest": "npm run test:db:prepare",
+    "pretest:e2e": "npm run test:db:prepare",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

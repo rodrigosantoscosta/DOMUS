@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ImoveisModule } from '../imoveis/imoveis.module';
 import { ImoveisService } from '../imoveis/imoveis.service';
@@ -101,14 +97,11 @@ describe('ClientesService (RN04, RN05)', () => {
     expect(cliente.imoveisInteresse).toHaveLength(1);
     expect(cliente.imoveisInteresse[0].id).toBe(imovel1.id);
 
-    const atualizado = await clientesService.vincularImoveisInteresse(
-      cliente.id,
-      [imovel2.id],
-    );
+    const atualizado = await clientesService.vincularImoveisInteresse(cliente.id, [imovel2.id]);
     expect(atualizado.imoveisInteresse).toHaveLength(2);
 
-    await expect(
-      clientesService.vincularImoveisInteresse(cliente.id, [99999]),
-    ).rejects.toThrow(NotFoundException);
+    await expect(clientesService.vincularImoveisInteresse(cliente.id, [99999])).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

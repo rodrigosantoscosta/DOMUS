@@ -10,10 +10,7 @@ import { Cliente, Imovel, Usuario } from '../types/domus';
 const originalConsoleError = console.error;
 beforeAll(() => {
   console.error = (...args: any[]) => {
-    if (
-      typeof args[0] === 'string' &&
-      args[0].includes('react-test-renderer is deprecated')
-    ) {
+    if (typeof args[0] === 'string' && args[0].includes('react-test-renderer is deprecated')) {
       return;
     }
     originalConsoleError(...args);
@@ -245,7 +242,7 @@ describe('ClientesScreen (Fiel ao wireframe 01-cadastro-cliente.png e Secao 4.2)
         email: 'ana@email.com',
         canalPrincipalContato: 'WHATSAPP',
         imoveisInteresseIds: [1],
-      })
+      }),
     );
     act(() => {
       testInstance.unmount();

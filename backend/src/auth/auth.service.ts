@@ -1,15 +1,8 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  UsuarioSanitizado,
-  UsuariosService,
-} from '../usuarios/usuarios.service';
+import { UsuarioSanitizado, UsuariosService } from '../usuarios/usuarios.service';
 import { AlterarSenhaDto } from './dto/alterar-senha.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -34,8 +27,7 @@ export class AuthService {
       );
     }
 
-    const usuario =
-      await this.usuariosService.findByLoginOrEmailComHash(identificador);
+    const usuario = await this.usuariosService.findByLoginOrEmailComHash(identificador);
     if (!usuario || !usuario.ativo) {
       throw new UnauthorizedException('Credenciais inválidas ou usuário inativo');
     }
@@ -67,17 +59,9 @@ export class AuthService {
     };
   }
 
-  async alterarSenha(
-    usuarioId: number,
-    dto: AlterarSenhaDto,
-  ): Promise<{ mensagem: string }> {
-    if (
-      dto.confirmarNovaSenha !== undefined &&
-      dto.confirmarNovaSenha !== dto.novaSenha
-    ) {
-      throw new BadRequestException(
-        'A confirmação da nova senha não confere com a nova senha',
-      );
+  async alterarSenha(usuarioId: number, dto: AlterarSenhaDto): Promise<{ mensagem: string }> {
+    if (dto.confirmarNovaSenha !== undefined && dto.confirmarNovaSenha !== dto.novaSenha) {
+      throw new BadRequestException('A confirmação da nova senha não confere com a nova senha');
     }
 
     const usuario = await this.prisma.usuario.findUnique({
@@ -87,10 +71,7 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado');
     }
 
-    const senhaAtualCorreta = await bcrypt.compare(
-      dto.senhaAtual,
-      usuario.senhaHash,
-    );
+    const senhaAtualCorreta = await bcrypt.compare(dto.senhaAtual, usuario.senhaHash);
     if (!senhaAtualCorreta) {
       throw new UnauthorizedException('A senha atual informada está incorreta');
     }

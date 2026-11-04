@@ -1,10 +1,5 @@
 import React, { useEffect, useRef, useMemo, useCallback } from 'react';
-import {
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Text, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
@@ -16,12 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  DOMUS_COLORS,
-  DOMUS_SPACING,
-  DOMUS_RADIUS,
-  DOMUS_TYPOGRAPHY,
-} from '../theme/tokens';
+import { DOMUS_COLORS, DOMUS_SPACING, DOMUS_RADIUS, DOMUS_TYPOGRAPHY } from '../theme/tokens';
 import { triggerLightImpact } from '../utils/haptics';
 import { EASE_OUT, projectVelocity } from '../utils/motion';
 
@@ -65,7 +55,7 @@ export const DomusToast: React.FC<DomusToastProps> = ({
     translateY.set(
       withTiming(-80, { duration: exitDuration, easing: EASE_OUT }, () => {
         runOnJS(onDismiss)();
-      })
+      }),
     );
     scale.set(withTiming(0.95, { duration: exitDuration, easing: EASE_OUT }));
     opacity.set(withTiming(0, { duration: exitDuration, easing: EASE_OUT }));
@@ -75,15 +65,9 @@ export const DomusToast: React.FC<DomusToastProps> = ({
     limparTimer();
 
     if (visivel && mensagem) {
-      translateY.set(
-        withSpring(0, { duration: reducedMotion ? 1 : 300, dampingRatio: 0.85 })
-      );
-      scale.set(
-        withTiming(1, { duration: reducedMotion ? 1 : 200, easing: EASE_OUT })
-      );
-      opacity.set(
-        withTiming(1, { duration: reducedMotion ? 1 : 200, easing: EASE_OUT })
-      );
+      translateY.set(withSpring(0, { duration: reducedMotion ? 1 : 300, dampingRatio: 0.85 }));
+      scale.set(withTiming(1, { duration: reducedMotion ? 1 : 200, easing: EASE_OUT }));
+      opacity.set(withTiming(1, { duration: reducedMotion ? 1 : 200, easing: EASE_OUT }));
 
       const timer = setTimeout(() => {
         handleDismiss();
@@ -102,7 +86,17 @@ export const DomusToast: React.FC<DomusToastProps> = ({
     return () => {
       limparTimer();
     };
-  }, [visivel, mensagem, durationMs, limparTimer, handleDismiss, reducedMotion, translateY, scale, opacity]);
+  }, [
+    visivel,
+    mensagem,
+    durationMs,
+    limparTimer,
+    handleDismiss,
+    reducedMotion,
+    translateY,
+    scale,
+    opacity,
+  ]);
 
   const panGesture = useMemo(
     () =>
@@ -126,16 +120,16 @@ export const DomusToast: React.FC<DomusToastProps> = ({
             translateY.set(
               withTiming(-80, { duration: 150, easing: EASE_OUT }, () => {
                 runOnJS(onDismiss)();
-              })
+              }),
             );
             opacity.set(withTiming(0, { duration: 150, easing: EASE_OUT }));
           } else {
             translateY.set(
-              withSpring(0, { duration: 250, dampingRatio: 0.85, velocity: e.velocityY })
+              withSpring(0, { duration: 250, dampingRatio: 0.85, velocity: e.velocityY }),
             );
           }
         }),
-    [dragContext, translateY, opacity, onDismiss]
+    [dragContext, translateY, opacity, onDismiss],
   );
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -180,11 +174,7 @@ export const DomusToast: React.FC<DomusToastProps> = ({
     >
       <GestureDetector gesture={panGesture}>
         <Animated.View
-          style={[
-            styles.toastCard,
-            { backgroundColor: getBackgroundColor() },
-            animatedStyle,
-          ]}
+          style={[styles.toastCard, { backgroundColor: getBackgroundColor() }, animatedStyle]}
           testID={testID}
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"

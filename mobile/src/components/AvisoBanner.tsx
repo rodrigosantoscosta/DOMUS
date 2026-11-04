@@ -1,18 +1,7 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  StyleProp,
-  ViewStyle,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  DOMUS_THEME,
-  DOMUS_SPACING,
-  MENSAGEM_BANNER_AVISOS,
-} from '../theme/tokens';
+import { DOMUS_SPACING, MENSAGEM_BANNER_AVISOS } from '../theme/tokens';
 import { triggerLightImpact } from '../utils/haptics';
 
 export interface AvisoBannerProps {
@@ -87,9 +76,7 @@ export const AvisoBanner: React.FC<AvisoBannerProps> = ({
         {totalSemData > 0 && (
           <View style={[styles.pill, styles.pillSemData]}>
             <Ionicons name="help-circle-outline" size={12} color="#475569" />
-            <Text style={styles.pillSemDataText}>
-              {`${totalSemData} Sem data`}
-            </Text>
+            <Text style={styles.pillSemDataText}>{`${totalSemData} Sem data`}</Text>
           </View>
         )}
       </View>

@@ -45,7 +45,9 @@ async function bootstrap() {
     const prisma = app.get(PrismaService);
     const usuariosCount = await prisma.usuario.count();
     if (usuariosCount === 0) {
-      console.warn('[DOMUS Backend] AVISO: Banco de dados SQLite sem usuários. Execute "npm run prisma:seed" para popular a Persona Junior.');
+      console.warn(
+        '[DOMUS Backend] AVISO: Banco de dados SQLite sem usuários. Execute "npm run prisma:seed" para popular a Persona Junior.',
+      );
     }
   } catch {
     // ignorar caso prisma nao esteja conectado

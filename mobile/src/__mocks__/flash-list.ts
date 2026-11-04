@@ -27,8 +27,8 @@ export const FlashList = (props: any) => {
           React.createElement(
             React.Fragment,
             { key: props.keyExtractor ? props.keyExtractor(item, index) : index },
-            renderItem({ item, index, target: 'Cell' })
-          )
+            renderItem({ item, index, target: 'Cell' }),
+          ),
         )
       : empty;
 

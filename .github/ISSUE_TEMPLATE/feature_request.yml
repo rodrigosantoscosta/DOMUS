@@ -1,0 +1,45 @@
+name: Sugestao de Funcionalidade
+description: Propor uma nova funcionalidade, melhoria tecnica ou evolucao para o DOMUS.
+title: "[FEAT]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Apresente sua proposta com contexto e justificativa de valor para corretores de imoveis ou desenvolvedores.
+        Lembrete: Mantenha a Regra Zero Emojis.
+
+  - type: textarea
+    id: motivacao
+    attributes:
+      label: Motivacao e Problema de Negocio
+      description: Qual necessidade ou friccao esta sugestao resolve?
+      placeholder: Corretores relataram necessidade de...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solucao-proposta
+    attributes:
+      label: Solucao Proposta
+      description: Descreva detalhadamente a solucao esperada e comportamento desejado.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: modulo
+    attributes:
+      label: Modulo Alvo
+      options:
+        - Mobile (Aplicativo Expo)
+        - Backend (API NestJS)
+        - Banco de Dados / Migrations
+        - Documentacao / Especificacoes
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas Consideradas
+      description: Outras abordagens avaliadas e motivos para descartadas.

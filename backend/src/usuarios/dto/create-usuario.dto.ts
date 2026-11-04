@@ -24,7 +24,10 @@ export class CreateUsuarioDto {
   @IsNotEmpty({ message: 'O login é obrigatório' })
   login: string;
 
-  @ApiPropertyOptional({ example: '12345678901', description: 'CPF do usuário (apenas números ou formatado)' })
+  @ApiPropertyOptional({
+    example: '12345678901',
+    description: 'CPF do usuário (apenas números ou formatado)',
+  })
   @IsOptional()
   @IsString()
   cpf?: string;

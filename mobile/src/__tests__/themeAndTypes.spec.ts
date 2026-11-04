@@ -1,9 +1,4 @@
-import {
-  DOMUS_COLORS,
-  DOMUS_SPACING,
-  DOMUS_RADIUS,
-  MENSAGEM_BANNER_AVISOS,
-} from '../theme/tokens';
+import { DOMUS_COLORS, DOMUS_SPACING, DOMUS_RADIUS, MENSAGEM_BANNER_AVISOS } from '../theme/tokens';
 import {
   TipoDocumento,
   CanalContato,

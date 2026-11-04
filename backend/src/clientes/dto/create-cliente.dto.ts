@@ -1,13 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsArray,
-  IsEmail,
-  IsIn,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsArray, IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export const TIPOS_DOCUMENTO = ['CPF', 'CNPJ'] as const;
 export const CANAIS_CONTATO = [
@@ -83,8 +75,7 @@ export class CreateClienteDto {
   @ApiPropertyOptional({
     example: 'WHATSAPP',
     enum: CANAIS_CONTATO,
-    description:
-      'Canal principal de contato do cliente conforme Seções 4.1 e 4.2 do .docx',
+    description: 'Canal principal de contato do cliente conforme Seções 4.1 e 4.2 do .docx',
   })
   @IsOptional()
   @IsIn(CANAIS_CONTATO)
@@ -92,8 +83,7 @@ export class CreateClienteDto {
 
   @ApiPropertyOptional({
     example: 'Busca apartamento de 3 quartos em Manaíra, preferência nascente.',
-    description:
-      'Observações sobre perfil e interesses do cliente conforme Seção 4.2 do .docx',
+    description: 'Observações sobre perfil e interesses do cliente conforme Seção 4.2 do .docx',
   })
   @IsOptional()
   @IsString()
@@ -102,8 +92,7 @@ export class CreateClienteDto {
   @ApiPropertyOptional({
     example: [1, 2],
     type: [Number],
-    description:
-      'IDs dos imóveis de interesse associados ao cliente conforme Seção 4.3 do .docx',
+    description: 'IDs dos imóveis de interesse associados ao cliente conforme Seção 4.3 do .docx',
   })
   @IsOptional()
   @IsArray()

@@ -45,7 +45,7 @@ function coletarTextos(node: any): string[] {
   return [];
 }
 
-function criarMockContextCompleto(overrides: Partial<DomusContextData> = {}): DomusContextData {
+function _criarMockContextCompleto(overrides: Partial<DomusContextData> = {}): DomusContextData {
   const clienteMock: Cliente = {
     id: 1,
     nomeCompleto: 'Carlos Eduardo Mendes',
@@ -124,7 +124,9 @@ function criarMockContextCompleto(overrides: Partial<DomusContextData> = {}): Do
     criarAgendamento: jest.fn().mockResolvedValue(agendamentoMock),
     programarRetorno: jest.fn().mockResolvedValue(agendamentoMock),
     concluirAgendamento: jest.fn().mockResolvedValue(agendamentoMock),
-    sincronizarGoogleCalendar: jest.fn().mockResolvedValue({ googleCalendarUrl: 'https://calendar.google.com' }),
+    sincronizarGoogleCalendar: jest
+      .fn()
+      .mockResolvedValue({ googleCalendarUrl: 'https://calendar.google.com' }),
     cadastrarUsuario: jest.fn(),
     configurarModo: jest.fn(),
     mostrarToast: jest.fn(),
@@ -160,7 +162,7 @@ describe('AvisoBanner Component', () => {
           totalAtrasados={1}
           totalSemData={2}
           onFechar={onFechar}
-        />
+        />,
       );
     });
 
@@ -191,7 +193,7 @@ describe('ImoveisScreen (Aba Imoveis)', () => {
       root = renderer.create(
         <DomusProvider autoLoginDemo={false}>
           <ImoveisScreen />
-        </DomusProvider>
+        </DomusProvider>,
       );
     });
 
@@ -231,7 +233,7 @@ describe('AtendimentosScreen (Aba Atendimentos)', () => {
       root = renderer.create(
         <DomusProvider autoLoginDemo={false}>
           <AtendimentosScreen />
-        </DomusProvider>
+        </DomusProvider>,
       );
     });
 
@@ -255,7 +257,7 @@ describe('DomusAppContent Layout Principal', () => {
       root = renderer.create(
         <DomusProvider autoLoginDemo={false}>
           <DomusAppContent />
-        </DomusProvider>
+        </DomusProvider>,
       );
     });
 

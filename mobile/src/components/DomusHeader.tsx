@@ -9,11 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  DOMUS_THEME,
-  DOMUS_SPACING,
-  DOMUS_RADIUS,
-} from '../theme/tokens';
+import { DOMUS_THEME, DOMUS_SPACING, DOMUS_RADIUS } from '../theme/tokens';
 import { triggerLightImpact, triggerMediumImpact } from '../utils/haptics';
 import { useSafeState, useSafeRef, useSafeEffect } from '../utils/safeHooks';
 
@@ -132,9 +128,7 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
               style={[
                 styles.statusDot,
                 {
-                  backgroundColor: modoOffline
-                    ? DOMUS_THEME.warning
-                    : DOMUS_THEME.success,
+                  backgroundColor: modoOffline ? DOMUS_THEME.warning : DOMUS_THEME.success,
                 },
               ]}
             />
@@ -142,9 +136,7 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
               style={[
                 styles.statusText,
                 {
-                  color: modoOffline
-                    ? DOMUS_THEME.warning
-                    : DOMUS_THEME.success,
+                  color: modoOffline ? DOMUS_THEME.warning : DOMUS_THEME.success,
                 },
               ]}
             >
@@ -158,28 +150,19 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
           <View style={styles.actionsRow}>
             {onResetDemo ? (
               <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  confirmandoReset && styles.actionButtonConfirming,
-                ]}
+                style={[styles.actionButton, confirmandoReset && styles.actionButtonConfirming]}
                 onPress={handlePressResetDemo}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 testID="btn-header-reset-demo"
                 accessibilityLabel={
-                  confirmandoReset
-                    ? 'Confirmar Reset?'
-                    : 'Resetar dados de demonstracao'
+                  confirmandoReset ? 'Confirmar Reset?' : 'Resetar dados de demonstracao'
                 }
                 accessibilityRole="button"
               >
                 <Ionicons
                   name={confirmandoReset ? 'alert-circle' : 'refresh-outline'}
                   size={15}
-                  color={
-                    confirmandoReset
-                      ? DOMUS_THEME.primaryText
-                      : DOMUS_THEME.textSecondary
-                  }
+                  color={confirmandoReset ? DOMUS_THEME.primaryText : DOMUS_THEME.textSecondary}
                 />
                 <Text
                   style={[
@@ -201,14 +184,8 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
                 accessibilityLabel="Sair do aplicativo"
                 accessibilityRole="button"
               >
-                <Ionicons
-                  name="log-out-outline"
-                  size={15}
-                  color={DOMUS_THEME.danger}
-                />
-                <Text style={[styles.actionButtonText, styles.logoutButtonText]}>
-                  Sair
-                </Text>
+                <Ionicons name="log-out-outline" size={15} color={DOMUS_THEME.danger} />
+                <Text style={[styles.actionButtonText, styles.logoutButtonText]}>Sair</Text>
               </TouchableOpacity>
             ) : null}
           </View>
