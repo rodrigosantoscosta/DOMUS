@@ -1,0 +1,232 @@
+name: CI Quality Gates
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'feat/**'
+      - 'fix/**'
+      - 'chore/**'
+      - 'refactor/**'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect Changed Paths
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Paths Filter
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'package.json'
+              - '.prettier*'
+              - '.github/workflows/ci.yml'
+            mobile:
+              - 'mobile/**'
+              - 'package.json'
+              - '.prettier*'
+              - '.github/workflows/ci.yml'
+            docker:
+              - 'backend/**'
+              - 'docker-compose.yml'
+              - '.github/workflows/ci.yml'
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Review Dependencies
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  backend-ci:
+    name: Backend CI (NestJS / Prisma)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        run: npm --prefix backend ci
+
+      - name: Generate Prisma client
+        run: npm --prefix backend run prisma:generate
+
+      - name: Check code formatting
+        run: npm --prefix backend run format:check
+
+      - name: Lint codebase
+        run: npm --prefix backend run lint
+
+      - name: Strict typecheck
+        run: npm --prefix backend run typecheck
+
+      - name: Build application
+        run: npm --prefix backend run build
+
+      - name: Unit tests
+        run: npm --prefix backend test
+
+      - name: End-to-end tests
+        run: npm --prefix backend run test:e2e
+
+      - name: Security audit
+        run: npm --prefix backend audit --audit-level=high
+
+  mobile-ci:
+    name: Mobile CI (React Native / Expo 58)
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'mobile/package-lock.json'
+
+      - name: Install dependencies
+        run: npm --prefix mobile ci --legacy-peer-deps
+
+      - name: Check code formatting
+        run: npm --prefix mobile run format:check
+
+      - name: Lint codebase
+        run: npm --prefix mobile run lint
+
+      - name: Strict typecheck
+        run: npm --prefix mobile run typecheck
+
+      - name: Unit and component tests
+        run: npm --prefix mobile test
+
+      - name: Static web export
+        run: npm --prefix mobile run export:web
+
+      - name: Security audit
+        run: npm --prefix mobile audit --audit-level=critical
+
+  docker-smoke:
+    name: Docker Smoke Test
+    needs: changes
+    if: needs.changes.outputs.docker == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend Docker image
+        run: docker build -t domus-backend:smoke ./backend
+
+      - name: Run container
+        run: |
+          docker run -d --name domus-smoke-test -p 3000:3000 \
+            -e DATABASE_URL="file:/app/prisma/dev.db" \
+            -e JWT_SECRET="ci-smoke-test-secret" \
+            -e DISABLE_AUTH="false" \
+            -e PORT="3000" \
+            domus-backend:smoke
+
+      - name: Wait and verify health status endpoint
+        run: |
+          timeout=60
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if curl -sf http://localhost:3000/api/status; then
+              echo "[OK] DOMUS API esta respondendo com sucesso"
+              exit 0
+            fi
+            echo "Aguardando inicializacao do container ($elapsed/$timeout s)..."
+            sleep 3
+            elapsed=$((elapsed + 3))
+          done
+          echo "[ERRO] Timeout aguardando healthcheck da API"
+          docker logs domus-smoke-test
+          exit 1
+
+      - name: Teardown container
+        if: always()
+        run: docker rm -f domus-smoke-test || true
+
+  ci-gate:
+    name: CI Quality Gate Consolidation
+    needs: [changes, dependency-review, backend-ci, mobile-ci, docker-smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consolidate CI status
+        run: |
+          echo "Status dos quality gates:"
+          echo "Changes:           ${{ needs.changes.result }}"
+          echo "Dependency Review: ${{ needs.dependency-review.result }}"
+          echo "Backend CI:        ${{ needs.backend-ci.result }}"
+          echo "Mobile CI:         ${{ needs.mobile-ci.result }}"
+          echo "Docker Smoke:      ${{ needs.docker-smoke.result }}"
+
+          if [ "${{ needs.changes.result }}" = "failure" ] || [ "${{ needs.changes.result }}" = "cancelled" ]; then
+            echo "[FALHA] Deteccao de mudancas (changes) falhou ou foi cancelada."
+            exit 1
+          fi
+          if [ "${{ needs.dependency-review.result }}" = "failure" ] || [ "${{ needs.dependency-review.result }}" = "cancelled" ]; then
+            echo "[FALHA] Dependency Review identificou vulnerabilidades bloqueantes ou foi cancelado."
+            exit 1
+          fi
+          if [ "${{ needs.backend-ci.result }}" = "failure" ] || [ "${{ needs.backend-ci.result }}" = "cancelled" ]; then
+            echo "[FALHA] Backend CI falhou ou foi cancelado."
+            exit 1
+          fi
+          if [ "${{ needs.mobile-ci.result }}" = "failure" ] || [ "${{ needs.mobile-ci.result }}" = "cancelled" ]; then
+            echo "[FALHA] Mobile CI falhou ou foi cancelado."
+            exit 1
+          fi
+          if [ "${{ needs.docker-smoke.result }}" = "failure" ] || [ "${{ needs.docker-smoke.result }}" = "cancelled" ]; then
+            echo "[FALHA] Docker Smoke falhou ou foi cancelado."
+            exit 1
+          fi
+
+          echo "[OK] Todos os quality gates foram concluidos com sucesso."
+          exit 0

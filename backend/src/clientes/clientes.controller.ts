@@ -9,12 +9,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiQuery,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ClientesService } from './clientes.service';
 import { CreateClienteDto } from './dto/create-cliente.dto';
@@ -50,8 +45,7 @@ export class ClientesController {
 
   @Get(':id')
   @ApiOperation({
-    summary:
-      'Detalhar cliente com imóveis de interesse e histórico de agendamentos/atendimentos',
+    summary: 'Detalhar cliente com imóveis de interesse e histórico de agendamentos/atendimentos',
   })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.clientesService.findOne(id);
@@ -59,10 +53,7 @@ export class ClientesController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar dados de um cliente' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateClienteDto: UpdateClienteDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateClienteDto: UpdateClienteDto) {
     return this.clientesService.update(id, updateClienteDto);
   }
 
@@ -70,10 +61,7 @@ export class ClientesController {
   @ApiOperation({
     summary: 'Associar um ou mais imóveis de interesse ao cliente (RN05)',
   })
-  vincularImoveis(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: VincularImoveisDto,
-  ) {
+  vincularImoveis(@Param('id', ParseIntPipe) id: number, @Body() dto: VincularImoveisDto) {
     return this.clientesService.vincularImoveisInteresse(id, dto.imovelIds);
   }
 

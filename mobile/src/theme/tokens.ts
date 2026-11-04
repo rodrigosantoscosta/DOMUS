@@ -22,23 +22,23 @@ export const DOMUS_COLORS = {
 } as const;
 
 export const DOMUS_THEME = {
-  background: '#F2F2F7',        // iOS Grouped Background (substitui o cinza cimento)
-  surface: '#FFFFFF',           // Cards brancos puros
-  surfaceElevated: '#F8FAFC',   // Superficie secundaria sutil
-  surfaceSubtle: '#F1F5F9',     // Pills inativas e badges neutros
-  inputBg: '#F8FAFC',           // Fundo de input em repouso
-  inputFocusBg: '#FFFFFF',      // Fundo de input focado
-  inputBorder: '#E2E8F0',       // Borda fina de input (1.5px)
-  inputFocusBorder: '#EA580C',  // Borda de input em foco
-  primary: '#EA580C',           // Laranja terracota moderno de alto contraste
+  background: '#F2F2F7', // iOS Grouped Background (substitui o cinza cimento)
+  surface: '#FFFFFF', // Cards brancos puros
+  surfaceElevated: '#F8FAFC', // Superficie secundaria sutil
+  surfaceSubtle: '#F1F5F9', // Pills inativas e badges neutros
+  inputBg: '#F8FAFC', // Fundo de input em repouso
+  inputFocusBg: '#FFFFFF', // Fundo de input focado
+  inputBorder: '#E2E8F0', // Borda fina de input (1.5px)
+  inputFocusBorder: '#EA580C', // Borda de input em foco
+  primary: '#EA580C', // Laranja terracota moderno de alto contraste
   primaryHover: '#C2410C',
-  primarySoft: '#FFF7ED',       // Fundo de chip/item selecionado
-  primaryBorder: '#FDBA74',     // Borda de chip selecionado
-  primaryText: '#FFFFFF',       // Texto branco nitido sobre botao primario
+  primarySoft: '#FFF7ED', // Fundo de chip/item selecionado
+  primaryBorder: '#FDBA74', // Borda de chip selecionado
+  primaryText: '#FFFFFF', // Texto branco nitido sobre botao primario
   accentAmber: '#F59E0B',
-  textPrimary: '#0F172A',       // Slate 900
-  textSecondary: '#475569',     // Slate 600
-  textMuted: '#94A3B8',         // Slate 400 (placeholders)
+  textPrimary: '#0F172A', // Slate 900
+  textSecondary: '#475569', // Slate 600
+  textMuted: '#94A3B8', // Slate 400 (placeholders)
   border: '#E2E8F0',
   borderSubtle: '#F1F5F9',
   danger: '#DC2626',
@@ -79,8 +79,7 @@ export const DOMUS_SHADOWS = {
   },
 } as const;
 
-export const MENSAGEM_BANNER_AVISOS =
-  'Você tem agendamentos proximo do dias marcados';
+export const MENSAGEM_BANNER_AVISOS = 'Você tem agendamentos proximo do dias marcados';
 
 export const DOMUS_SPACING = {
   xs: 4,

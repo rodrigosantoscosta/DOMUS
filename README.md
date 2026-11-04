@@ -157,7 +157,26 @@ npm run web
 
 ---
 
-## Execucao dos Testes Automatizados
+## Execucao dos Testes Automatizados e Qualidade
+
+O projeto conta com suites de testes automatizados com protecao de integridade e comandos orquestradores na raiz:
+
+### Comandos Unificados (Raiz do Repositorio)
+
+| Comando | Descricao |
+| :--- | :--- |
+| `npm run install:all` | Instala dependencias do backend e do mobile simultaneamente |
+| `npm run format:check` | Valida formatacao Prettier no backend e mobile |
+| `npm run format` | Aplica formatacao Prettier nos arquivos TypeScript/TSX |
+| `npm run lint` | Executa analise estatica ESLint em ambos os modulos |
+| `npm run typecheck` | Executa verificacao estrita de tipos com `tsc --noEmit` em ambos |
+
+
+| `npm run test:backend` | Executa a suite de testes unitarios do backend |
+| `npm run test:mobile` | Executa a suite de testes unitarios do mobile |
+| `npm test` | Executa todas as suites de testes do workspace |
+| `npm run verify` | Executa o pipeline de verificacao local completo (format, lint, types, tests) |
+
 
 O projeto conta com suítes de testes automatizados com protecao de integridade:
 
@@ -185,7 +204,33 @@ npm test
 
 # Verificacao estrita de tipos TypeScript
 npm run typecheck
+
+
+# Exportacao de build web estatico
+npm run export:web
 ```
+
+---
+
+## Esteira de Integracao Continua (CI/CD) e Governanca
+
+O repositorio conta com uma esteira automatizada no GitHub Actions estruturada com Quality Gates rigorosos:
+
+```mermaid
+flowchart TD
+    PR[Pull Request ou Push] --> Changes[Detect Changes - dorny/paths-filter]
+    PR --> DepReview[Dependency Review Action - Severidade High]
+    Changes -->|backend/**| BackendCI[Backend CI: Lint + Types + Build + Tests + E2E + Audit High]
+    Changes -->|mobile/**| MobileCI[Mobile CI: Lint + Types + Tests + Export Web + Audit Critical]
+    Changes -->|docker| DockerSmoke[Docker Smoke: Build + Run Container + Healthcheck /api/status]
+    BackendCI --> CIGate[CI Quality Gate Consolidation]
+    MobileCI --> CIGate
+    DockerSmoke --> CIGate
+```
+
+- **Deteccao Inteligente de Mudancas:** Executa apenas os jobs dos modulos modificados (`paths-filter`), otimizando tempo e consumo de recursos.
+- **Governanca de Pull Requests:** Validacao de mensagens com Conventional Commits (`semantic-pr-title`) e rotulagem automatica por escopo (`labeler`).
+- **Seguranca de Dependencias:** Auditoria automatizada (`dependency-review` e `npm audit`) bloqueando vulnerabilidades de severidade alta ou critica.
 
 ---
 

@@ -66,13 +66,8 @@ export class UsuariosService {
   }
 
   async create(dto: CreateUsuarioDto): Promise<UsuarioSanitizado> {
-    if (
-      dto.confirmarSenha !== undefined &&
-      dto.confirmarSenha !== dto.senha
-    ) {
-      throw new BadRequestException(
-        'A confirmação de senha não confere com a senha informada',
-      );
+    if (dto.confirmarSenha !== undefined && dto.confirmarSenha !== dto.senha) {
+      throw new BadRequestException('A confirmação de senha não confere com a senha informada');
     }
 
     const loginNormalizado = dto.login.trim().toLowerCase();
@@ -113,9 +108,7 @@ export class UsuariosService {
 
     const senhaHash = await bcrypt.hash(dto.senha, 10);
     const perfisStr =
-      dto.perfis && dto.perfis.length > 0
-        ? Array.from(new Set(dto.perfis)).join(',')
-        : 'CORRETOR';
+      dto.perfis && dto.perfis.length > 0 ? Array.from(new Set(dto.perfis)).join(',') : 'CORRETOR';
 
     const criado = await this.prisma.usuario.create({
       data: {
@@ -163,8 +156,7 @@ export class UsuariosService {
 
     const loginNormalizado = dto.login?.trim().toLowerCase();
     const emailNormalizado = dto.email?.trim().toLowerCase();
-    const cpfNormalizado =
-      dto.cpf !== undefined ? this.normalizarDocumento(dto.cpf) : undefined;
+    const cpfNormalizado = dto.cpf !== undefined ? this.normalizarDocumento(dto.cpf) : undefined;
 
     if (cpfNormalizado && cpfNormalizado.length !== 11) {
       throw new BadRequestException('O CPF deve conter 11 dígitos numéricos');
@@ -182,9 +174,7 @@ export class UsuariosService {
         },
       });
       if (conflito) {
-        throw new ConflictException(
-          'Login, e-mail ou CPF já utilizado por outro usuário',
-        );
+        throw new ConflictException('Login, e-mail ou CPF já utilizado por outro usuário');
       }
     }
 
@@ -195,9 +185,7 @@ export class UsuariosService {
         ...(loginNormalizado !== undefined ? { login: loginNormalizado } : {}),
         ...(emailNormalizado !== undefined ? { email: emailNormalizado } : {}),
         ...(cpfNormalizado !== undefined ? { cpf: cpfNormalizado } : {}),
-        ...(dto.perfis !== undefined
-          ? { perfis: Array.from(new Set(dto.perfis)).join(',') }
-          : {}),
+        ...(dto.perfis !== undefined ? { perfis: Array.from(new Set(dto.perfis)).join(',') } : {}),
         ...(dto.ativo !== undefined ? { ativo: dto.ativo } : {}),
       },
     });

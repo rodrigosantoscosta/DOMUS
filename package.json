@@ -1,0 +1,17 @@
+{
+  "name": "domus",
+  "version": "1.0.0",
+  "description": "DOMUS - Plataforma digital para gestao e acompanhamento da rotina de corretores de imoveis",
+  "private": true,
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix mobile install",
+    "lint": "npm --prefix backend run lint && npm --prefix mobile run lint",
+    "format": "npm --prefix backend run format && npm --prefix mobile run format",
+    "format:check": "npm --prefix backend run format:check && npm --prefix mobile run format:check",
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix mobile run typecheck",
+    "test:backend": "npm --prefix backend test",
+    "test:mobile": "npm --prefix mobile test",
+    "test": "npm run test:backend && npm run test:mobile",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test"
+  }
+}

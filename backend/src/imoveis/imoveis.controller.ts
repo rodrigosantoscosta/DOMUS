@@ -9,12 +9,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiQuery,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateImovelDto } from './dto/create-imovel.dto';
 import { UpdateImovelDto } from './dto/update-imovel.dto';
@@ -66,10 +61,7 @@ export class ImoveisController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar dados de um imóvel' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateImovelDto: UpdateImovelDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateImovelDto: UpdateImovelDto) {
     return this.imoveisService.update(id, updateImovelDto);
   }
 

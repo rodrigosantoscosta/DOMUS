@@ -9,8 +9,6 @@ import { InlineConfirmButton } from '../components/InlineConfirmButton';
 import { DomusToast } from '../components/DomusToast';
 import { ConnectionModal } from '../components/ConnectionModal';
 import { DomusProvider } from '../context/DomusContext';
-import { DOMUS_COLORS } from '../theme/tokens';
-import { AbaDomus } from '../types/domus';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -20,10 +18,10 @@ beforeAll(() => {
     if (
       typeof args[0] === 'string' &&
       (args[0].includes('react-test-renderer is deprecated') ||
-       args[0].includes('not configured to support act') ||
-       args[0].includes('was not wrapped in act') ||
-       args[0].includes('An update to') ||
-       args[0].includes('Invalid hook call'))
+        args[0].includes('not configured to support act') ||
+        args[0].includes('was not wrapped in act') ||
+        args[0].includes('An update to') ||
+        args[0].includes('Invalid hook call'))
     ) {
       return;
     }
@@ -114,10 +112,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
       let root: any;
       renderer.act(() => {
         root = renderer.create(
-          <DomusHeader
-            onResetDemo={onResetDemo}
-            confirmarResetEmDoisToques={true}
-          />
+          <DomusHeader onResetDemo={onResetDemo} confirmarResetEmDoisToques={true} />,
         );
       });
 
@@ -149,7 +144,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
             onResetDemo={jest.fn()}
             onLogout={jest.fn()}
             onPressStatus={jest.fn()}
-          />
+          />,
         );
       });
 
@@ -284,7 +279,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
             loadingLabel="Salvando..."
             onPress={onPress}
             testID="btn-loading"
-          />
+          />,
         );
       });
 
@@ -305,7 +300,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
             successLabel="Cadastrado!"
             onPress={onPress}
             testID="btn-success"
-          />
+          />,
         );
       });
 
@@ -319,7 +314,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
       let root: any;
       renderer.act(() => {
         root = renderer.create(
-          <DomusButton title="Acao" onPress={jest.fn()} testID="btn-touch-target" />
+          <DomusButton title="Acao" onPress={jest.fn()} testID="btn-touch-target" />,
         );
       });
       const touchable = root.root.findByType('TouchableOpacity');
@@ -339,7 +334,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
             confirmLabel="Confirmar Exclusao?"
             onConfirm={onConfirm}
             testID="btn-confirm-teste"
-          />
+          />,
         );
       });
 
@@ -366,11 +361,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
       let root: any;
       renderer.act(() => {
         root = renderer.create(
-          <InlineConfirmButton
-            label="Acao"
-            onConfirm={jest.fn()}
-            testID="btn-confirm-size"
-          />
+          <InlineConfirmButton label="Acao" onConfirm={jest.fn()} testID="btn-confirm-size" />,
         );
       });
       const touchable = root.root.findByType('TouchableOpacity');
@@ -392,7 +383,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
             tipo="sucesso"
             onDismiss={onDismiss}
             testID="toast-teste"
-          />
+          />,
         );
       });
 
@@ -411,11 +402,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
       let root: any;
       renderer.act(() => {
         root = renderer.create(
-          <DomusToast
-            visivel={false}
-            mensagem="Mensagem oculta"
-            onDismiss={jest.fn()}
-          />
+          <DomusToast visivel={false} mensagem="Mensagem oculta" onDismiss={jest.fn()} />,
         );
       });
       expect(root.toJSON()).toBeNull();
@@ -431,7 +418,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
         root = renderer.create(
           <DomusProvider autoLoginDemo={false}>
             <ConnectionModal visivel={true} onFechar={onFechar} />
-          </DomusProvider>
+          </DomusProvider>,
         );
       });
 
@@ -455,7 +442,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
         root = renderer.create(
           <DomusProvider autoLoginDemo={false}>
             <ConnectionModal visivel={true} onFechar={jest.fn()} />
-          </DomusProvider>
+          </DomusProvider>,
         );
       });
 

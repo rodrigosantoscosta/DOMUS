@@ -1,35 +1,14 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  RefreshControl,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, ScrollView, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { DomusInput } from '../components/DomusInput';
 import { DomusButton } from '../components/DomusButton';
 import { useDomus, DomusContextData } from '../context/DomusContext';
-import {
-  DOMUS_THEME,
-  DOMUS_SPACING,
-  DOMUS_RADIUS,
-} from '../theme/tokens';
-import {
-  Cliente,
-  FinalidadeImovel,
-  Imovel,
-  StatusImovel,
-  TipoImovel,
-} from '../types/domus';
+import { DOMUS_THEME, DOMUS_SPACING, DOMUS_RADIUS } from '../theme/tokens';
+import { Cliente, FinalidadeImovel, Imovel, StatusImovel, TipoImovel } from '../types/domus';
 import { formatarMoedaBrl } from '../utils/formatters';
-import {
-  triggerSelectionHaptic,
-  triggerSuccessHaptic,
-  triggerErrorHaptic,
-} from '../utils/haptics';
+import { triggerSelectionHaptic, triggerSuccessHaptic, triggerErrorHaptic } from '../utils/haptics';
 
 export interface ImoveisScreenProps {
   context?: DomusContextData;
@@ -150,17 +129,8 @@ function OpcaoChip<T extends string>({
       accessibilityState={{ selected: selecionado }}
       accessibilityLabel={`Opção ${opcao.label}`}
     >
-      <Ionicons
-        name={opcao.icon}
-        size={15}
-        color={selecionado ? '#C2410C' : '#475569'}
-      />
-      <Text
-        style={[
-          styles.canalChipText,
-          selecionado && styles.canalChipTextSelected,
-        ]}
-      >
+      <Ionicons name={opcao.icon} size={15} color={selecionado ? '#C2410C' : '#475569'} />
+      <Text style={[styles.canalChipText, selecionado && styles.canalChipTextSelected]}>
         {opcao.label}
       </Text>
     </TouchableOpacity>
@@ -182,10 +152,7 @@ export const ProprietarioChip = React.memo<ProprietarioChipProps>(
 
     return (
       <TouchableOpacity
-        style={[
-          styles.imovelChip,
-          selecionado && styles.imovelChipSelected,
-        ]}
+        style={[styles.imovelChip, selecionado && styles.imovelChipSelected]}
         onPress={handlePress}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         testID={`chip-proprietario-${cliente.id}`}
@@ -200,10 +167,7 @@ export const ProprietarioChip = React.memo<ProprietarioChipProps>(
         />
         <View style={styles.imovelChipInfo}>
           <Text
-            style={[
-              styles.imovelChipTitle,
-              selecionado && styles.imovelChipTitleSelected,
-            ]}
+            style={[styles.imovelChipTitle, selecionado && styles.imovelChipTitleSelected]}
             numberOfLines={1}
           >
             {cliente.nomeCompleto}
@@ -215,7 +179,7 @@ export const ProprietarioChip = React.memo<ProprietarioChipProps>(
         </View>
       </TouchableOpacity>
     );
-  }
+  },
 );
 ProprietarioChip.displayName = 'ProprietarioChip';
 
@@ -224,119 +188,103 @@ interface ImovelCardItemProps {
   onAgendar: (imovel: Imovel) => void;
 }
 
-export const ImovelCardItem = React.memo<ImovelCardItemProps>(
-  ({ imovel, onAgendar }) => {
-    const proprietario = imovel.proprietario || null;
-    const iniciais = extrairIniciais(proprietario?.nomeCompleto || imovel.tipoImovel);
-    const localizacao = imovel.bairro || imovel.endereco || 'Sem endereço';
-    const status = imovel.statusImovel;
+export const ImovelCardItem = React.memo<ImovelCardItemProps>(({ imovel, onAgendar }) => {
+  const proprietario = imovel.proprietario || null;
+  const iniciais = extrairIniciais(proprietario?.nomeCompleto || imovel.tipoImovel);
+  const localizacao = imovel.bairro || imovel.endereco || 'Sem endereço';
+  const status = imovel.statusImovel;
 
-    return (
-      <View style={styles.clienteCard} testID={`card-imovel-${imovel.id}`}>
-        <View style={styles.cardHeaderRow}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{iniciais}</Text>
-          </View>
-          <View style={styles.cardHeaderTextColumn}>
-            <Text style={styles.clienteNome} numberOfLines={1}>
-              {imovel.tipoImovel} - {localizacao}
-            </Text>
-            <View
-              style={[
-                styles.canalBadge,
-                {
-                  backgroundColor: FUNDO_STATUS[status],
-                  borderColor: BORDA_STATUS[status],
-                },
-              ]}
-            >
-              <Ionicons
-                name="ellipse"
-                size={7}
-                color={COR_STATUS[status]}
-              />
-              <Text
-                style={[styles.canalBadgeText, { color: COR_STATUS[status] }]}
-              >
-                {LABEL_STATUS[status]}
-              </Text>
-            </View>
-          </View>
+  return (
+    <View style={styles.clienteCard} testID={`card-imovel-${imovel.id}`}>
+      <View style={styles.cardHeaderRow}>
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarText}>{iniciais}</Text>
         </View>
-
-        <View style={styles.clienteDetailsRow}>
-          <View style={styles.detailItem}>
-            <Ionicons name="location-outline" size={13} color={DOMUS_THEME.textSecondary} />
-            <Text style={styles.detailText} numberOfLines={1}>
-              {imovel.endereco}
-              {imovel.numero ? `, ${imovel.numero}` : ''}
-            </Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Ionicons name="cash-outline" size={13} color={DOMUS_THEME.textSecondary} />
-            <Text style={styles.detailText}>{formatarMoedaBrl(imovel.valor)}</Text>
-          </View>
-        </View>
-
-        {imovel.numeroInscricao ? (
-          <View style={styles.detailItemSingle}>
-            <Ionicons name="document-text-outline" size={13} color={DOMUS_THEME.textSecondary} />
-            <Text style={styles.detailText}>{imovel.numeroInscricao}</Text>
-          </View>
-        ) : null}
-
-        <View style={styles.clienteDetailsRow}>
-          <View style={styles.detailItem}>
-            <Ionicons name="layers-outline" size={13} color={DOMUS_THEME.textSecondary} />
-            <Text style={styles.detailText}>
-              {`${imovel.areaTotal ? `${imovel.areaTotal} m² • ` : ''}${imovel.comodos ?? 0} com. • ${imovel.banheiros ?? 0} ban.`}
-            </Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Ionicons name="pricetag-outline" size={13} color={DOMUS_THEME.textSecondary} />
-            <Text style={styles.detailText}>{imovel.finalidade}</Text>
-          </View>
-        </View>
-
-        {proprietario ? (
-          <View style={styles.obsContainer}>
-            <Text style={styles.observacaoText} numberOfLines={1}>
-              Proprietário: {proprietario.nomeCompleto}
-            </Text>
-          </View>
-        ) : null}
-
-        <TouchableOpacity
-          style={styles.btnAgendarAtalho}
-          onPress={() => onAgendar(imovel)}
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          testID={`btn-agendar-imovel-${imovel.id}`}
-          accessibilityRole="button"
-          accessibilityLabel={`Agendar Visita para ${imovel.tipoImovel} ${localizacao}`}
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={15}
-            color="#C2410C"
-          />
-          <Text style={styles.btnAgendarAtalhoText}>
-            Agendar Visita
+        <View style={styles.cardHeaderTextColumn}>
+          <Text style={styles.clienteNome} numberOfLines={1}>
+            {imovel.tipoImovel} - {localizacao}
           </Text>
-        </TouchableOpacity>
+          <View
+            style={[
+              styles.canalBadge,
+              {
+                backgroundColor: FUNDO_STATUS[status],
+                borderColor: BORDA_STATUS[status],
+              },
+            ]}
+          >
+            <Ionicons name="ellipse" size={7} color={COR_STATUS[status]} />
+            <Text style={[styles.canalBadgeText, { color: COR_STATUS[status] }]}>
+              {LABEL_STATUS[status]}
+            </Text>
+          </View>
+        </View>
       </View>
-    );
-  }
-);
+
+      <View style={styles.clienteDetailsRow}>
+        <View style={styles.detailItem}>
+          <Ionicons name="location-outline" size={13} color={DOMUS_THEME.textSecondary} />
+          <Text style={styles.detailText} numberOfLines={1}>
+            {imovel.endereco}
+            {imovel.numero ? `, ${imovel.numero}` : ''}
+          </Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Ionicons name="cash-outline" size={13} color={DOMUS_THEME.textSecondary} />
+          <Text style={styles.detailText}>{formatarMoedaBrl(imovel.valor)}</Text>
+        </View>
+      </View>
+
+      {imovel.numeroInscricao ? (
+        <View style={styles.detailItemSingle}>
+          <Ionicons name="document-text-outline" size={13} color={DOMUS_THEME.textSecondary} />
+          <Text style={styles.detailText}>{imovel.numeroInscricao}</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.clienteDetailsRow}>
+        <View style={styles.detailItem}>
+          <Ionicons name="layers-outline" size={13} color={DOMUS_THEME.textSecondary} />
+          <Text style={styles.detailText}>
+            {`${imovel.areaTotal ? `${imovel.areaTotal} m² • ` : ''}${imovel.comodos ?? 0} com. • ${imovel.banheiros ?? 0} ban.`}
+          </Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Ionicons name="pricetag-outline" size={13} color={DOMUS_THEME.textSecondary} />
+          <Text style={styles.detailText}>{imovel.finalidade}</Text>
+        </View>
+      </View>
+
+      {proprietario ? (
+        <View style={styles.obsContainer}>
+          <Text style={styles.observacaoText} numberOfLines={1}>
+            Proprietário: {proprietario.nomeCompleto}
+          </Text>
+        </View>
+      ) : null}
+
+      <TouchableOpacity
+        style={styles.btnAgendarAtalho}
+        onPress={() => onAgendar(imovel)}
+        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        testID={`btn-agendar-imovel-${imovel.id}`}
+        accessibilityRole="button"
+        accessibilityLabel={`Agendar Visita para ${imovel.tipoImovel} ${localizacao}`}
+      >
+        <Ionicons name="calendar-outline" size={15} color="#C2410C" />
+        <Text style={styles.btnAgendarAtalhoText}>Agendar Visita</Text>
+      </TouchableOpacity>
+    </View>
+  );
+});
 ImovelCardItem.displayName = 'ImovelCardItem';
 
 /* =========================================================================
    Tela Principal ImoveisScreen
    ========================================================================= */
 
-export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
-  context,
-  onAgendarImovel,
-}) => {
+export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({ context, onAgendarImovel }) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const domusHook = context ? null : useDomus();
   const domus = context || domusHook!;
 
@@ -462,9 +410,7 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
       const enderecoMatch = i.endereco?.toLowerCase().includes(termo);
       const bairroMatch = i.bairro?.toLowerCase().includes(termo);
       const inscricaoMatch = i.numeroInscricao?.toLowerCase().includes(termo);
-      const proprietarioMatch = i.proprietario?.nomeCompleto
-        .toLowerCase()
-        .includes(termo);
+      const proprietarioMatch = i.proprietario?.nomeCompleto.toLowerCase().includes(termo);
       const valorMatch = String(i.valor ?? '').includes(termo);
       return (
         tipoMatch ||
@@ -485,7 +431,7 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
         domus.setAbaAtiva('Agendar');
       }
     },
-    [onAgendarImovel, domus]
+    [onAgendarImovel, domus],
   );
 
   const keyExtractor = useCallback((item: Imovel) => String(item.id), []);
@@ -494,7 +440,7 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
     ({ item }: { item: Imovel }) => (
       <ImovelCardItem imovel={item} onAgendar={handleAgendarParaImovel} />
     ),
-    [handleAgendarParaImovel]
+    [handleAgendarParaImovel],
   );
 
   const handlePullToRefresh = useCallback(async () => {

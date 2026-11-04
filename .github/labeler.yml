@@ -1,0 +1,28 @@
+backend:
+  - changed-files:
+      - any-glob-to-any-file: 'backend/**'
+
+mobile:
+  - changed-files:
+      - any-glob-to-any-file: 'mobile/**'
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '*.md'
+          - 'backend/README.md'
+          - 'mobile/README.md'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - '.prettier*'
+          - 'package.json'
+
+docker:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'backend/Dockerfile'
+          - 'docker-compose.yml'

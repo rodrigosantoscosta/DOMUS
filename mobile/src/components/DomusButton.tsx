@@ -133,14 +133,7 @@ export const DomusButton: React.FC<DomusButtonProps> = ({
               color={getIndicatorColor()}
               testID={testID ? `${testID}-loading` : undefined}
             />
-            <Text
-              style={[
-                styles.baseText,
-                getTextStyle(),
-                styles.loadingLabelText,
-                textStyle,
-              ]}
-            >
+            <Text style={[styles.baseText, getTextStyle(), styles.loadingLabelText, textStyle]}>
               {loadingLabel}
             </Text>
           </View>
@@ -160,22 +153,14 @@ export const DomusButton: React.FC<DomusButtonProps> = ({
             style={styles.iconWrapper}
             testID={testID ? `${testID}-success-icon` : undefined}
           />
-          <Text
-            style={[
-              styles.baseText,
-              getTextStyle(),
-              textStyle,
-            ]}
-          >
+          <Text style={[styles.baseText, getTextStyle(), textStyle]}>
             {successLabel || buttonText}
           </Text>
         </View>
       ) : (
         <View style={styles.contentRow}>
           {icon ? <View style={styles.iconWrapper}>{icon}</View> : null}
-          <Text style={[styles.baseText, getTextStyle(), textStyle]}>
-            {buttonText}
-          </Text>
+          <Text style={[styles.baseText, getTextStyle(), textStyle]}>{buttonText}</Text>
         </View>
       )}
     </TouchableOpacity>

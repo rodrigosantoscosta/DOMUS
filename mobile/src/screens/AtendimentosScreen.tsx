@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,11 +24,7 @@ import { DomusInput } from '../components/DomusInput';
 import { DomusButton } from '../components/DomusButton';
 import { AvisoBanner } from '../components/AvisoBanner';
 import { useDomus, DomusContextData } from '../context/DomusContext';
-import {
-  DOMUS_THEME,
-  DOMUS_SPACING,
-  DOMUS_RADIUS,
-} from '../theme/tokens';
+import { DOMUS_THEME, DOMUS_SPACING, DOMUS_RADIUS } from '../theme/tokens';
 import { Agendamento } from '../types/domus';
 import { projectVelocity, rubberband } from '../utils/motion';
 import {
@@ -111,8 +107,8 @@ export const AtendimentoCardItem = React.memo<AtendimentoCardItemProps>(
                 item.tipo === 'VISITA'
                   ? styles.badgeVisita
                   : item.tipo === 'RETORNO'
-                  ? styles.badgeRetorno
-                  : styles.badgeAtendimento,
+                    ? styles.badgeRetorno
+                    : styles.badgeAtendimento,
               ]}
             >
               <Text
@@ -121,8 +117,8 @@ export const AtendimentoCardItem = React.memo<AtendimentoCardItemProps>(
                   item.tipo === 'VISITA'
                     ? styles.badgeVisitaText
                     : item.tipo === 'RETORNO'
-                    ? styles.badgeRetornoText
-                    : styles.badgeAtendimentoText,
+                      ? styles.badgeRetornoText
+                      : styles.badgeAtendimentoText,
                 ]}
               >
                 {item.tipo}
@@ -147,12 +143,7 @@ export const AtendimentoCardItem = React.memo<AtendimentoCardItemProps>(
               size={13}
               color={hasData ? DOMUS_THEME.textSecondary : '#D97706'}
             />
-            <Text
-              style={[
-                styles.dataMetaText,
-                !hasData && styles.dataMetaSemData,
-              ]}
-            >
+            <Text style={[styles.dataMetaText, !hasData && styles.dataMetaSemData]}>
               {formatarDataHoraAmigavel(item.dataHora)}
             </Text>
           </View>
@@ -187,7 +178,7 @@ export const AtendimentoCardItem = React.memo<AtendimentoCardItemProps>(
         </TouchableOpacity>
       </View>
     );
-  }
+  },
 );
 AtendimentoCardItem.displayName = 'AtendimentoCardItem';
 
@@ -197,8 +188,9 @@ AtendimentoCardItem.displayName = 'AtendimentoCardItem';
 
 export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
   context,
-  onNovoAgendamento,
+  onNovoAgendamento: _onNovoAgendamento,
 }) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const domusHook = context ? null : useDomus();
   const domus = context || domusHook!;
 
@@ -210,13 +202,18 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
   const [atendimentoSelecionado, setAtendimentoSelecionado] = useState<Agendamento | null>(null);
 
   // Estados de acoes no Sheet
-  const [modoAcaoSheet, setModoAcaoSheet] = useState<'visualizar' | 'retorno' | 'concluir'>('visualizar');
+  const [modoAcaoSheet, setModoAcaoSheet] = useState<'visualizar' | 'retorno' | 'concluir'>(
+    'visualizar',
+  );
   const [dataRetorno, setDataRetorno] = useState<string>('');
   const [horaRetorno, setHoraRetorno] = useState<string>('09:00');
   const [proximaAcaoRetorno, setProximaAcaoRetorno] = useState<string>('');
   const [obsConclusao, setObsConclusao] = useState<string>('');
   const [executandoAcao, setExecutandoAcao] = useState<boolean>(false);
-  const [feedbackSheet, setFeedbackSheet] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
+  const [feedbackSheet, setFeedbackSheet] = useState<{
+    tipo: 'sucesso' | 'erro';
+    texto: string;
+  } | null>(null);
 
   // Bottom Sheet Gestures & Animation
   const SHEET_HEIGHT = 620;
@@ -265,8 +262,8 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                   if (finished !== false) {
                     runOnJS(fecharSheet)();
                   }
-                }
-              )
+                },
+              ),
             );
           } else {
             translateY.set(
@@ -274,23 +271,18 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                 duration: reducedMotion ? 1 : 300,
                 dampingRatio: 0.8,
                 velocity: e.velocityY,
-              })
+              }),
             );
             runOnJS(triggerLightImpact)();
           }
         }),
-    [dragContext, translateY, reducedMotion, fecharSheet]
+    [dragContext, translateY, reducedMotion, fecharSheet],
   );
 
   const sheetAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [{ translateY: translateY.get() }],
-      opacity: interpolate(
-        translateY.get(),
-        [0, SHEET_HEIGHT],
-        [1, 0.85],
-        Extrapolation.CLAMP
-      ),
+      opacity: interpolate(translateY.get(), [0, SHEET_HEIGHT], [1, 0.85], Extrapolation.CLAMP),
     };
   });
 
@@ -303,18 +295,18 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
       translateY.set(0);
       dragContext.set(0);
     },
-    [translateY, dragContext]
+    [translateY, dragContext],
   );
 
   // Metricas
   const totalAtendimentos = domus.agendamentos.length;
   const totalPendentes = useMemo(
     () => domus.agendamentos.filter((a) => a.status === 'PENDENTE').length,
-    [domus.agendamentos]
+    [domus.agendamentos],
   );
   const totalSemData = useMemo(
     () => domus.agendamentos.filter((a) => !a.dataHora).length,
-    [domus.agendamentos]
+    [domus.agendamentos],
   );
 
   // Filtragem
@@ -419,7 +411,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
 
     try {
       setExecutandoAcao(true);
-      const res = await domus.sincronizarGoogleCalendar(atendimentoSelecionado.id);
+      await domus.sincronizarGoogleCalendar(atendimentoSelecionado.id);
       triggerSuccessHaptic();
       setFeedbackSheet({
         tipo: 'sucesso',
@@ -443,7 +435,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
     ({ item }: { item: Agendamento }) => (
       <AtendimentoCardItem item={item} onVisualizar={abrirDetalhes} />
     ),
-    [abrirDetalhes]
+    [abrirDetalhes],
   );
 
   const handlePullToRefresh = useCallback(async () => {
@@ -515,10 +507,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
               contentContainerStyle={styles.filterPillsRow}
             >
               <TouchableOpacity
-                style={[
-                  styles.filterPill,
-                  filtro === 'TODOS' && styles.filterPillActive,
-                ]}
+                style={[styles.filterPill, filtro === 'TODOS' && styles.filterPillActive]}
                 onPress={() => {
                   triggerSelectionHaptic();
                   setFiltro('TODOS');
@@ -529,20 +518,14 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                 accessibilityState={{ selected: filtro === 'TODOS' }}
               >
                 <Text
-                  style={[
-                    styles.filterPillText,
-                    filtro === 'TODOS' && styles.filterPillTextActive,
-                  ]}
+                  style={[styles.filterPillText, filtro === 'TODOS' && styles.filterPillTextActive]}
                 >
                   Todos
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.filterPill,
-                  filtro === 'CLIENTE' && styles.filterPillActive,
-                ]}
+                style={[styles.filterPill, filtro === 'CLIENTE' && styles.filterPillActive]}
                 onPress={() => {
                   triggerSelectionHaptic();
                   setFiltro('CLIENTE');
@@ -563,10 +546,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.filterPill,
-                  filtro === 'IMOVEL' && styles.filterPillActive,
-                ]}
+                style={[styles.filterPill, filtro === 'IMOVEL' && styles.filterPillActive]}
                 onPress={() => {
                   triggerSelectionHaptic();
                   setFiltro('IMOVEL');
@@ -587,10 +567,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.filterPill,
-                  filtro === 'SEM_DATA' && styles.filterPillActive,
-                ]}
+                style={[styles.filterPill, filtro === 'SEM_DATA' && styles.filterPillActive]}
                 onPress={() => {
                   triggerSelectionHaptic();
                   setFiltro('SEM_DATA');
@@ -754,9 +731,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                 {atendimentoSelecionado?.descricao && (
                   <View style={styles.detailCol}>
                     <Text style={styles.detailLabel}>Descrição:</Text>
-                    <Text style={styles.detailValueBlock}>
-                      {atendimentoSelecionado.descricao}
-                    </Text>
+                    <Text style={styles.detailValueBlock}>{atendimentoSelecionado.descricao}</Text>
                   </View>
                 )}
 

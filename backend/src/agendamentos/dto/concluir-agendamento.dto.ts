@@ -28,7 +28,8 @@ export class ConcluirAgendamentoDto {
 
   @ApiPropertyOptional({
     example: true,
-    description: 'Se verdadeiro e houver proximaAcao, cria automaticamente um novo agendamento de RETORNO',
+    description:
+      'Se verdadeiro e houver proximaAcao, cria automaticamente um novo agendamento de RETORNO',
   })
   @IsOptional()
   @IsBoolean()

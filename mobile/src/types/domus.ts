@@ -1,35 +1,18 @@
 export type TipoDocumento = 'CPF' | 'CNPJ';
 
-export type CanalContato =
-  | 'WHATSAPP'
-  | 'TELEFONE'
-  | 'REDE_SOCIAL'
-  | 'EMAIL'
-  | 'PRESENCIAL';
+export type CanalContato = 'WHATSAPP' | 'TELEFONE' | 'REDE_SOCIAL' | 'EMAIL' | 'PRESENCIAL';
 
 export type TipoImovel = 'CASA' | 'APARTAMENTO' | 'TERRENO' | 'COMERCIAL';
 
 export type FinalidadeImovel = 'VENDA' | 'ALUGUEL' | 'AMBOS';
 
-export type StatusImovel =
-  | 'DISPONIVEL'
-  | 'RESERVADO'
-  | 'VENDIDO'
-  | 'ALUGADO'
-  | 'INATIVO';
+export type StatusImovel = 'DISPONIVEL' | 'RESERVADO' | 'VENDIDO' | 'ALUGADO' | 'INATIVO';
 
 export type TipoAgendamento = 'VISITA' | 'RETORNO' | 'ATENDIMENTO';
 
-export type StatusAgendamento =
-  | 'PENDENTE'
-  | 'CONFIRMADO'
-  | 'CONCLUIDO'
-  | 'CANCELADO';
+export type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CONCLUIDO' | 'CANCELADO';
 
-export type TipoAviso =
-  | 'COMPROMISSO_PROXIMO'
-  | 'RETORNO_ATRASADO'
-  | 'TAREFA_SEM_DATA';
+export type TipoAviso = 'COMPROMISSO_PROXIMO' | 'RETORNO_ATRASADO' | 'TAREFA_SEM_DATA';
 
 export type AbaDomus = 'Agendar' | 'Imoveis' | 'Atendimentos' | 'Clientes';
 

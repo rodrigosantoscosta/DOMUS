@@ -29,9 +29,7 @@ describe('DOMUS Backend — Fluxo Completo E2E (.docx Seções 1 a 6 + OWASP A01
 
   it('Deve executar toda a jornada de validação do Plano de Intervenção (Seção 4.3 e Seção 5 do .docx) e impor autenticação/autorização (OWASP A01 e RN02)', async () => {
     // 0. Healthcheck público (/api/status) e bloqueio de rotas protegidas sem JWT (OWASP A01)
-    const statusRes = await request(app.getHttpServer())
-      .get('/api/status')
-      .expect(200);
+    const statusRes = await request(app.getHttpServer()).get('/api/status').expect(200);
     expect(statusRes.body.status).toBe('online');
 
     await request(app.getHttpServer()).get('/api/clientes').expect(401);
@@ -148,9 +146,7 @@ describe('DOMUS Backend — Fluxo Completo E2E (.docx Seções 1 a 6 + OWASP A01
     expect(visitaRes.body.canalContato).toBe('WHATSAPP');
 
     // 6. Programar um retorno associado a essa visita (Seção 4.3, item 3)
-    const dataDepoisAmanha = new Date(Date.now() + 40 * 3600_000)
-      .toISOString()
-      .slice(0, 10);
+    const dataDepoisAmanha = new Date(Date.now() + 40 * 3600_000).toISOString().slice(0, 10);
 
     const retornoRes = await request(app.getHttpServer())
       .post(`/api/agendamentos/${visitaId}/programar-retorno`)
@@ -195,9 +191,7 @@ describe('DOMUS Backend — Fluxo Completo E2E (.docx Seções 1 a 6 + OWASP A01
       .expect(201);
 
     expect(disparoRes.body.possuiAvisos).toBe(true);
-    expect(disparoRes.body.mensagemBanner).toBe(
-      'Você tem agendamentos proximo do dias marcados',
-    );
+    expect(disparoRes.body.mensagemBanner).toBe('Você tem agendamentos proximo do dias marcados');
     expect(disparoRes.body.totalDisparados).toBe(2);
 
     // 9. Dispensar um aviso (botão X do banner) e concluir a visita

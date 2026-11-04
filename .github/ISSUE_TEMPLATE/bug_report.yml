@@ -1,0 +1,58 @@
+name: Relato de Bug
+description: Registrar um problema ou comportamento inesperado na plataforma DOMUS.
+title: "[BUG]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar o problema. Forneca o maximo de detalhes tecnicos possivel.
+        Lembrete: Mantenha a Regra Zero Emojis em toda a descricao.
+
+  - type: textarea
+    id: descricao
+    attributes:
+      label: Descricao do Problema
+      description: Explicacao clara e concisa do que esta ocorrendo.
+      placeholder: Ao acessar a tela de atendimentos e tentar registrar retorno...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: modulo
+    attributes:
+      label: Modulo Afetado
+      options:
+        - Backend (API NestJS / Prisma)
+        - Mobile (Expo SDK 58 / React Native)
+        - Docker / Infraestrutura
+        - CI/CD / Scripts
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducao
+    attributes:
+      label: Passos para Reproduzir
+      description: Sequencia de passos para observar o comportamento.
+      placeholder: |
+        1. Iniciar o backend com 'npm run start:dev'
+        2. Abrir o aplicativo mobile
+        3. Clicar em ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: comportamento-esperado
+    attributes:
+      label: Comportamento Esperado
+      description: O que deveria ter acontecido segundo os requisitos.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs-evidencias
+    attributes:
+      label: Logs ou Evidencias de Terminal
+      description: Cole saidas de terminal, logs de erro ou mensagens de console relevantes.
+      render: shell

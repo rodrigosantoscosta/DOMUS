@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
@@ -22,27 +15,16 @@ import { DomusInput } from './DomusInput';
 import { DomusButton } from './DomusButton';
 import { useDomus } from '../context/DomusContext';
 import { domusApi } from '../services/domusApi';
-import {
-  DOMUS_THEME,
-  DOMUS_SPACING,
-  DOMUS_RADIUS,
-} from '../theme/tokens';
+import { DOMUS_THEME, DOMUS_SPACING, DOMUS_RADIUS } from '../theme/tokens';
 import { projectVelocity, rubberband } from '../utils/motion';
-import {
-  triggerLightImpact,
-  triggerSuccessHaptic,
-  triggerErrorHaptic,
-} from '../utils/haptics';
+import { triggerLightImpact, triggerSuccessHaptic, triggerErrorHaptic } from '../utils/haptics';
 
 export interface ConnectionModalProps {
   visivel: boolean;
   onFechar: () => void;
 }
 
-export const ConnectionModal: React.FC<ConnectionModalProps> = ({
-  visivel,
-  onFechar,
-}) => {
+export const ConnectionModal: React.FC<ConnectionModalProps> = ({ visivel, onFechar }) => {
   const { modoOffline, configurarModo, recarregarDados } = useDomus();
   const [urlInput, setUrlInput] = useState<string>(domusApi.baseUrl);
   const [testando, setTestando] = useState<boolean>(false);
@@ -114,8 +96,8 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                   if (finished !== false) {
                     runOnJS(fecharComHaptica)();
                   }
-                }
-              )
+                },
+              ),
             );
           } else {
             translateY.set(
@@ -123,23 +105,18 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                 duration: reducedMotion ? 1 : 300,
                 dampingRatio: 0.8,
                 velocity: e.velocityY,
-              })
+              }),
             );
             runOnJS(triggerLightImpact)();
           }
         }),
-    [dragContext, translateY, reducedMotion, fecharComHaptica]
+    [dragContext, translateY, reducedMotion, fecharComHaptica],
   );
 
   const sheetAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [{ translateY: translateY.get() }],
-      opacity: interpolate(
-        translateY.get(),
-        [0, SHEET_HEIGHT],
-        [1, 0.85],
-        Extrapolation.CLAMP
-      ),
+      opacity: interpolate(translateY.get(), [0, SHEET_HEIGHT], [1, 0.85], Extrapolation.CLAMP),
     };
   });
 
@@ -202,7 +179,8 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
         triggerErrorHaptic();
         setMensagemFeedback({
           tipo: 'erro',
-          texto: '[FALHA] Servidor inacessível ou não autenticado na porta 3000. Verifique se o backend NestJS está iniciado com banco populado (npm run prisma:seed).',
+          texto:
+            '[FALHA] Servidor inacessível ou não autenticado na porta 3000. Verifique se o backend NestJS está iniciado com banco populado (npm run prisma:seed).',
         });
       }
     } catch (err: any) {
@@ -279,11 +257,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
           <View style={styles.header}>
             <View style={styles.titleGroup}>
               <View style={styles.headerIconWrapper}>
-                <Ionicons
-                  name="server-outline"
-                  size={18}
-                  color={DOMUS_THEME.primary}
-                />
+                <Ionicons name="server-outline" size={18} color={DOMUS_THEME.primary} />
               </View>
               <Text style={styles.title}>Conexão com o Backend</Text>
             </View>
@@ -312,9 +286,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                 style={[
                   styles.statusDot,
                   {
-                    backgroundColor: modoOffline
-                      ? DOMUS_THEME.warning
-                      : DOMUS_THEME.success,
+                    backgroundColor: modoOffline ? DOMUS_THEME.warning : DOMUS_THEME.success,
                   },
                 ]}
               />
@@ -401,9 +373,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                 accessibilityRole="button"
                 accessibilityLabel="Usar Modo Demo Local Offline"
               >
-                <Text style={styles.btnSecondaryTextLabel}>
-                  Usar Modo Demo Local (Offline)
-                </Text>
+                <Text style={styles.btnSecondaryTextLabel}>Usar Modo Demo Local (Offline)</Text>
               </TouchableOpacity>
             </View>
 
@@ -411,10 +381,12 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
             <View style={styles.guideBox}>
               <Text style={styles.guideTitle}>Dicas para Apresentação:</Text>
               <Text style={styles.guideItem}>
-                - No Celular via USB: Execute 'adb reverse tcp:3000 tcp:3000' e use http://localhost:3000/api
+                - No Celular via USB: Execute 'adb reverse tcp:3000 tcp:3000' e use
+                http://localhost:3000/api
               </Text>
               <Text style={styles.guideItem}>
-                - No Celular via Wi-Fi: Utilize o IP da sua máquina na rede (ex: http://192.168.1.100:3000/api)
+                - No Celular via Wi-Fi: Utilize o IP da sua máquina na rede (ex:
+                http://192.168.1.100:3000/api)
               </Text>
               <Text style={styles.guideItem}>
                 - No Navegador Web: Utilize http://localhost:3000/api

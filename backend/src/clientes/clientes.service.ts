@@ -48,21 +48,16 @@ export class ClientesService {
       );
     }
 
-    const tipoDoc =
-      dto.tipoDocumento || (docFinal.length === 14 ? 'CNPJ' : 'CPF');
+    const tipoDoc = dto.tipoDocumento || (docFinal.length === 14 ? 'CNPJ' : 'CPF');
 
     const existente = await this.prisma.cliente.findUnique({
       where: { cpfDocumento: docFinal },
     });
     if (existente) {
-      throw new ConflictException(
-        `Já existe um cliente cadastrado com o documento ${docFinal}`,
-      );
+      throw new ConflictException(`Já existe um cliente cadastrado com o documento ${docFinal}`);
     }
 
-    const idsImoveis = await this.validarImoveisExistentes(
-      dto.imoveisInteresseIds,
-    );
+    const idsImoveis = await this.validarImoveisExistentes(dto.imoveisInteresseIds);
 
     return this.prisma.cliente.create({
       data: {
@@ -89,10 +84,7 @@ export class ClientesService {
     });
   }
 
-  async findAll(filtros?: {
-    busca?: string;
-    canalPrincipalContato?: string;
-  }) {
+  async findAll(filtros?: { busca?: string; canalPrincipalContato?: string }) {
     const busca = filtros?.busca?.trim();
     return this.prisma.cliente.findMany({
       where: {
@@ -153,9 +145,7 @@ export class ClientesService {
     if (dto.cpfDocumento !== undefined || dto.cpf !== undefined) {
       docFinal = this.normalizarDocumento(dto.cpfDocumento || dto.cpf);
       if (!docFinal || (docFinal.length !== 11 && docFinal.length !== 14)) {
-        throw new BadRequestException(
-          'Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido',
-        );
+        throw new BadRequestException('Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido');
       }
       const conflito = await this.prisma.cliente.findFirst({
         where: {
@@ -164,9 +154,7 @@ export class ClientesService {
         },
       });
       if (conflito) {
-        throw new ConflictException(
-          `Já existe outro cliente com o documento ${docFinal}`,
-        );
+        throw new ConflictException(`Já existe outro cliente com o documento ${docFinal}`);
       }
     }
 
@@ -180,24 +168,14 @@ export class ClientesService {
       data: {
         ...(nomeFinal ? { nomeCompleto: nomeFinal } : {}),
         ...(docFinal ? { cpfDocumento: docFinal } : {}),
-        ...(dto.tipoDocumento !== undefined
-          ? { tipoDocumento: dto.tipoDocumento }
-          : {}),
-        ...(dto.telefone !== undefined
-          ? { telefone: dto.telefone.trim() }
-          : {}),
-        ...(dto.celular !== undefined
-          ? { celular: dto.celular?.trim() || null }
-          : {}),
-        ...(dto.email !== undefined
-          ? { email: dto.email?.trim().toLowerCase() || null }
-          : {}),
+        ...(dto.tipoDocumento !== undefined ? { tipoDocumento: dto.tipoDocumento } : {}),
+        ...(dto.telefone !== undefined ? { telefone: dto.telefone.trim() } : {}),
+        ...(dto.celular !== undefined ? { celular: dto.celular?.trim() || null } : {}),
+        ...(dto.email !== undefined ? { email: dto.email?.trim().toLowerCase() || null } : {}),
         ...(dto.canalPrincipalContato !== undefined
           ? { canalPrincipalContato: dto.canalPrincipalContato }
           : {}),
-        ...(dto.observacoes !== undefined
-          ? { observacoes: dto.observacoes?.trim() || null }
-          : {}),
+        ...(dto.observacoes !== undefined ? { observacoes: dto.observacoes?.trim() || null } : {}),
         ...(idsImoveis !== undefined
           ? {
               imoveisInteresse: {

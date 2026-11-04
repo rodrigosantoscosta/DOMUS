@@ -29,7 +29,6 @@ function resolveStorageDriver(): StorageDriver {
   const memoryFallback = new MemoryStorageDriver();
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const mod = require('@react-native-async-storage/async-storage');
     const native = mod?.default || mod;
 

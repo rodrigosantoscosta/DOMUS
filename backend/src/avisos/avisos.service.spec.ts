@@ -7,10 +7,7 @@ import { ImoveisModule } from '../imoveis/imoveis.module';
 import { ImoveisService } from '../imoveis/imoveis.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  AvisosService,
-  MENSAGEM_BANNER_PADRAO,
-} from './avisos.service';
+import { AvisosService, MENSAGEM_BANNER_PADRAO } from './avisos.service';
 
 describe('AvisosService (RN13, RN14, RN15)', () => {
   let avisosService: AvisosService;
@@ -93,9 +90,7 @@ describe('AvisosService (RN13, RN14, RN15)', () => {
     expect(disparado.totalSemData).toBe(1);
 
     // Dispensar o aviso de compromisso próximo
-    const avisoProximo = disparado.avisos.find(
-      (a) => a.tipoAviso === 'COMPROMISSO_PROXIMO',
-    );
+    const avisoProximo = disparado.avisos.find((a) => a.tipoAviso === 'COMPROMISSO_PROXIMO');
     expect(avisoProximo).toBeDefined();
 
     const dispensado = await avisosService.dispensarAviso(avisoProximo.id);

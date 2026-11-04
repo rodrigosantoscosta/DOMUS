@@ -4,7 +4,6 @@ import { MENSAGEM_BANNER_AVISOS } from '../theme/tokens';
 import {
   Agendamento,
   AvisoItem,
-  CanalContato,
   Cliente,
   ConcluirAgendamentoInput,
   CreateAgendamentoInput,
@@ -17,7 +16,6 @@ import {
   Imovel,
   ProgramarRetornoInput,
   ResumoAvisosProximos,
-  TipoAviso,
   Usuario,
   VisaoGeralAtendimentos,
 } from '../types/domus';
@@ -31,7 +29,7 @@ const HTTP_TIMEOUT_MS = 2500;
 export function interpretarDataHora(
   data?: string | null,
   hora?: string | null,
-  dataHoraIso?: string | null
+  dataHoraIso?: string | null,
 ): Date | null {
   if (dataHoraIso && dataHoraIso.trim()) {
     const d = new Date(dataHoraIso.trim());
@@ -88,8 +86,11 @@ export function interpretarDataHora(
   }
 
   const isoString = `${String(ano).padStart(4, '0')}-${String(mes).padStart(2, '0')}-${String(
-    dia
-  ).padStart(2, '0')}T${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:00.000Z`;
+    dia,
+  ).padStart(
+    2,
+    '0',
+  )}T${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:00.000Z`;
 
   const resultado = new Date(isoString);
   if (isNaN(resultado.getTime())) {
@@ -172,7 +173,9 @@ export class DomusApiService {
     return this.apiBaseUrl;
   }
 
-  async testarConexao(urlTeste?: string): Promise<{ ok: boolean; mensagem: string; status?: number }> {
+  async testarConexao(
+    urlTeste?: string,
+  ): Promise<{ ok: boolean; mensagem: string; status?: number }> {
     const alvo = normalizarApiUrl(urlTeste || this.apiBaseUrl);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 3000);
@@ -236,8 +239,7 @@ export class DomusApiService {
       try {
         const estado = await this.carregarEstado();
         const userLogado =
-          estado.usuarios.find((u) => u.id === estado.usuarioLogadoId) ||
-          estado.usuarios[0];
+          estado.usuarios.find((u) => u.id === estado.usuarioLogadoId) || estado.usuarios[0];
         const login = userLogado?.login || 'junior.corretor';
         const senha = this.memoriaSenhas.get(login) || 'Domus@2026';
 
@@ -290,16 +292,14 @@ export class DomusApiService {
       body?: any;
       headers?: Record<string, string>;
       tentativaRetry?: boolean;
-    } = {}
+    } = {},
   ): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
 
     try {
       let token =
-        endpoint === '/auth/login' || endpoint === '/status'
-          ? null
-          : await this.obterTokenValido();
+        endpoint === '/auth/login' || endpoint === '/status' ? null : await this.obterTokenValido();
 
       const url = `${this.apiBaseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
 
@@ -339,7 +339,7 @@ export class DomusApiService {
 
   private async executarHibrido<T>(
     chamadaApi: () => Promise<T>,
-    fallbackLocal: (estado: DomusLocalState) => Promise<T>
+    fallbackLocal: (estado: DomusLocalState) => Promise<T>,
   ): Promise<T> {
     if (this.forcarOffline) {
       this.apiOnlineReal = false;
@@ -393,7 +393,7 @@ export class DomusApiService {
           (u) =>
             u.login.toLowerCase() === idLower ||
             u.email.toLowerCase() === idLower ||
-            (u.cpf && u.cpf.replace(/\D/g, '') === identificador.replace(/\D/g, ''))
+            (u.cpf && u.cpf.replace(/\D/g, '') === identificador.replace(/\D/g, '')),
         );
 
         if (!usuario || !usuario.ativo) {
@@ -420,7 +420,7 @@ export class DomusApiService {
           usuario,
           modoOffline: true,
         };
-      }
+      },
     );
   }
 
@@ -463,7 +463,7 @@ export class DomusApiService {
       },
       async (estado) => {
         const loginOuEmailExiste = estado.usuarios.some(
-          (u) => u.login.toLowerCase() === login || u.email.toLowerCase() === email
+          (u) => u.login.toLowerCase() === login || u.email.toLowerCase() === email,
         );
         if (loginOuEmailExiste) {
           throw new Error('Já existe um usuário cadastrado com este login ou e-mail');
@@ -475,8 +475,8 @@ export class DomusApiService {
         const perfisArray = Array.isArray(input.perfis)
           ? input.perfis
           : typeof input.perfis === 'string'
-          ? input.perfis.split(',').map((p) => p.trim())
-          : ['CORRETOR'];
+            ? input.perfis.split(',').map((p) => p.trim())
+            : ['CORRETOR'];
 
         const novoUsuario: Usuario = {
           id: idNovo,
@@ -497,7 +497,7 @@ export class DomusApiService {
         estado.usuarios.push(novoUsuario);
         await this.salvarEstado(estado);
         return novoUsuario;
-      }
+      },
     );
   }
 
@@ -520,14 +520,14 @@ export class DomusApiService {
               c.nomeCompleto.toLowerCase().includes(termo) ||
               c.cpfDocumento.includes(termo) ||
               (c.email && c.email.toLowerCase().includes(termo)) ||
-              c.telefone.includes(termo)
+              c.telefone.includes(termo),
           );
         }
         if (filtros?.canalPrincipalContato) {
           lista = lista.filter((c) => c.canalPrincipalContato === filtros.canalPrincipalContato);
         }
         return lista;
-      }
+      },
     );
   }
 
@@ -574,7 +574,11 @@ export class DomusApiService {
           cpfDocumento: docLimpo,
           tipoDocumento: input.tipoDocumento || (docLimpo.length === 14 ? 'CNPJ' : 'CPF'),
           telefone: (input.telefone || '').trim(),
-          celular: input.celular ? input.celular.trim() : input.telefone ? input.telefone.trim() : null,
+          celular: input.celular
+            ? input.celular.trim()
+            : input.telefone
+              ? input.telefone.trim()
+              : null,
           email: input.email ? input.email.trim().toLowerCase() : null,
           canalPrincipalContato: input.canalPrincipalContato || 'WHATSAPP',
           observacoes: input.observacoes ? input.observacoes.trim() : null,
@@ -586,7 +590,7 @@ export class DomusApiService {
         estado.clientes.push(novoCliente);
         await this.salvarEstado(estado);
         return novoCliente;
-      }
+      },
     );
   }
 
@@ -619,7 +623,7 @@ export class DomusApiService {
         cliente.atualizadoEm = new Date().toISOString();
         await this.salvarEstado(estado);
         return cliente;
-      }
+      },
     );
   }
 
@@ -655,7 +659,7 @@ export class DomusApiService {
           lista = lista.filter((i) => i.bairro && i.bairro.toLowerCase().includes(bairroTermo));
         }
         return lista;
-      }
+      },
     );
   }
 
@@ -678,7 +682,7 @@ export class DomusApiService {
           const duplicado = estado.imoveis.find((i) => i.numeroInscricao === inscricao);
           if (duplicado) {
             throw new Error(
-              `Já existe um imóvel cadastrado com o número de inscrição ${inscricao}`
+              `Já existe um imóvel cadastrado com o número de inscrição ${inscricao}`,
             );
           }
         }
@@ -689,8 +693,8 @@ export class DomusApiService {
         const posicoesVal = Array.isArray(input.posicoes)
           ? input.posicoes
           : typeof input.posicoes === 'string'
-          ? input.posicoes.split(',').map((p) => p.trim())
-          : null;
+            ? input.posicoes.split(',').map((p) => p.trim())
+            : null;
 
         const novoImovel: Imovel = {
           id: idNovo,
@@ -717,7 +721,7 @@ export class DomusApiService {
         estado.imoveis.push(novoImovel);
         await this.salvarEstado(estado);
         return novoImovel;
-      }
+      },
     );
   }
 
@@ -756,7 +760,7 @@ export class DomusApiService {
             (a) =>
               !a.dataHora &&
               !a.dataRetorno &&
-              (a.status === 'PENDENTE' || a.status === 'CONFIRMADO')
+              (a.status === 'PENDENTE' || a.status === 'CONFIRMADO'),
           );
         }
         return lista.sort((a, b) => {
@@ -765,7 +769,7 @@ export class DomusApiService {
           if (!b.dataHora) return -1;
           return new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime();
         });
-      }
+      },
     );
   }
 
@@ -777,20 +781,18 @@ export class DomusApiService {
       },
       async (estado) => {
         const agendamentosCorretor = estado.agendamentos.filter((a) =>
-          corretorId !== undefined ? a.corretorId === corretorId : true
+          corretorId !== undefined ? a.corretorId === corretorId : true,
         );
 
         const proximosCompromissos = agendamentosCorretor.filter(
           (a) =>
             (a.status === 'PENDENTE' || a.status === 'CONFIRMADO') &&
-            Boolean(a.dataHora || a.dataRetorno)
+            Boolean(a.dataHora || a.dataRetorno),
         );
 
         const tarefasSemData = agendamentosCorretor.filter(
           (a) =>
-            (a.status === 'PENDENTE' || a.status === 'CONFIRMADO') &&
-            !a.dataHora &&
-            !a.dataRetorno
+            (a.status === 'PENDENTE' || a.status === 'CONFIRMADO') && !a.dataHora && !a.dataRetorno,
         );
 
         const mapaPorCliente = new Map<number, { cliente: Cliente; compromissos: Agendamento[] }>();
@@ -824,7 +826,7 @@ export class DomusApiService {
           cliente: entry.cliente,
           totalCompromissos: entry.compromissos.length,
           pendentes: entry.compromissos.filter(
-            (c) => c.status === 'PENDENTE' || c.status === 'CONFIRMADO'
+            (c) => c.status === 'PENDENTE' || c.status === 'CONFIRMADO',
           ).length,
           compromissos: entry.compromissos,
         }));
@@ -833,7 +835,7 @@ export class DomusApiService {
           imovel: entry.imovel,
           totalCompromissos: entry.compromissos.length,
           pendentes: entry.compromissos.filter(
-            (c) => c.status === 'PENDENTE' || c.status === 'CONFIRMADO'
+            (c) => c.status === 'PENDENTE' || c.status === 'CONFIRMADO',
           ).length,
           compromissos: entry.compromissos,
         }));
@@ -847,7 +849,7 @@ export class DomusApiService {
           porCliente,
           porImovel,
         };
-      }
+      },
     );
   }
 
@@ -858,7 +860,7 @@ export class DomusApiService {
       dataHora: Date;
       duracaoMinutos: number;
       ignorarId?: number;
-    }
+    },
   ): void {
     const inicioNovo = novo.dataHora.getTime();
     const fimNovo = inicioNovo + novo.duracaoMinutos * 60_000;
@@ -874,7 +876,7 @@ export class DomusApiService {
 
       if (inicioNovo < fimAg && fimNovo > inicioAg) {
         throw new Error(
-          `Conflito de agenda: o corretor já possui o compromisso "${ag.titulo}" agendado neste horário`
+          `Conflito de agenda: o corretor já possui o compromisso "${ag.titulo}" agendado neste horário`,
         );
       }
     }
@@ -924,7 +926,7 @@ export class DomusApiService {
 
     if (tipo === 'VISITA' && !input.imovelId) {
       throw new Error(
-        'Para agendar uma visita (tipo VISITA), é obrigatório selecionar um imóvel cadastrado (imovelId)'
+        'Para agendar uma visita (tipo VISITA), é obrigatório selecionar um imóvel cadastrado (imovelId)',
       );
     }
 
@@ -932,7 +934,7 @@ export class DomusApiService {
 
     if (tipo === 'VISITA' && !dataHoraInterpretada) {
       throw new Error(
-        'Para agendar uma visita (tipo VISITA), é obrigatório informar a data e hora do compromisso'
+        'Para agendar uma visita (tipo VISITA), é obrigatório informar a data e hora do compromisso',
       );
     }
 
@@ -954,7 +956,8 @@ export class DomusApiService {
           : null;
 
         const corretorId = input.corretorId || estado.usuarioLogadoId || 1;
-        const duracaoMinutos = input.duracaoMinutos && input.duracaoMinutos > 0 ? input.duracaoMinutos : 60;
+        const duracaoMinutos =
+          input.duracaoMinutos && input.duracaoMinutos > 0 ? input.duracaoMinutos : 60;
 
         if (dataHoraInterpretada && (status === 'PENDENTE' || status === 'CONFIRMADO')) {
           this.validarConflitoHorario(estado.agendamentos, {
@@ -973,8 +976,8 @@ export class DomusApiService {
         const dataRetornoIso = input.dataRetorno
           ? interpretarDataHora(null, null, input.dataRetorno)?.toISOString() || null
           : tipo === 'RETORNO'
-          ? dataHoraIso
-          : null;
+            ? dataHoraIso
+            : null;
 
         let googleCalendarEventId: string | null = null;
         let googleCalendarUrl: string | null = null;
@@ -1022,13 +1025,13 @@ export class DomusApiService {
         estado.agendamentos.push(novo);
         await this.salvarEstado(estado);
         return novo;
-      }
+      },
     );
   }
 
   async programarRetorno(
     agendamentoId: number,
-    input: ProgramarRetornoInput
+    input: ProgramarRetornoInput,
   ): Promise<Agendamento> {
     const dataHoraInterpretada = interpretarDataHora(input.data, input.hora, input.dataHoraIso);
     if (!dataHoraInterpretada) {
@@ -1109,13 +1112,13 @@ export class DomusApiService {
         estado.agendamentos.push(novoRetorno);
         await this.salvarEstado(estado);
         return novoRetorno;
-      }
+      },
     );
   }
 
   async concluirAgendamento(
     agendamentoId: number,
-    input?: ConcluirAgendamentoInput
+    input?: ConcluirAgendamentoInput,
   ): Promise<Agendamento> {
     return this.executarHibrido(
       async () => {
@@ -1142,18 +1145,20 @@ export class DomusApiService {
         estado.avisos = estado.avisos.map((av) =>
           av.agendamentoId === agendamentoId
             ? { ...av, status: 'DISPENSADO' as const, dispensadoEm: new Date().toISOString() }
-            : av
+            : av,
         );
 
         await this.salvarEstado(estado);
         return agendamento;
-      }
+      },
     );
   }
 
-  async sincronizarGoogleCalendar(
-    agendamentoId: number
-  ): Promise<{ googleCalendarEventId: string; googleCalendarUrl: string; agendamento: Agendamento }> {
+  async sincronizarGoogleCalendar(agendamentoId: number): Promise<{
+    googleCalendarEventId: string;
+    googleCalendarUrl: string;
+    agendamento: Agendamento;
+  }> {
     return this.executarHibrido(
       async () => {
         const res = await this.requisicaoApi<{
@@ -1173,7 +1178,7 @@ export class DomusApiService {
 
         if (!agendamento.dataHora) {
           throw new Error(
-            'Não é possível sincronizar com o Google Calendar um atendimento sem data e hora definidas'
+            'Não é possível sincronizar com o Google Calendar um atendimento sem data e hora definidas',
           );
         }
 
@@ -1199,7 +1204,7 @@ export class DomusApiService {
           googleCalendarUrl: syncDados.googleCalendarUrl,
           agendamento,
         };
-      }
+      },
     );
   }
 
@@ -1207,7 +1212,7 @@ export class DomusApiService {
     return this.executarHibrido(
       async () => {
         return this.requisicaoApi<ResumoAvisosProximos>(
-          `/avisos/proximos?horasAntecedencia=${horasAntecedencia}`
+          `/avisos/proximos?horasAntecedencia=${horasAntecedencia}`,
         );
       },
       async (estado) => {
@@ -1217,13 +1222,13 @@ export class DomusApiService {
         const dispensadosChaves = new Set(
           estado.avisos
             .filter((a) => a.status === 'DISPENSADO' && a.agendamentoId)
-            .map((a) => `${a.agendamentoId}:${a.tipoAviso}`)
+            .map((a) => `${a.agendamentoId}:${a.tipoAviso}`),
         );
 
         const dispensadosIds = new Set(
           estado.avisos
             .filter((a) => a.status === 'DISPENSADO' && a.id !== undefined)
-            .map((a) => a.id)
+            .map((a) => a.id),
         );
 
         const proximos: AvisoItem[] = [];
@@ -1231,7 +1236,7 @@ export class DomusApiService {
         const semData: AvisoItem[] = [];
 
         const ativos = estado.agendamentos.filter(
-          (a) => a.status === 'PENDENTE' || a.status === 'CONFIRMADO'
+          (a) => a.status === 'PENDENTE' || a.status === 'CONFIRMADO',
         );
 
         for (let i = 0; i < ativos.length; i++) {
@@ -1312,7 +1317,7 @@ export class DomusApiService {
           semData,
           alertas: todosAlertas,
         };
-      }
+      },
     );
   }
 
@@ -1321,7 +1326,7 @@ export class DomusApiService {
       async () => {
         return this.requisicaoApi<ResumoAvisosProximos>(
           `/avisos/disparar?horasAntecedencia=${horasAntecedencia}`,
-          { method: 'POST' }
+          { method: 'POST' },
         );
       },
       async (estado) => {
@@ -1334,7 +1339,7 @@ export class DomusApiService {
         }
         await this.salvarEstado(estado);
         return resumo;
-      }
+      },
     );
   }
 
@@ -1361,7 +1366,7 @@ export class DomusApiService {
           });
         }
         await this.salvarEstado(estado);
-      }
+      },
     );
   }
 

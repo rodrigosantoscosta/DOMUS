@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import React from 'react';
 
 /**
@@ -6,7 +7,9 @@ import React from 'react';
  * diretamente como funcoes puras em testes unitarios legados sem lancar
  * o erro 'Invalid hook call: Hooks can only be called inside of the body of a function component.'
  */
-export function useSafeState<T>(initial: T | (() => T)): [T, React.Dispatch<React.SetStateAction<T>>] {
+export function useSafeState<T>(
+  initial: T | (() => T),
+): [T, React.Dispatch<React.SetStateAction<T>>] {
   const originalError = console.error;
   try {
     console.error = (...args: any[]) => {

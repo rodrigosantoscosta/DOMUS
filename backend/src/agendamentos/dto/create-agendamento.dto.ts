@@ -1,26 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsBoolean,
-  IsIn,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 import { CANAIS_CONTATO } from '../../clientes/dto/create-cliente.dto';
 
-export const TIPOS_AGENDAMENTO = [
-  'VISITA',
-  'RETORNO',
-  'ATENDIMENTO',
-] as const;
-export const STATUS_AGENDAMENTO = [
-  'PENDENTE',
-  'CONFIRMADO',
-  'CONCLUIDO',
-  'CANCELADO',
-] as const;
+export const TIPOS_AGENDAMENTO = ['VISITA', 'RETORNO', 'ATENDIMENTO'] as const;
+export const STATUS_AGENDAMENTO = ['PENDENTE', 'CONFIRMADO', 'CONCLUIDO', 'CANCELADO'] as const;
 
 export class CreateAgendamentoDto {
   @ApiProperty({
@@ -41,7 +24,8 @@ export class CreateAgendamentoDto {
 
   @ApiPropertyOptional({
     example: 'Apresentar planta e proposta',
-    description: 'Descrição curta exibida na lista de Seus Atendimentos (gerada automaticamente se omitida)',
+    description:
+      'Descrição curta exibida na lista de Seus Atendimentos (gerada automaticamente se omitida)',
   })
   @IsOptional()
   @IsString()
@@ -66,7 +50,8 @@ export class CreateAgendamentoDto {
 
   @ApiPropertyOptional({
     example: '2026-10-20',
-    description: 'Data do compromisso (YYYY-MM-DD ou DD/MM/YYYY) conforme tela de Agendar Compromisso',
+    description:
+      'Data do compromisso (YYYY-MM-DD ou DD/MM/YYYY) conforme tela de Agendar Compromisso',
   })
   @IsOptional()
   @IsString()
@@ -140,7 +125,8 @@ export class CreateAgendamentoDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Autoriza sincronização opcional do evento com o Google Calendar (Seção 4.1 do .docx)',
+    description:
+      'Autoriza sincronização opcional do evento com o Google Calendar (Seção 4.1 do .docx)',
   })
   @IsOptional()
   @IsBoolean()

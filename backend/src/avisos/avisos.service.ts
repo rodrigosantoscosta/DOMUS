@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-export const MENSAGEM_BANNER_PADRAO =
-  'Você tem agendamentos proximo do dias marcados';
+export const MENSAGEM_BANNER_PADRAO = 'Você tem agendamentos proximo do dias marcados';
 
 export interface OpcoesVerificacaoAvisos {
   horasAntecedencia?: number;
@@ -20,9 +19,7 @@ export class AvisosService {
     agora: Date,
     horasAntecedencia: number,
   ) {
-    const limiteFuturo = new Date(
-      agora.getTime() + horasAntecedencia * 3600_000,
-    );
+    const limiteFuturo = new Date(agora.getTime() + horasAntecedencia * 3600_000);
 
     const proximos: any[] = [];
     const atrasados: any[] = [];
@@ -75,17 +72,13 @@ export class AvisosService {
 
   async consultarAvisosProximos(opcoes?: OpcoesVerificacaoAvisos) {
     const horasAntecedencia =
-      opcoes?.horasAntecedencia && opcoes.horasAntecedencia > 0
-        ? opcoes.horasAntecedencia
-        : 48;
+      opcoes?.horasAntecedencia && opcoes.horasAntecedencia > 0 ? opcoes.horasAntecedencia : 48;
     const agora = opcoes?.agora ? new Date(opcoes.agora) : new Date();
 
     const agendamentosAtivos = await this.prisma.agendamento.findMany({
       where: {
         status: { in: ['PENDENTE', 'CONFIRMADO'] },
-        ...(opcoes?.corretorId !== undefined
-          ? { corretorId: opcoes.corretorId }
-          : {}),
+        ...(opcoes?.corretorId !== undefined ? { corretorId: opcoes.corretorId } : {}),
       },
       include: {
         cliente: true,
@@ -99,17 +92,16 @@ export class AvisosService {
       select: { agendamentoId: true, tipoAviso: true },
     });
 
-    const dispensadosSet = new Set(
+    const dispensadosSet = new Set<string>(
       avisosDispensados.map((a) => `${a.agendamentoId}:${a.tipoAviso}`),
     );
 
-    const { proximos, atrasados, semData } =
-      this.classificarAgendamentosParaAviso(
-        agendamentosAtivos,
-        dispensadosSet,
-        agora,
-        horasAntecedencia,
-      );
+    const { proximos, atrasados, semData } = this.classificarAgendamentosParaAviso(
+      agendamentosAtivos,
+      dispensadosSet,
+      agora,
+      horasAntecedencia,
+    );
 
     const todosAlertas = [...proximos, ...atrasados, ...semData];
     const possuiAvisos = todosAlertas.length > 0;
@@ -182,8 +174,7 @@ export class AvisosService {
 
     return {
       possuiAvisos: avisosPersistidos.length > 0,
-      mensagemBanner:
-        avisosPersistidos.length > 0 ? MENSAGEM_BANNER_PADRAO : null,
+      mensagemBanner: avisosPersistidos.length > 0 ? MENSAGEM_BANNER_PADRAO : null,
       totalDisparados: avisosPersistidos.length,
       totalProximos: consulta.totalProximos,
       totalAtrasados: consulta.totalAtrasados,
@@ -196,9 +187,7 @@ export class AvisosService {
     return this.prisma.aviso.findMany({
       where: {
         ...(filtros?.status ? { status: filtros.status } : {}),
-        ...(filtros?.usuarioId !== undefined
-          ? { usuarioId: filtros.usuarioId }
-          : {}),
+        ...(filtros?.usuarioId !== undefined ? { usuarioId: filtros.usuarioId } : {}),
       },
       include: {
         agendamento: {

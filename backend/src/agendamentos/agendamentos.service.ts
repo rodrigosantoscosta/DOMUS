@@ -22,9 +22,7 @@ export class AgendamentosService {
     if (dataHoraIso && dataHoraIso.trim()) {
       const parsed = new Date(dataHoraIso.trim());
       if (isNaN(parsed.getTime())) {
-        throw new BadRequestException(
-          `Formato de dataHora inválido: ${dataHoraIso}`,
-        );
+        throw new BadRequestException(`Formato de dataHora inválido: ${dataHoraIso}`);
       }
       return parsed;
     }
@@ -58,9 +56,7 @@ export class AgendamentosService {
 
     const matchHora = /^(\d{1,2}):(\d{2})$/.exec(horaLimpa);
     if (!matchHora) {
-      throw new BadRequestException(
-        `Formato de hora inválido: ${hora}. Use HH:mm`,
-      );
+      throw new BadRequestException(`Formato de hora inválido: ${hora}. Use HH:mm`);
     }
 
     const horas = Number(matchHora[1]);
@@ -148,26 +144,20 @@ export class AgendamentosService {
     imovel?: { endereco: string; bairro?: string | null } | null;
   }) {
     const inicio = new Date(agendamento.dataHora);
-    const fim = new Date(
-      inicio.getTime() + (agendamento.duracaoMinutos || 60) * 60_000,
-    );
+    const fim = new Date(inicio.getTime() + (agendamento.duracaoMinutos || 60) * 60_000);
 
     const linhasDetalhes = [
       agendamento.descricao ? `Descrição: ${agendamento.descricao}` : null,
       agendamento.cliente
         ? `Cliente: ${agendamento.cliente.nomeCompleto} (${agendamento.cliente.telefone})`
         : null,
-      agendamento.canalContato
-        ? `Canal preferencial: ${agendamento.canalContato}`
-        : null,
+      agendamento.canalContato ? `Canal preferencial: ${agendamento.canalContato}` : null,
       agendamento.imovel
         ? `Imóvel: ${agendamento.imovel.endereco}${
             agendamento.imovel.bairro ? ` - ${agendamento.imovel.bairro}` : ''
           }`
         : null,
-      agendamento.proximaAcao
-        ? `Próxima ação: ${agendamento.proximaAcao}`
-        : null,
+      agendamento.proximaAcao ? `Próxima ação: ${agendamento.proximaAcao}` : null,
       agendamento.observacao ? `Observações: ${agendamento.observacao}` : null,
     ].filter(Boolean);
 
@@ -212,19 +202,9 @@ export class AgendamentosService {
     status: string;
     ignorarAgendamentoId?: number;
   }) {
-    const {
-      corretorId,
-      dataHora,
-      duracaoMinutos,
-      status,
-      ignorarAgendamentoId,
-    } = params;
+    const { corretorId, dataHora, duracaoMinutos, status, ignorarAgendamentoId } = params;
 
-    if (
-      !corretorId ||
-      !dataHora ||
-      !['PENDENTE', 'CONFIRMADO'].includes(status)
-    ) {
+    if (!corretorId || !dataHora || !['PENDENTE', 'CONFIRMADO'].includes(status)) {
       return;
     }
 
@@ -243,8 +223,7 @@ export class AgendamentosService {
     for (const existente of compromissosDoCorretor) {
       if (!existente.dataHora) continue;
       const inicioExistente = existente.dataHora.getTime();
-      const fimExistente =
-        inicioExistente + (existente.duracaoMinutos || 60) * 60_000;
+      const fimExistente = inicioExistente + (existente.duracaoMinutos || 60) * 60_000;
 
       if (inicioNovo < fimExistente && fimNovo > inicioExistente) {
         throw new ConflictException(
@@ -262,9 +241,7 @@ export class AgendamentosService {
       where: { id: dto.clienteId },
     });
     if (!cliente) {
-      throw new NotFoundException(
-        `Cliente com ID ${dto.clienteId} não encontrado`,
-      );
+      throw new NotFoundException(`Cliente com ID ${dto.clienteId} não encontrado`);
     }
 
     if (tipo === 'VISITA' && !dto.imovelId) {
@@ -279,9 +256,7 @@ export class AgendamentosService {
         where: { id: dto.imovelId },
       });
       if (!imovel) {
-        throw new NotFoundException(
-          `Imóvel com ID ${dto.imovelId} não encontrado`,
-        );
+        throw new NotFoundException(`Imóvel com ID ${dto.imovelId} não encontrado`);
       }
     }
 
@@ -290,17 +265,11 @@ export class AgendamentosService {
         where: { id: dto.corretorId },
       });
       if (!corretor) {
-        throw new NotFoundException(
-          `Corretor com ID ${dto.corretorId} não encontrado`,
-        );
+        throw new NotFoundException(`Corretor com ID ${dto.corretorId} não encontrado`);
       }
     }
 
-    const dataHora = this.interpretarDataHora(
-      dto.data,
-      dto.hora,
-      dto.dataHora,
-    );
+    const dataHora = this.interpretarDataHora(dto.data, dto.hora, dto.dataHora);
 
     if (tipo === 'VISITA' && !dataHora) {
       throw new BadRequestException(
@@ -314,10 +283,7 @@ export class AgendamentosService {
         ? dataHora
         : null;
 
-    const duracaoMinutos = this.interpretarDuracao(
-      dto.duracaoMinutos,
-      dto.duracao,
-    );
+    const duracaoMinutos = this.interpretarDuracao(dto.duracaoMinutos, dto.duracao);
 
     await this.validarConflitoHorarioCorretor({
       corretorId: dto.corretorId,
@@ -399,20 +365,12 @@ export class AgendamentosService {
   }) {
     return this.prisma.agendamento.findMany({
       where: {
-        ...(filtros?.clienteId !== undefined
-          ? { clienteId: filtros.clienteId }
-          : {}),
-        ...(filtros?.imovelId !== undefined
-          ? { imovelId: filtros.imovelId }
-          : {}),
-        ...(filtros?.corretorId !== undefined
-          ? { corretorId: filtros.corretorId }
-          : {}),
+        ...(filtros?.clienteId !== undefined ? { clienteId: filtros.clienteId } : {}),
+        ...(filtros?.imovelId !== undefined ? { imovelId: filtros.imovelId } : {}),
+        ...(filtros?.corretorId !== undefined ? { corretorId: filtros.corretorId } : {}),
         ...(filtros?.tipo ? { tipo: filtros.tipo } : {}),
         ...(filtros?.status ? { status: filtros.status } : {}),
-        ...(filtros?.apenasPendentes
-          ? { status: { in: ['PENDENTE', 'CONFIRMADO'] } }
-          : {}),
+        ...(filtros?.apenasPendentes ? { status: { in: ['PENDENTE', 'CONFIRMADO'] } } : {}),
         ...(filtros?.semDataRetorno
           ? {
               dataHora: null,
@@ -445,9 +403,7 @@ export class AgendamentosService {
       ['PENDENTE', 'CONFIRMADO'].includes(a.status),
     );
 
-    const tarefasSemData = proximosCompromissos.filter(
-      (a) => !a.dataHora && !a.dataRetorno,
-    );
+    const tarefasSemData = proximosCompromissos.filter((a) => !a.dataHora && !a.dataRetorno);
 
     const mapaPorCliente = new Map<
       number,
@@ -532,11 +488,7 @@ export class AgendamentosService {
   async programarRetorno(agendamentoOrigemId: number, dto: ProgramarRetornoDto) {
     const origem = await this.findOne(agendamentoOrigemId);
 
-    const dataHora = this.interpretarDataHora(
-      dto.data,
-      dto.hora,
-      dto.dataHora,
-    );
+    const dataHora = this.interpretarDataHora(dto.data, dto.hora, dto.dataHora);
     if (!dataHora) {
       throw new BadRequestException(
         'Para programar um retorno, informe a data e hora do compromisso',
@@ -553,9 +505,7 @@ export class AgendamentosService {
     });
 
     const canalContato =
-      dto.canalContato ||
-      origem.canalContato ||
-      origem.cliente.canalPrincipalContato;
+      dto.canalContato || origem.canalContato || origem.cliente.canalPrincipalContato;
 
     const descricaoCurta = this.gerarDescricaoCurta(
       null,
@@ -632,15 +582,9 @@ export class AgendamentosService {
       where: { id },
       data: {
         status: 'CONCLUIDO',
-        ...(dto?.observacao !== undefined
-          ? { observacao: dto.observacao.trim() }
-          : {}),
-        ...(dto?.proximaAcao !== undefined
-          ? { proximaAcao: dto.proximaAcao.trim() }
-          : {}),
-        ...(dataRetornoInterpretada !== undefined
-          ? { dataRetorno: dataRetornoInterpretada }
-          : {}),
+        ...(dto?.observacao !== undefined ? { observacao: dto.observacao.trim() } : {}),
+        ...(dto?.proximaAcao !== undefined ? { proximaAcao: dto.proximaAcao.trim() } : {}),
+        ...(dataRetornoInterpretada !== undefined ? { dataRetorno: dataRetornoInterpretada } : {}),
       },
       include: {
         cliente: true,
@@ -654,10 +598,7 @@ export class AgendamentosService {
     });
 
     let retornoCriado: any = null;
-    if (
-      dto?.gerarAgendamentoRetorno &&
-      (dto.proximaAcao || dataRetornoInterpretada)
-    ) {
+    if (dto?.gerarAgendamentoRetorno && (dto.proximaAcao || dataRetornoInterpretada)) {
       const tituloRetorno = dto.proximaAcao
         ? `Retorno: ${dto.proximaAcao}`
         : `Retorno de ${atual.titulo}`;
@@ -742,15 +683,11 @@ export class AgendamentosService {
 
     const novoTipo = dto.tipo || existente.tipo;
     const novoStatus = dto.status || existente.status;
-    const novoImovelId =
-      dto.imovelId !== undefined ? dto.imovelId : existente.imovelId;
-    const novoCorretorId =
-      dto.corretorId !== undefined ? dto.corretorId : existente.corretorId;
+    const novoImovelId = dto.imovelId !== undefined ? dto.imovelId : existente.imovelId;
+    const novoCorretorId = dto.corretorId !== undefined ? dto.corretorId : existente.corretorId;
 
     const novaDataHora =
-      dto.data !== undefined ||
-      dto.hora !== undefined ||
-      dto.dataHora !== undefined
+      dto.data !== undefined || dto.hora !== undefined || dto.dataHora !== undefined
         ? this.interpretarDataHora(dto.data, dto.hora, dto.dataHora)
         : existente.dataHora;
 
@@ -760,9 +697,7 @@ export class AgendamentosService {
       );
     }
     if (novoTipo === 'VISITA' && !novaDataHora) {
-      throw new BadRequestException(
-        'Agendamentos do tipo VISITA exigem data e hora definidas',
-      );
+      throw new BadRequestException('Agendamentos do tipo VISITA exigem data e hora definidas');
     }
 
     const novaDuracao =
@@ -787,9 +722,7 @@ export class AgendamentosService {
       where: { id },
       data: {
         ...(dto.titulo !== undefined ? { titulo: dto.titulo.trim() } : {}),
-        ...(dto.descricao !== undefined
-          ? { descricao: dto.descricao?.trim() || null }
-          : {}),
+        ...(dto.descricao !== undefined ? { descricao: dto.descricao?.trim() || null } : {}),
         ...(dto.descricaoCurta !== undefined
           ? {
               descricaoCurta: this.gerarDescricaoCurta(
@@ -804,15 +737,9 @@ export class AgendamentosService {
         status: novoStatus,
         dataHora: novaDataHora,
         duracaoMinutos: novaDuracao,
-        ...(dto.observacao !== undefined
-          ? { observacao: dto.observacao?.trim() || null }
-          : {}),
-        ...(dto.canalContato !== undefined
-          ? { canalContato: dto.canalContato }
-          : {}),
-        ...(dto.proximaAcao !== undefined
-          ? { proximaAcao: dto.proximaAcao?.trim() || null }
-          : {}),
+        ...(dto.observacao !== undefined ? { observacao: dto.observacao?.trim() || null } : {}),
+        ...(dto.canalContato !== undefined ? { canalContato: dto.canalContato } : {}),
+        ...(dto.proximaAcao !== undefined ? { proximaAcao: dto.proximaAcao?.trim() || null } : {}),
         dataRetorno: novaDataRetorno,
         ...(dto.sincronizarGoogleCalendar !== undefined
           ? { sincronizarGoogleCalendar: dto.sincronizarGoogleCalendar }

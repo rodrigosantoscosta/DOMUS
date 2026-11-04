@@ -4,7 +4,8 @@ import { IsInt, IsOptional, Min } from 'class-validator';
 export class DispararAvisosDto {
   @ApiPropertyOptional({
     example: 48,
-    description: 'Janela de antecedência em horas para identificar agendamentos próximos (padrão: 48h)',
+    description:
+      'Janela de antecedência em horas para identificar agendamentos próximos (padrão: 48h)',
   })
   @IsOptional()
   @IsInt()
