@@ -92,7 +92,7 @@ export class AvisosService {
       select: { agendamentoId: true, tipoAviso: true },
     });
 
-    const dispensadosSet = new Set(
+    const dispensadosSet = new Set<string>(
       avisosDispensados.map((a) => `${a.agendamentoId}:${a.tipoAviso}`),
     );
 

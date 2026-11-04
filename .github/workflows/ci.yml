@@ -86,6 +86,9 @@ jobs:
       - name: Install dependencies
         run: npm --prefix backend ci
 
+      - name: Generate Prisma client
+        run: npm --prefix backend run prisma:generate
+
       - name: Check code formatting
         run: npm --prefix backend run format:check
 
