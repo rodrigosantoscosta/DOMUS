@@ -1,5 +1,5 @@
 # Etapa 1: Build da aplicacao NestJS e Prisma
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Etapa 2: Imagem final para execucao
-FROM node:22-alpine AS runner
+FROM node:26-alpine AS runner
 
 WORKDIR /app
 
