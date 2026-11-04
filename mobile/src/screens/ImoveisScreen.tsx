@@ -122,6 +122,13 @@ function parsearInteiro(texto: string): number | undefined {
   return Number(numeros);
 }
 
+function parsearArea(texto: string): number | undefined {
+  if (!texto) return undefined;
+  const limpo = texto.trim().replace(',', '.');
+  const num = parseFloat(limpo);
+  return isNaN(num) || num <= 0 ? undefined : num;
+}
+
 interface OpcaoChipProps<T> {
   opcao: OpcaoImovel<T>;
   selecionado: boolean;
@@ -401,7 +408,7 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
         bairro: bairro.trim() || undefined,
         numero: numero.trim() || undefined,
         complemento: complemento.trim() || undefined,
-        areaTotal: parsearInteiro(areaTotal),
+        areaTotal: parsearArea(areaTotal),
         comodos: parsearInteiro(comodos),
         banheiros: parsearInteiro(banheiros),
         valor: parsearValor(valor),
@@ -622,7 +629,7 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
               label="Área Total (m²)"
               placeholder="Ex: 120"
               value={areaTotal}
-              onChangeText={(text) => setAreaTotal(text.replace(/\D/g, ''))}
+              onChangeText={(text) => setAreaTotal(text.replace(/[^0-9.,]/g, ''))}
               keyboardType="numeric"
               testID="input-imovel-area"
             />

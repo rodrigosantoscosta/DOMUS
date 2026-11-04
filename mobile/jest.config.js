@@ -24,7 +24,7 @@ module.exports = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        diagnostics: false,
+        diagnostics: true,
         tsconfig: {
           target: 'ES2022',
           module: 'CommonJS',

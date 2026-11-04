@@ -1037,7 +1037,7 @@ export class DomusApiService {
 
     return this.executarHibrido(
       async () => {
-        return this.requisicaoApi<Agendamento>(`/agendamentos/${agendamentoId}/retorno`, {
+        return this.requisicaoApi<Agendamento>(`/agendamentos/${agendamentoId}/programar-retorno`, {
           method: 'POST',
           body: input,
         });
@@ -1121,7 +1121,15 @@ export class DomusApiService {
       async () => {
         return this.requisicaoApi<Agendamento>(`/agendamentos/${agendamentoId}/concluir`, {
           method: 'PATCH',
-          body: input || {},
+          body: {
+            observacao: (input?.observacao || input?.observacaoConclusao)?.trim() || undefined,
+            proximaAcao: input?.proximaAcao?.trim() || undefined,
+            dataRetorno: input?.dataRetorno?.trim() || undefined,
+            gerarAgendamentoRetorno:
+              typeof input?.gerarAgendamentoRetorno === 'boolean'
+                ? input.gerarAgendamentoRetorno
+                : input?.programarRetornoAutomatico,
+          },
         });
       },
       async (estado) => {
@@ -1131,8 +1139,9 @@ export class DomusApiService {
         }
 
         agendamento.status = 'CONCLUIDO';
-        if (input?.observacaoConclusao) {
-          agendamento.observacao = [agendamento.observacao, input.observacaoConclusao.trim()]
+        const obsTexto = (input?.observacaoConclusao || input?.observacao)?.trim();
+        if (obsTexto) {
+          agendamento.observacao = [agendamento.observacao, obsTexto]
             .filter(Boolean)
             .join(' | ');
         }
