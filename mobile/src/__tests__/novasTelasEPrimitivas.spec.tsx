@@ -183,12 +183,16 @@ describe('AvisoBanner Component', () => {
   });
 });
 
-describe('ImoveisScreen (Aba Imoveis - Vazia por enquanto)', () => {
-  it('renderiza container vazio com testID "imoveis-screen"', () => {
+describe('ImoveisScreen (Aba Imoveis)', () => {
+  it('renderiza container principal com testID "imoveis-screen"', () => {
     let root: any;
 
     act(() => {
-      root = renderer.create(<ImoveisScreen />);
+      root = renderer.create(
+        <DomusProvider autoLoginDemo={false}>
+          <ImoveisScreen />
+        </DomusProvider>
+      );
     });
 
     const screen = root.root.findByProps({ testID: 'imoveis-screen' });
@@ -196,6 +200,10 @@ describe('ImoveisScreen (Aba Imoveis - Vazia por enquanto)', () => {
     const styleScreen = StyleSheet.flatten(screen.props.style);
     expect(styleScreen.flex).toBe(1);
     expect(styleScreen.backgroundColor).toBe(DOMUS_THEME.background);
+
+    act(() => {
+      root.unmount();
+    });
   });
 });
 
@@ -215,12 +223,16 @@ describe('AgendarScreen (Aba Agendar - Vazia por enquanto)', () => {
   });
 });
 
-describe('AtendimentosScreen (Aba Atendimentos - Vazia por enquanto)', () => {
-  it('renderiza container vazio com testID "atendimentos-screen"', () => {
+describe('AtendimentosScreen (Aba Atendimentos)', () => {
+  it('renderiza container principal com testID "atendimentos-screen"', () => {
     let root: any;
 
     act(() => {
-      root = renderer.create(<AtendimentosScreen />);
+      root = renderer.create(
+        <DomusProvider autoLoginDemo={false}>
+          <AtendimentosScreen />
+        </DomusProvider>
+      );
     });
 
     const screen = root.root.findByProps({ testID: 'atendimentos-screen' });
@@ -228,6 +240,10 @@ describe('AtendimentosScreen (Aba Atendimentos - Vazia por enquanto)', () => {
     const styleScreen = StyleSheet.flatten(screen.props.style);
     expect(styleScreen.flex).toBe(1);
     expect(styleScreen.backgroundColor).toBe(DOMUS_THEME.background);
+
+    act(() => {
+      root.unmount();
+    });
   });
 });
 

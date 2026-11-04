@@ -62,7 +62,7 @@ export const DomusAppContent: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container} testID="app-main-container">
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header Superior Fixo */}
       <DomusHeader
