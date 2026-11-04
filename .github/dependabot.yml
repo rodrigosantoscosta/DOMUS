@@ -3,7 +3,7 @@
 
 version: 2
 updates:
-  # 1. Dependencias do Backend (NestJS / TypeScript / Prisma)
+  # 1. Dependencias do Backend (NestJS 11 / TypeScript / Prisma 6)
   - package-ecosystem: "npm"
     directory: "/backend"
     schedule:
@@ -26,6 +26,16 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    # Guardrails: Ignora major updates para evitar quebras em frameworks acoplados
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@nestjs/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/*"
+        update-types: ["version-update:semver-major"]
 
   # 2. Dependencias do Mobile (React Native / Expo SDK 58 / TypeScript)
   - package-ecosystem: "npm"
@@ -50,6 +60,18 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    # Guardrails: Impede quebras no Expo SDK e modulos nativos
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo-*"
+        update-types: ["version-update:semver-major"]
 
   # 3. Imagem Base do Dockerfile (Node Alpine no Backend)
   - package-ecosystem: "docker"
@@ -66,6 +88,10 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+    # Guardrail: Mantem o backend no Node 22 (Active LTS)
+    ignore:
+      - dependency-name: "node"
+        versions: [">= 23"]
 
   # 4. Acoes do GitHub Actions (CI/CD e Workflows)
   - package-ecosystem: "github-actions"
