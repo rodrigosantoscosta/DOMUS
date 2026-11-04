@@ -5,7 +5,7 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -174,8 +174,11 @@ export const AtendimentoCardItem = React.memo<AtendimentoCardItemProps>(
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.btnVisualizar}
+        <Pressable
+          style={({ pressed }) => [
+            styles.btnVisualizar,
+            pressed && styles.btnVisualizarPressed,
+          ]}
           onPress={() => onVisualizar(item)}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           testID={`btn-visualizar-atendimento-${item.id}`}
@@ -184,7 +187,7 @@ export const AtendimentoCardItem = React.memo<AtendimentoCardItemProps>(
         >
           <Ionicons name="eye-outline" size={15} color="#C2410C" />
           <Text style={styles.btnVisualizarText}>Visualizar Detalhes</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     );
   }
@@ -514,10 +517,11 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.filterPillsRow}
             >
-              <TouchableOpacity
-                style={[
+              <Pressable
+                style={({ pressed }) => [
                   styles.filterPill,
                   filtro === 'TODOS' && styles.filterPillActive,
+                  pressed && styles.filterPillPressed,
                 ]}
                 onPress={() => {
                   triggerSelectionHaptic();
@@ -536,12 +540,13 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                 >
                   Todos
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
-                style={[
+              <Pressable
+                style={({ pressed }) => [
                   styles.filterPill,
                   filtro === 'CLIENTE' && styles.filterPillActive,
+                  pressed && styles.filterPillPressed,
                 ]}
                 onPress={() => {
                   triggerSelectionHaptic();
@@ -560,12 +565,13 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                 >
                   Por Cliente
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
-                style={[
+              <Pressable
+                style={({ pressed }) => [
                   styles.filterPill,
                   filtro === 'IMOVEL' && styles.filterPillActive,
+                  pressed && styles.filterPillPressed,
                 ]}
                 onPress={() => {
                   triggerSelectionHaptic();
@@ -584,12 +590,13 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                 >
                   Por Imóvel
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
-                style={[
+              <Pressable
+                style={({ pressed }) => [
                   styles.filterPill,
                   filtro === 'SEM_DATA' && styles.filterPillActive,
+                  pressed && styles.filterPillPressed,
                 ]}
                 onPress={() => {
                   triggerSelectionHaptic();
@@ -608,7 +615,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                 >
                   Sem Data / Pendentes
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </ScrollView>
           </View>
 
@@ -665,9 +672,8 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
         onRequestClose={fecharSheet}
       >
         <View style={styles.modalOverlay}>
-          <TouchableOpacity
+          <Pressable
             style={styles.modalBackdropDismiss}
-            activeOpacity={1}
             onPress={fecharSheet}
             accessibilityRole="button"
             accessibilityLabel="Fechar detalhes"
@@ -689,8 +695,11 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                   {atendimentoSelecionado?.tipo} • Status: {atendimentoSelecionado?.status}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={styles.sheetCloseBtn}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.sheetCloseBtn,
+                  pressed && styles.sheetCloseBtnPressed,
+                ]}
                 onPress={fecharSheet}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 testID="btn-fechar-detalhes"
@@ -698,7 +707,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                 accessibilityLabel="Fechar"
               >
                 <Ionicons name="close" size={20} color={DOMUS_THEME.textSecondary} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <ScrollView style={styles.sheetScroll} keyboardShouldPersistTaps="handled">
@@ -1390,6 +1399,18 @@ const styles = StyleSheet.create({
   },
   sheetBtnCol: {
     flex: 1,
+  },
+  btnVisualizarPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  filterPillPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  sheetCloseBtnPressed: {
+    opacity: 0.6,
+    transform: [{ scale: 0.96 }],
   },
 });
 

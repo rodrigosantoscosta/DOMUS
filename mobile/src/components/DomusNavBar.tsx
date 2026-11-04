@@ -2,7 +2,7 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   StyleProp,
   ViewStyle,
@@ -53,9 +53,13 @@ export const DomusNavBar: React.FC<DomusNavBarProps> = ({
         const estaAtiva = tab.id === abaAtiva;
 
         return (
-          <TouchableOpacity
+          <Pressable
             key={tab.id}
-            style={[styles.tabItem, estaAtiva && styles.tabItemActive]}
+            style={({ pressed }) => [
+              styles.tabItem,
+              estaAtiva && styles.tabItemActive,
+              pressed && styles.tabItemPressed,
+            ]}
             onPress={() => handleTabPress(tab.id)}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             testID={`tab-btn-${tab.id}`}
@@ -79,7 +83,7 @@ export const DomusNavBar: React.FC<DomusNavBarProps> = ({
             >
               {tab.label}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         );
       })}
     </View>
@@ -113,6 +117,10 @@ const styles = StyleSheet.create({
   },
   tabItemActive: {
     backgroundColor: 'transparent',
+  },
+  tabItemPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
   },
   tabIcon: {
     marginBottom: 2,

@@ -5,7 +5,7 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -71,10 +71,11 @@ export const CanalChipButton = React.memo<CanalChipButtonProps>(
     };
 
     return (
-      <TouchableOpacity
-        style={[
+      <Pressable
+        style={({ pressed }) => [
           styles.canalChip,
           selecionado && styles.canalChipSelected,
+          pressed && styles.chipPressed,
         ]}
         onPress={handlePress}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -96,7 +97,7 @@ export const CanalChipButton = React.memo<CanalChipButtonProps>(
         >
           {canal.label}
         </Text>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 );
@@ -116,10 +117,11 @@ export const ImovelInteresseChip = React.memo<ImovelInteresseChipProps>(
     };
 
     return (
-      <TouchableOpacity
-        style={[
+      <Pressable
+        style={({ pressed }) => [
           styles.imovelChip,
           selecionado && styles.imovelChipSelected,
+          pressed && styles.chipPressed,
         ]}
         onPress={handlePress}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -148,7 +150,7 @@ export const ImovelInteresseChip = React.memo<ImovelInteresseChipProps>(
             {formatarMoedaBrl(imovel.valor)}
           </Text>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 );
@@ -229,8 +231,11 @@ export const ClienteCardItem = React.memo<ClienteCardItemProps>(
           </View>
         ) : null}
 
-        <TouchableOpacity
-          style={styles.btnAgendarAtalho}
+        <Pressable
+          style={({ pressed }) => [
+            styles.btnAgendarAtalho,
+            pressed && styles.btnAgendarAtalhoPressed,
+          ]}
           onPress={() => onAgendar(cliente)}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           testID={`btn-agendar-cliente-${cliente.id}`}
@@ -245,7 +250,7 @@ export const ClienteCardItem = React.memo<ClienteCardItemProps>(
           <Text style={styles.btnAgendarAtalhoText}>
             Agendar Visita / Retorno
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     );
   }
@@ -965,6 +970,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#C2410C',
+  },
+  chipPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  btnAgendarAtalhoPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
   },
 });
 

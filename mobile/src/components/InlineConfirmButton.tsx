@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
   StyleProp,
@@ -112,8 +112,13 @@ export const InlineConfirmButton: React.FC<InlineConfirmButtonProps> = ({
     : iconName;
 
   return (
-    <TouchableOpacity
-      style={[styles.baseButton, getContainerStyle(), style]}
+    <Pressable
+      style={({ pressed }) => [
+        styles.baseButton,
+        getContainerStyle(),
+        pressed && styles.pressedScale,
+        style,
+      ]}
       onPress={handlePress}
       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
       testID={testID}
@@ -122,7 +127,6 @@ export const InlineConfirmButton: React.FC<InlineConfirmButtonProps> = ({
         accessibilityLabel || (confirming ? confirmLabel : label)
       }
       accessibilityState={{ selected: confirming }}
-      activeOpacity={0.85}
     >
       <View style={styles.contentRow}>
         {currentIcon ? (
@@ -137,7 +141,7 @@ export const InlineConfirmButton: React.FC<InlineConfirmButtonProps> = ({
           {confirming ? confirmLabel : label}
         </Text>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -177,6 +181,10 @@ const styles = StyleSheet.create({
   },
   confirmingContainer: {
     backgroundColor: '#B71C1C',
+  },
+  pressedScale: {
+    transform: [{ scale: 0.98 }],
+    opacity: 0.88,
   },
 });
 

@@ -2,7 +2,7 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   StyleProp,
   ViewStyle,
@@ -54,8 +54,11 @@ export const AvisoBanner: React.FC<AvisoBannerProps> = ({
           <Text style={styles.bannerMessage}>{mensagem}</Text>
         </View>
         {onFechar ? (
-          <TouchableOpacity
-            style={styles.closeButton}
+          <Pressable
+            style={({ pressed }) => [
+              styles.closeButton,
+              pressed && styles.closeButtonPressed,
+            ]}
             onPress={handleFechar}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             testID="btn-fechar-aviso"
@@ -63,7 +66,7 @@ export const AvisoBanner: React.FC<AvisoBannerProps> = ({
             accessibilityLabel="Fechar aviso"
           >
             <Ionicons name="close" size={18} color="#92400E" />
-          </TouchableOpacity>
+          </Pressable>
         ) : null}
       </View>
 
@@ -144,6 +147,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: DOMUS_SPACING.xs,
+  },
+  closeButtonPressed: {
+    opacity: 0.6,
+    transform: [{ scale: 0.96 }],
   },
   pillsRow: {
     flexDirection: 'row',

@@ -52,11 +52,36 @@ A tela de **Cadastro de Clientes** implementada em React Native com Expo SDK 58 
 O sistema e estruturado em uma arquitetura desacoplada cliente-servidor:
 
 - **Mobile (Frontend):** Desenvolvido em **React Native** com **Expo SDK 58** e **TypeScript**, priorizando uso em smartphones por corretores em deslocamento e suporte multiplataforma (Android, iOS e Web). Os padroes de arquitetura, ergonomia Apple HIG, fisica de gestos e persistencia offline-first estao detalhados em [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md).
-  - **Componentes Basicos Nativos:** Emprego comprovado de `View`, `Text`, `Image` (logotipo oficial em `mobile/assets/logo.png`), `ScrollView` e `Pressable` (com feedback de toque e microescala).
-  - **Superficies Limpas:** Eliminacao total de bordas assimetricas decorativas (anti-slop) no modal de conexao e cards, utilizando bordas perimetrais uniformes de 1px.
-- **Backend (API):** Desenvolvido em **Node.js 22** com **TypeScript** e **NestJS 11**, seguindo principios de arquitetura modular, injecao de dependencias e validacao estrita por DTOs.
+- **Backend (API):** Desenvolvido em **Node.js 22** com **TypeScript** e **NestJS 11**, seguindo principios de arquitetura modular, injecao de dependencias e validacao estrita por DTOs. Detalhes em [backend/README.md](backend/README.md).
 - **Banco de Dados e Persistencia:** **Prisma ORM** com **SQLite** persistente (`dev.db`) e historico de **Migrations SQL versionadas**, permitindo execucao zero-config tanto nativa quanto via Docker.
 - **Testes e Qualidade:** Cobertura de testes unitarios e ponta a ponta (E2E) com **Jest** e **Supertest**, alem de tipagem estrita com **TypeScript**.
+
+### Stack Tecnologica do Modulo Mobile
+
+O modulo movel (`mobile/`) foi concebido segundo padroes de engenharia de software movel de alta performance, garantindo resposta tatil fluida a 60/120 FPS, suporte offline-first e fidelidade ergonômica as diretrizes Apple HIG:
+
+| Camada / Tecnologia | Versao | Papel Arquitetural e Justificativa Tecnica |
+| :--- | :--- | :--- |
+| **Expo SDK** (`expo`) | `~58.0.16` | Plataforma e runtime nativo gerenciado, assegurando compatibilidade entre React Native e APIs de hardware. |
+| **React Native** (`react-native`) | `0.78.2` | Framework base para renderizacao de componentes nativos multiplataforma (Android, iOS e Web). |
+| **React** (`react` / `react-dom`) | `19.1.0` | Biblioteca de interface reativa com modelo moderno de hooks e reconciliacao em memoria. |
+| **TypeScript** (`typescript`) | `~5.8.0` | Tipagem estatica estrita de ponta a ponta para contratos de dados, rotas e componentes (`tsc --noEmit`). |
+| **Reanimated** (`react-native-reanimated`) | `^4.7.1` | Motor de animacoes na UI Thread via JSI (Two-Runtime Rule a 60/120 FPS), eliminando bloqueios da thread JS. |
+| **Worklets** (`react-native-worklets`) | `^0.13.0` | Runtime de micro-threads de baixa latencia exigido pelo Reanimated v4 para compilacao unificada mobile e web. |
+| **Gesture Handler** (`react-native-gesture-handler`) | `^3.4.0` | Reconhecimento declarativo de gestos nativos, fisica inercial (`projectVelocity`) e resistencia elastica (`rubberband`). |
+| **FlashList** (`@shopify/flash-list`) | `^2.3.3` | Virtualizacao de listas de alta performance com reciclagem de celulas, reduzindo uso de memoria e coletas de lixo. |
+| **Safe Area Context** (`react-native-safe-area-context`) | `^5.10.1` | Metricas dinamicas de hardware (Dynamic Island, notch e barra de gestos), garantindo touch targets >= 44pt. |
+| **Expo Haptics** (`expo-haptics`) | `^58.0.7` | Feedback tatil sensorial em botoes e acoes com camada de degradacao graciosa para web e testes. |
+| **AsyncStorage** (`@react-native-async-storage/async-storage`) | `^3.1.1` | Persistencia local assincrona nao-volatil para cache de dados offline, token JWT e configuracoes de rede. |
+| **Vector Icons** (`@expo/vector-icons`) | `^15.1.1` | Iconografia vetorial nitida (Ionicons, Feather) em todas as densidades de tela (`@2x`, `@3x`, Retina). |
+| **Suporte Web** (`react-native-web` / `@expo/metro-runtime`) | `^0.21.4` | Mapeamento de primitivas nativas para elementos DOM semanticos, permitindo execucao no navegador (`port 8081`). |
+| **Testes Unitarios** (`jest`, `ts-jest`, `react-test-renderer`) | `^29.7.0` | Execucao automatizada de 5 suites de testes com dubles nativos em `__mocks__/` e cobertura de regras de negocio. |
+
+#### Pilares Tecnicos da Interface Mobile:
+- **Componentes Basicos Nativos:** Uso comprovado de `View`, `Text`, `Image` (logotipo oficial em [mobile/assets/logo.png](mobile/assets/logo.png)), `ScrollView` e `Pressable` (com feedback tatil e microescala).
+- **Superficies Limpas (Anti-AI Slop):** Eliminacao total de bordas decorativas assimetricas (`border-l-4`). Utilizacao de bordas perimetrais uniformes de 1px (`#E2E8F0`) e fundos neutros suaves.
+- **Feedback Nao-Bloqueante:** Notificacoes flutuantes no topo (`DomusToast`), botoes integrados com 3 estados (`idle` -> `loading` -> `success`) e confirmacoes inline em dois toques.
+- **Arquitetura Hibrida Offline-First:** Deteccao automatica do IP da maquina via `expo-constants`, auto-autenticacao JWT e alternancia transparente entre o banco real e o modo demo local.
 
 ---
 
@@ -72,9 +97,11 @@ DOMUS/
 │   ├── assets/       # Imagens e logotipos estaticos (logo.png)
 │   ├── src/          # Telas, componentes Apple HIG, contexto e servicos
 │   └── __tests__/    # Testes unitarios de componentes, telas e regras
-├── docs/             # Documentacao do estudo de caso, modelos PDM e PE
-│   ├── prototipos/   # Wireframes e prints reais de validacao
-│   └── superpowers/  # Especificacoes tecnicas e planos de implementacao
+├── docs/             # Documentacao academica, especificacoes e estudo de caso
+│   ├── entrevistas/  # Entrevistas de campo com corretores e estudo de caso
+│   ├── modelos/      # Modelos PDM/PE e jornada do corretor
+│   ├── prototipos/   # Wireframes e prints de validacao do Expo Go
+│   └── MOBILE_SYSTEM_DESIGN.md # Especificacao arquitetural completa do mobile
 ├── package.json      # Orquestracao unificada de scripts dev/test para a raiz
 ├── docker-compose.yml# Orquestracao do backend com volume persistente SQLite
 └── README.md         # Visao geral do projeto DOMUS (este arquivo)
@@ -189,9 +216,11 @@ Durante a fase de desenho do backend, foi considerada a utilizacao do **PocketBa
 
 ## Referencias
 
-- Arquitetura e System Design do Modulo Mobile: [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md)
-- Diagnostico da Problematica e Plano de Intervencao: `docs/MODELO DIAGNOSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO.docx`
-- Especificacao Funcional do Backend: `docs/superpowers/specs/2026-10-17-domus-backend-nestjs-design.md`
-- Roteiro de Apresentacao Academica: `docs/guia-apresentacao-academica.md`
-- Guia Tecnico da API: `backend/README.md`
-- Guia do Aplicativo Mobile: `mobile/README.md`
+- **Arquitetura e System Design do Modulo Mobile:** [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md)
+- **Diagnostico da Problematica e Plano de Intervencao:** [docs/MODELO DIAGNOSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO.md](docs/MODELO%20DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.md) ([Versao DOCX](docs/MODELO%20DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.docx))
+- **Roteiro de Apresentacao Academica:** [docs/guia-apresentacao-academica.md](docs/guia-apresentacao-academica.md)
+- **Guia Tecnico da API (Backend NestJS):** [backend/README.md](backend/README.md)
+- **Guia do Aplicativo Mobile (Expo Go):** [mobile/README.md](mobile/README.md)
+- **Catalogo de Prototipos e Wireframes:** [docs/prototipos/expo/README.md](docs/prototipos/expo/README.md)
+- **Estudo de Caso e Entrevistas com Corretores:** [docs/entrevistas/roteiro-estudo-caso-domus.md](docs/entrevistas/roteiro-estudo-caso-domus.md)
+- **Modelos e Propostas Academicas (PDM e PE):** [docs/modelos/MODELO PROPOSTA DE PROJETO - PDM E PE.md](docs/modelos/MODELO%20PROPOSTA%20DE%20PROJETO%20-%20PDM%20E%20PE.md)

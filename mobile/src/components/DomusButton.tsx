@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   ActivityIndicator,
   StyleSheet,
@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DOMUS_THEME, DOMUS_SPACING } from '../theme/tokens';
-import { useSafeState } from '../utils/safeHooks';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'outline';
 
@@ -48,7 +47,6 @@ export const DomusButton: React.FC<DomusButtonProps> = ({
   textStyle,
   accessibilityLabel,
 }) => {
-  const [isPressed, setIsPressed] = useSafeState<boolean>(false);
   const buttonText = title || label || '';
   const isBloqueado = disabled || loading;
 
@@ -106,24 +104,21 @@ export const DomusButton: React.FC<DomusButtonProps> = ({
   };
 
   return (
-    <TouchableOpacity
-      style={[
+    <Pressable
+      style={({ pressed }) => [
         styles.baseContainer,
         getContainerStyle(),
         isBloqueado && styles.disabledContainer,
-        isPressed && !isBloqueado && styles.pressedScale,
+        pressed && !isBloqueado && styles.pressedScale,
         style,
       ]}
       onPress={handlePress}
-      onPressIn={() => setIsPressed(true)}
-      onPressOut={() => setIsPressed(false)}
       disabled={isBloqueado}
       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
       testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || buttonText}
       accessibilityState={{ disabled: isBloqueado, busy: loading }}
-      activeOpacity={0.88}
     >
       {loading ? (
         loadingLabel ? (
@@ -178,7 +173,7 @@ export const DomusButton: React.FC<DomusButtonProps> = ({
           </Text>
         </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 

@@ -4,7 +4,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -259,9 +259,8 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
       testID="connection-modal"
     >
       <View style={styles.overlay}>
-        <TouchableOpacity
+        <Pressable
           style={styles.backdropDismiss}
-          activeOpacity={1}
           onPress={onFechar}
           accessibilityRole="button"
           accessibilityLabel="Fechar modal tocando fora"
@@ -287,16 +286,19 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
               </View>
               <Text style={styles.title}>Conexão com o Backend</Text>
             </View>
-            <TouchableOpacity
+            <Pressable
               onPress={onFechar}
-              style={styles.closeButton}
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.pressedFeedback,
+              ]}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               testID="btn-fechar-modal-conexao"
               accessibilityRole="button"
               accessibilityLabel="Fechar configuracao de conexao"
             >
               <Ionicons name="close" size={20} color={DOMUS_THEME.textSecondary} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <ScrollView style={styles.scrollBody} keyboardShouldPersistTaps="handled">
@@ -392,9 +394,12 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                 testID="btn-salvar-conectar"
               />
 
-              <TouchableOpacity
+              <Pressable
                 onPress={handleAtivarOffline}
-                style={styles.btnSecondaryText}
+                style={({ pressed }) => [
+                  styles.btnSecondaryText,
+                  pressed && styles.pressedFeedback,
+                ]}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 disabled={testando || salvando}
                 testID="btn-alternar-offline"
@@ -404,7 +409,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                 <Text style={styles.btnSecondaryTextLabel}>
                   Usar Modo Demo Local (Offline)
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             {/* Guia Rapido de IPs */}
@@ -593,6 +598,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: DOMUS_THEME.textSecondary,
     textDecorationLine: 'underline',
+  },
+  pressedFeedback: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
   },
   guideBox: {
     marginTop: DOMUS_SPACING.lg,

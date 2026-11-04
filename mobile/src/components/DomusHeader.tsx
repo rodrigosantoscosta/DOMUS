@@ -2,7 +2,7 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   SafeAreaView,
   StyleProp,
@@ -131,13 +131,13 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[
+          <Pressable
+            style={({ pressed }) => [
               styles.statusBadge,
               modoOffline ? styles.statusBadgeOffline : styles.statusBadgeOnline,
+              pressed && onPressStatus ? styles.statusBadgePressed : null,
             ]}
             onPress={onPressStatus}
-            activeOpacity={onPressStatus ? 0.7 : 1}
             disabled={!onPressStatus}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             testID="header-status-badge"
@@ -166,17 +166,18 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
             >
               {modoOffline ? 'Modo Demo Local' : 'API Online'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Linha Inferior: Botoes de Acao (Reset Demo e Sair) */}
         {(onResetDemo || onLogout) && (
           <View style={styles.actionsRow}>
             {onResetDemo ? (
-              <TouchableOpacity
-                style={[
+              <Pressable
+                style={({ pressed }) => [
                   styles.actionButton,
                   confirmandoReset && styles.actionButtonConfirming,
+                  pressed && styles.actionButtonPressed,
                 ]}
                 onPress={handlePressResetDemo}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -205,12 +206,16 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
                 >
                   {confirmandoReset ? 'Confirmar Reset?' : 'Reset Demo'}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ) : null}
 
             {onLogout ? (
-              <TouchableOpacity
-                style={[styles.actionButton, styles.logoutButton]}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  styles.logoutButton,
+                  pressed && styles.actionButtonPressed,
+                ]}
                 onPress={onLogout}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 testID="btn-header-logout"
@@ -225,7 +230,7 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
                 <Text style={[styles.actionButtonText, styles.logoutButtonText]}>
                   Sair
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ) : null}
           </View>
         )}
@@ -368,6 +373,14 @@ const styles = StyleSheet.create({
   actionButtonTextConfirming: {
     color: DOMUS_THEME.primaryText,
     fontWeight: '700',
+  },
+  statusBadgePressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  actionButtonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
   },
 });
 

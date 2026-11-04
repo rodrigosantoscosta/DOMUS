@@ -7,7 +7,8 @@ export const TouchableOpacity = (props: any) => React.createElement('TouchableOp
 export const Pressable = (props: any) => {
   // Se style for uma função, executa passando { pressed: false }
   const style = typeof props.style === 'function' ? props.style({ pressed: false }) : props.style;
-  return React.createElement('Pressable', { ...props, style }, props.children);
+  const children = typeof props.children === 'function' ? props.children({ pressed: false }) : props.children;
+  return React.createElement('Pressable', { ...props, style }, children);
 };
 export const TextInput = (props: any) => React.createElement('TextInput', props);
 export const ScrollView = (props: any) => React.createElement('ScrollView', props, props.children);
@@ -24,6 +25,9 @@ export const StyleSheet = {
   create: <T extends Record<string, any>>(styles: T): T => styles,
   flatten: (style: any): Record<string, any> => {
     if (!style) return {};
+    if (typeof style === 'function') {
+      return StyleSheet.flatten(style({ pressed: false }));
+    }
     if (!Array.isArray(style)) {
       return typeof style === 'object' ? style : {};
     }

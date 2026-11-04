@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -199,19 +199,22 @@ export const DomusToast: React.FC<DomusToastProps> = ({
             <Text style={styles.messageText} numberOfLines={3}>
               {mensagem}
             </Text>
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 triggerLightImpact();
                 handleDismiss();
               }}
-              style={styles.closeButton}
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.closeButtonPressed,
+              ]}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityRole="button"
               accessibilityLabel="Fechar aviso"
               testID={`${testID}-btn-fechar`}
             >
               <Ionicons name="close" size={18} color={DOMUS_COLORS.white} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </Animated.View>
       </GestureDetector>
@@ -261,6 +264,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: DOMUS_SPACING.xs,
+  },
+  closeButtonPressed: {
+    opacity: 0.6,
+    transform: [{ scale: 0.96 }],
   },
 });
 

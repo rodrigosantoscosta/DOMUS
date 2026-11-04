@@ -5,7 +5,7 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -148,8 +148,12 @@ function OpcaoChip<T extends string>({
   };
 
   return (
-    <TouchableOpacity
-      style={[styles.canalChip, selecionado && styles.canalChipSelected]}
+    <Pressable
+      style={({ pressed }) => [
+        styles.canalChip,
+        selecionado && styles.canalChipSelected,
+        pressed && styles.chipPressed,
+      ]}
       onPress={handlePress}
       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
       testID={`${testIDPrefix}-${opcao.id}`}
@@ -170,7 +174,7 @@ function OpcaoChip<T extends string>({
       >
         {opcao.label}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -188,10 +192,11 @@ export const ProprietarioChip = React.memo<ProprietarioChipProps>(
     };
 
     return (
-      <TouchableOpacity
-        style={[
+      <Pressable
+        style={({ pressed }) => [
           styles.imovelChip,
           selecionado && styles.imovelChipSelected,
+          pressed && styles.chipPressed,
         ]}
         onPress={handlePress}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -220,7 +225,7 @@ export const ProprietarioChip = React.memo<ProprietarioChipProps>(
             {cliente.cpfDocumento ? ` • ${cliente.cpfDocumento}` : ''}
           </Text>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 );
@@ -313,8 +318,11 @@ export const ImovelCardItem = React.memo<ImovelCardItemProps>(
           </View>
         ) : null}
 
-        <TouchableOpacity
-          style={styles.btnAgendarAtalho}
+        <Pressable
+          style={({ pressed }) => [
+            styles.btnAgendarAtalho,
+            pressed && styles.btnAgendarAtalhoPressed,
+          ]}
           onPress={() => onAgendar(imovel)}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           testID={`btn-agendar-imovel-${imovel.id}`}
@@ -329,7 +337,7 @@ export const ImovelCardItem = React.memo<ImovelCardItemProps>(
           <Text style={styles.btnAgendarAtalhoText}>
             Agendar Visita
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     );
   }
@@ -1116,6 +1124,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#C2410C',
+  },
+  chipPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  btnAgendarAtalhoPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
   },
 });
 

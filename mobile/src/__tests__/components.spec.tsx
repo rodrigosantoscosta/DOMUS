@@ -345,8 +345,8 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
           <DomusButton title="Acao" onPress={jest.fn()} testID="btn-touch-target" />
         );
       });
-      const touchable = root.root.findByType('TouchableOpacity');
-      const style = StyleSheet.flatten(touchable.props.style);
+      const pressable = root.root.findByType('Pressable');
+      const style = StyleSheet.flatten(pressable.props.style);
       expect(style.minHeight).toBeGreaterThanOrEqual(44);
     });
   });
@@ -366,13 +366,13 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
         );
       });
 
-      const touchable = root.root.findByType('TouchableOpacity');
+      const pressable = root.root.findByType('Pressable');
       let textos = coletarTextos(root.toJSON());
       expect(textos).toContain('Excluir Registro');
 
       // 1o clique: entra em confirmacao
       renderer.act(() => {
-        touchable.props.onPress();
+        pressable.props.onPress();
       });
       expect(onConfirm).not.toHaveBeenCalled();
       textos = coletarTextos(root.toJSON());
@@ -380,7 +380,7 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
 
       // 2o clique: confirma acao
       renderer.act(() => {
-        touchable.props.onPress();
+        pressable.props.onPress();
       });
       expect(onConfirm).toHaveBeenCalledTimes(1);
     });
@@ -396,8 +396,8 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
           />
         );
       });
-      const touchable = root.root.findByType('TouchableOpacity');
-      const style = StyleSheet.flatten(touchable.props.style);
+      const pressable = root.root.findByType('Pressable');
+      const style = StyleSheet.flatten(pressable.props.style);
       expect(style.minHeight).toBeGreaterThanOrEqual(44);
       expect(style.minWidth).toBeGreaterThanOrEqual(44);
     });
