@@ -45,7 +45,7 @@ Validacao executada apos as correcoes (todas verdes):
 4. **Gestao de segredos (C3 — aceito)** — `.env` + `.env.example` + fail-closed; por que segredo versionado nunca volta a ser secreto (regenerar > reescrever historico).
 5. **Rate limiting e enumeracao (C8/C10 — NAO corrigido)** — `@nestjs/throttler`, hash dummy para usuario inexistente, backoff.
 6. **CORS, Helmet e superficie da API (C7/C9 — NAO corrigido)** — por que `origin: true + credentials: true` quebra CORS; quando Swagger fica publico.
-7. **Cadeia de dependencias (C11 — RESOLVIDO, manter)** — `npm audit` no CI; risco de transitive deps; `overrides` quando o pai fixa a versao exata.
+7. **Cadeia de dependencias (C11 — RESOLVIDO, manter)** — `npm audit` no CI; risco de transitive deps; `overrides` quando o pai fixa a versao exata; GitHub Dependabot ativo (`.github/dependabot.yml` com alertas de vulnerabilidades e atualizacoes semanais de seguranca/versao para backend, mobile e docker).
 8. **Multi-tenancy (evolucao futura)** — endpoints por agencia transformariam a visao compartilhada atual em IDOR real. Anotado como arquitetura, nao exploit hoje.
 
 ---
