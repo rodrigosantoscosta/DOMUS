@@ -552,18 +552,18 @@ const styles = StyleSheet.create({
   },
   feedbackSuccess: {
     backgroundColor: DOMUS_THEME.successSoft,
-    borderLeftWidth: 4,
-    borderLeftColor: DOMUS_THEME.success,
+    borderWidth: 1,
+    borderColor: DOMUS_THEME.successBorder,
   },
   feedbackError: {
     backgroundColor: DOMUS_THEME.dangerSoft,
-    borderLeftWidth: 4,
-    borderLeftColor: DOMUS_THEME.danger,
+    borderWidth: 1,
+    borderColor: DOMUS_THEME.dangerBorder,
   },
   feedbackInfo: {
     backgroundColor: DOMUS_THEME.infoSoft,
-    borderLeftWidth: 4,
-    borderLeftColor: DOMUS_THEME.info,
+    borderWidth: 1,
+    borderColor: DOMUS_THEME.infoBorder,
   },
   feedbackText: {
     fontSize: 13,
@@ -599,8 +599,8 @@ const styles = StyleSheet.create({
     padding: DOMUS_SPACING.md,
     backgroundColor: DOMUS_THEME.surfaceElevated,
     borderRadius: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: DOMUS_THEME.primary,
+    borderWidth: 1,
+    borderColor: DOMUS_THEME.border,
     marginBottom: DOMUS_SPACING.xxl,
   },
   guideTitle: {

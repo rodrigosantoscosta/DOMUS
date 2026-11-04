@@ -165,6 +165,29 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
       const styleBadge = StyleSheet.flatten(badgeStatus.props.style);
       expect(styleBadge.minHeight).toBeGreaterThanOrEqual(44);
     });
+
+    it('renderiza o componente Image com o logotipo DOMUS e suporta fallback para icone em caso de erro', () => {
+      let root: any;
+      renderer.act(() => {
+        root = renderer.create(<DomusHeader titulo="DOMUS" />);
+      });
+
+      const logoImg = root.root.findByProps({ testID: 'domus-header-logo' });
+      expect(logoImg).toBeDefined();
+      expect(logoImg.props.accessibilityLabel).toBe('Logotipo DOMUS');
+
+      // Simula erro no carregamento da imagem para acionar o icone de fallback
+      renderer.act(() => {
+        logoImg.props.onError();
+      });
+
+      const iconFallback = root.root.findByProps({ testID: 'icon-brand-home' });
+      expect(iconFallback).toBeDefined();
+
+      renderer.act(() => {
+        root.unmount();
+      });
+    });
   });
 
   describe('DomusNavBar', () => {

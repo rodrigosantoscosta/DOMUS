@@ -2,8 +2,13 @@ import React from 'react';
 
 export const View = (props: any) => React.createElement('View', props, props.children);
 export const Text = (props: any) => React.createElement('Text', props, props.children);
+export const Image = (props: any) => React.createElement('Image', props, props.children);
 export const TouchableOpacity = (props: any) => React.createElement('TouchableOpacity', props, props.children);
-export const Pressable = (props: any) => React.createElement('Pressable', props, props.children);
+export const Pressable = (props: any) => {
+  // Se style for uma função, executa passando { pressed: false }
+  const style = typeof props.style === 'function' ? props.style({ pressed: false }) : props.style;
+  return React.createElement('Pressable', { ...props, style }, props.children);
+};
 export const TextInput = (props: any) => React.createElement('TextInput', props);
 export const ScrollView = (props: any) => React.createElement('ScrollView', props, props.children);
 export const RefreshControl = (props: any) => React.createElement('RefreshControl', props);
@@ -52,6 +57,7 @@ export const Linking = {
 export default {
   View,
   Text,
+  Image,
   TouchableOpacity,
   Pressable,
   TextInput,

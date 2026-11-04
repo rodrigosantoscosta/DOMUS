@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   StyleProp,
   ViewStyle,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -16,6 +17,8 @@ import {
 } from '../theme/tokens';
 import { triggerLightImpact, triggerMediumImpact } from '../utils/haptics';
 import { useSafeState, useSafeRef, useSafeEffect } from '../utils/safeHooks';
+
+const domusLogo = require('../../assets/logo.png');
 
 export interface DomusHeaderProps {
   titulo?: string;
@@ -39,6 +42,7 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
   style,
 }) => {
   const [confirmandoReset, setConfirmandoReset] = useSafeState<boolean>(false);
+  const [logoErro, setLogoErro] = useSafeState<boolean>(false);
   const resetTimerRef = useSafeRef<NodeJS.Timeout | null>(null);
 
   useSafeEffect(() => {
@@ -89,12 +93,24 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
         <View style={styles.topRow}>
           <View style={styles.brandGroup}>
             <View style={styles.brandIconWrapper}>
-              <Ionicons
-                name="home"
-                size={20}
-                color={DOMUS_THEME.primary}
-                testID="icon-brand-home"
-              />
+              {!logoErro ? (
+                <Image
+                  source={domusLogo}
+                  style={styles.brandLogo}
+                  resizeMode="contain"
+                  testID="domus-header-logo"
+                  onError={() => setLogoErro(true)}
+                  accessibilityRole="image"
+                  accessibilityLabel="Logotipo DOMUS"
+                />
+              ) : (
+                <Ionicons
+                  name="home"
+                  size={20}
+                  color={DOMUS_THEME.primary}
+                  testID="icon-brand-home"
+                />
+              )}
             </View>
             <View style={styles.titleColumn}>
               <Text style={styles.title} testID="header-title">
@@ -256,6 +272,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: DOMUS_THEME.primaryBorder,
+  },
+  brandLogo: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
   },
   titleColumn: {
     flexDirection: 'column',

@@ -1,0 +1,19 @@
+{
+  "name": "domus",
+  "version": "1.0.0",
+  "description": "DOMUS — Sistema de Acompanhamento de Clientes, Atendimentos e Retornos para Corretores de Imoveis",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -k -n \"BACKEND,MOBILE\" -c \"cyan,magenta\" \"npm run start:dev --prefix backend\" \"npm run web --prefix mobile\"",
+    "dev:backend": "npm run start:dev --prefix backend",
+    "dev:mobile": "npm run web --prefix mobile",
+    "test:backend": "npm test --prefix backend",
+    "test:mobile": "npm test --prefix mobile",
+    "test": "npm run test:backend && npm run test:mobile"
+  },
+  "author": "Equipe DOMUS",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
