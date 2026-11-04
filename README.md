@@ -79,7 +79,6 @@ O modulo movel (`mobile/`) foi concebido segundo padroes de engenharia de softwa
 
 #### Pilares Tecnicos da Interface Mobile:
 - **Componentes Basicos Nativos:** Uso comprovado de `View`, `Text`, `Image` (logotipo oficial em [mobile/assets/logo.png](mobile/assets/logo.png)), `ScrollView` e `Pressable` (com feedback tatil e microescala).
-- **Superficies Limpas (Anti-AI Slop):** Eliminacao total de bordas decorativas assimetricas (`border-l-4`). Utilizacao de bordas perimetrais uniformes de 1px (`#E2E8F0`) e fundos neutros suaves.
 - **Feedback Nao-Bloqueante:** Notificacoes flutuantes no topo (`DomusToast`), botoes integrados com 3 estados (`idle` -> `loading` -> `success`) e confirmacoes inline em dois toques.
 - **Arquitetura Hibrida Offline-First:** Deteccao automatica do IP da maquina via `expo-constants`, auto-autenticacao JWT e alternancia transparente entre o banco real e o modo demo local.
 
