@@ -24,12 +24,14 @@ module.exports = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
+        diagnostics: false,
         tsconfig: {
           target: 'ES2022',
           module: 'CommonJS',
           jsx: 'react-jsx',
           esModuleInterop: true,
           skipLibCheck: true,
+          types: ['jest', 'node'],
         },
       },
     ],

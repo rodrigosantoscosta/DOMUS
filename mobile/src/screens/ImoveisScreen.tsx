@@ -503,7 +503,7 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
   }, [domus]);
 
   return (
-    <View style={styles.safeArea}>
+    <View style={styles.safeArea} testID="imoveis-screen">
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
