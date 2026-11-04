@@ -1,5 +1,8 @@
 # Arquitetura e System Design do Módulo Mobile — DOMUS
 
+> [!NOTE]
+> **TL;DR:** Especificacao de engenharia e system design do modulo `mobile/` (React Native 0.78 / Expo SDK 58). Cobre ergonomia Apple HIG (touch targets >= 44pt), Two-Runtime Rule (60/120 FPS), arquitetura hibrida offline-first, superficies limpas anti-slop e paridade com os requisitos tecnicos obrigatorios de componentes nativos (`View`, `Text`, `Image`, `ScrollView`, `Pressable`).
+
 Este documento consolida a arquitetura completa do módulo móvel (`mobile/`) do projeto DOMUS, detalhando todas as decisões técnicas tomadas no system design móvel, a substituição de padrões genéricos por componentes nativos de alta fidelidade, as primitivas de feedback não-bloqueante, o gerenciamento de gestos a 60/120 FPS e o funcionamento da camada híbrida de conectividade.
 
 ---
@@ -97,6 +100,18 @@ Antes da intervenção, a interface apresentava componentes genéricos desprovid
   - Definição precisa de `estimatedItemSize` (148pt para clientes, 140pt para imóveis e atendimentos).
   - Extração de componentes de linha (`ClienteCardItem`, `ImovelCardItem`, `AtendimentoCardItem`) para fora do escopo funcional das telas, envelopados com `React.memo` para evitar reconciliações desnecessárias durante a digitação de filtros.
 
+### Decisão 5: Anti-AI Slop e Superfícies Limpas
+- **Problema Anterior:** Uso de bordas laterais assimétricas e espessas (`borderLeftWidth: 3` e `borderLeftWidth: 4`) em cards de dicas e caixas de feedback no [`ConnectionModal.tsx`](../mobile/src/components/ConnectionModal.tsx).
+- **Solução Implementada:**
+  - Substituição integral de barras laterais decorativas por **bordas perimetrais uniformes e completas de 1px** (`borderWidth: 1`, `borderColor: DOMUS_THEME.border`).
+  - Utilização de fundos suaves e discretos (`DOMUS_THEME.surfaceElevated`, `DOMUS_THEME.successSoft`, `DOMUS_THEME.dangerSoft`, `DOMUS_THEME.infoSoft`) com contrastes harmoniosos, garantindo acabamento de produto real de acordo com a política de superfícies limpas.
+
+### Decisão 6: Componentes Básicos Nativos e Orquestração na Raiz
+- **Problema Anterior:** Ausência de componente nativo `Image` (utilizava-se apenas ícones vetoriais) e dependência de múltiplos terminais manuais para subir o backend e o frontend simultaneamente.
+- **Solução Implementada:**
+  - **Uso do Componente `Image`:** Incorporado ao [`DomusHeader.tsx`](../mobile/src/components/DomusHeader.tsx) renderizando o logotipo oficial (`mobile/assets/logo.png`) com proporções nítidas e fallback inteligente para ícone via `onError`.
+  - **Orquestração na Raiz:** Configuração do script unificado `npm run dev` na raiz utilizando `concurrently -k`, com encerramento gracioso dos processos do NestJS e do Metro ao pressionar `Ctrl+C`.
+
 ---
 
 ## 4. Camada de Dados e Arquitetura Híbrida (Offline-First)
@@ -147,8 +162,16 @@ No [`DomusHeader.tsx`](../mobile/src/components/DomusHeader.tsx), a badge exibe 
 - **Recursos:** Seletores em pílula para `Tipo de Imóvel` (`Apartamento`, `Casa`, `Comercial`, `Terreno`) e `Finalidade` (`Venda`, `Aluguel`); campos com máscaras monetárias; botões inline com 3 estados; listagem de imóveis com badge de status e atalho "Agendar Visita".
 
 ### 4. `AgendarScreen.tsx` (RN08, RN10, RN16)
-- **Objetivo:** Agendamento de compromissos com prevenção de conflitos.
-- **Recursos:** Validação estrita das regras de negócio (imóvel obrigatório em visitas segundo a `RN08`; cliente obrigatório segundo a `RN10`); seleção de data e hora; toggle tátil (`>= 48pt`) para sincronização com o Google Calendar (`RN16`).
+- **Objetivo:** Agendamento de compromissos com prevenção de conflitos e validação de vínculos comerciais.
+- **Status:** Prototipada na íntegra no PR #25 (`feat/mobile-agendamento-screen`) e mantida como container estruturado limpo na branch `master` para homologação gradual.
+- **Recursos Desenvolvidos:**
+  - Uso completo dos 5 componentes básicos: `View`, `Text`, `Image`, `ScrollView` e `Pressable`.
+  - Seletores táteis de tipo (`VISITA`, `RETORNO`, `ATENDIMENTO`) com escala física `0.96` no toque.
+  - Validação estrita das regras de negócio (imóvel obrigatório em visitas segundo a `RN08`; cliente obrigatório segundo a `RN10`).
+  - Destaque automático para imóveis de interesse vinculados ao cliente selecionado.
+  - Seleção de data e hora com campos pareados lado a lado (fiel ao Wireframe 02), duração em minutos, próxima ação e observações.
+  - Toggle tátil via `Pressable` (`>= 44pt`) para sincronização com o Google Calendar (`RN16`).
+  - Submissão com feedback sutil flutuante via `DomusToast` e redirecionamento para `Atendimentos`.
 
 ### 5. `AtendimentosScreen.tsx` (RN09, RN11, RN12, RN14, RN15)
 - **Objetivo:** Painel de controle operacional e lembretes do corretor.

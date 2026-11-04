@@ -2,6 +2,9 @@
 
 Plataforma digital para organizacao e acompanhamento da rotina de corretores de imoveis, com foco em mobilidade, gestao de contatos, visitas e programacao de retornos comerciais.
 
+> [!NOTE]
+> **TL;DR:** Solucao fullstack (NestJS 11 + Expo SDK 58 / React Native) para organizacao de corretores de imoveis, centralizando clientes, imoveis, visitas e avisos de retornos comerciais. Execute o ecossistema completo na raiz com um unico comando: `npm run dev`.
+
 ---
 
 ## Sobre o Projeto
@@ -48,7 +51,9 @@ A tela de **Cadastro de Clientes** implementada em React Native com Expo SDK 58 
 
 O sistema e estruturado em uma arquitetura desacoplada cliente-servidor:
 
-- **Mobile (Frontend):** Desenvolvido em **React Native** com **Expo SDK 58** e **TypeScript**, priorizando uso em smartphones por corretores em deslocamento e suporte multiplataforma (Android, iOS e Web). Os padrões de arquitetura, ergonomia Apple HIG, física de gestos e persistência offline-first estão detalhados em [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md).
+- **Mobile (Frontend):** Desenvolvido em **React Native** com **Expo SDK 58** e **TypeScript**, priorizando uso em smartphones por corretores em deslocamento e suporte multiplataforma (Android, iOS e Web). Os padroes de arquitetura, ergonomia Apple HIG, fisica de gestos e persistencia offline-first estao detalhados em [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md).
+  - **Componentes Basicos Nativos:** Emprego comprovado de `View`, `Text`, `Image` (logotipo oficial em `mobile/assets/logo.png`), `ScrollView` e `Pressable` (com feedback de toque e microescala).
+  - **Superficies Limpas:** Eliminacao total de bordas assimetricas decorativas (anti-slop) no modal de conexao e cards, utilizando bordas perimetrais uniformes de 1px.
 - **Backend (API):** Desenvolvido em **Node.js 22** com **TypeScript** e **NestJS 11**, seguindo principios de arquitetura modular, injecao de dependencias e validacao estrita por DTOs.
 - **Banco de Dados e Persistencia:** **Prisma ORM** com **SQLite** persistente (`dev.db`) e historico de **Migrations SQL versionadas**, permitindo execucao zero-config tanto nativa quanto via Docker.
 - **Testes e Qualidade:** Cobertura de testes unitarios e ponta a ponta (E2E) com **Jest** e **Supertest**, alem de tipagem estrita com **TypeScript**.
@@ -59,23 +64,18 @@ O sistema e estruturado em uma arquitetura desacoplada cliente-servidor:
 
 ```text
 DOMUS/
-├── backend/          # API RESTful (NestJS, TypeScript, Prisma ORM, SQLite)
-│   ├── prisma/       # Migrations SQL versionadas, schema e seed inicial
-│   ├── src/          # Modulos de negocio, auth JWT, usuarios e agendamentos
-│   ├── test/         # Testes unitarios, testes E2E e setup isolado
-│   ├── Dockerfile    # Imagem de producao multi-stage Node 22 Alpine
-│   └── README.md     # Documentacao tecnica detalhada da API
-├── mobile/           # Aplicativo Movel (React Native, Expo SDK 58, TypeScript)
-│   ├── src/          # Telas (Clientes), componentes, servicos e contexto
-│   ├── App.tsx       # Componente raiz integrado ao contexto global
-│   └── README.md     # Guia do aplicativo movel e preview web
-├── docs/             # Documentacao do projeto extensionista
-│   ├── MOBILE_SYSTEM_DESIGN.md        # Arquitetura e system design do modulo mobile
-│   ├── guia-apresentacao-academica.md # Roteiro detalhado para apresentacao em sala
-│   ├── entrevistas/  # Transcricoes e validacoes do estudo de caso
-│   ├── modelos/      # Diagnostico institucional e jornada do usuario
-│   ├── prototipos/   # Wireframes e especificacoes visuais das telas
+├── backend/          # API REST modular em NestJS 11 e Prisma ORM
+│   ├── prisma/       # Schema do banco SQLite, migrations SQL e seed
+│   ├── src/          # Modulos de auth, clientes, imoveis, agendamentos e avisos
+│   └── test/         # Testes unitarios, testes E2E e setup isolado
+├── mobile/           # Aplicativo movel em React Native / Expo SDK 58
+│   ├── assets/       # Imagens e logotipos estaticos (logo.png)
+│   ├── src/          # Telas, componentes Apple HIG, contexto e servicos
+│   └── __tests__/    # Testes unitarios de componentes, telas e regras
+├── docs/             # Documentacao do estudo de caso, modelos PDM e PE
+│   ├── prototipos/   # Wireframes e prints reais de validacao
 │   └── superpowers/  # Especificacoes tecnicas e planos de implementacao
+├── package.json      # Orquestracao unificada de scripts dev/test para a raiz
 ├── docker-compose.yml# Orquestracao do backend com volume persistente SQLite
 └── README.md         # Visao geral do projeto DOMUS (este arquivo)
 ```
@@ -84,67 +84,57 @@ DOMUS/
 
 ## Como Executar o Projeto
 
-### 1. Execucao do Backend (API e Banco de Dados)
+### 1. Inicializacao Rapida Unificada (Recomendado)
 
-O backend pode ser executado de forma **nativa (sem Docker)** ou **containerizada (com Docker Compose)**. Ambas utilizam exatamente o mesmo banco SQLite persistente (`backend/prisma/dev.db`):
+Na raiz do projeto (`DOMUS/`), execute um unico comando para subir simultaneamente o Backend NestJS (porta `3000`) e o Expo Web (porta `8081`):
 
-#### Opcao A: Execucao Direta Local (Sem Docker - Rapido e Leve)
+```bash
+npm run dev
+```
 
+Este comando utiliza `concurrently -k`, garantindo que ambos os servicos encerrem seus processos de forma limpa ao pressionar `Ctrl+C`.
+
+| Comando na Raiz | Finalidade |
+| :--- | :--- |
+| `npm run dev` | Inicia o Backend NestJS e o Expo Web simultaneamente |
+| `npm run dev:backend` | Inicia apenas o Backend NestJS em modo watch |
+| `npm run dev:mobile` | Inicia apenas o Expo Web |
+| `npm test` | Executa todas as suites de testes automatizados do workspace |
+
+---
+
+### 2. Execucao Individual por Modulo
+
+#### A. Backend (Nativo ou Docker)
+
+**Opcao Direta Local (Sem Docker):**
 ```powershell
-# 1. Entrar na pasta do backend
 cd backend
-
-# 2. Instalar dependencias
 npm install
-
-# 3. Aplicar as migrations do Prisma no banco SQLite (dev.db)
 npx prisma migrate deploy
-
-# 4. Popular dados iniciais de teste (Persona Junior)
 npm run prisma:seed
-
-# 5. Iniciar o servidor de desenvolvimento
 npm run start:dev
 ```
 
-#### Opcao B: Via Docker Compose (Containerizado)
-
+**Opcao via Docker Compose:**
 ```powershell
-# Na raiz do projeto, suba o container em background:
 docker compose up -d
-
-# Visualizar logs em tempo real:
 docker compose logs -f backend
 ```
 
 - **Acesso da API:** `http://localhost:3000/api`
 - **Documentacao Interativa Swagger:** `http://localhost:3000/api/docs`
-- **Painel Visual do Banco (Prisma Studio):** `npm run prisma:studio` na pasta `backend` (disponivel em `http://localhost:5555`)
+- **Painel Visual do Banco (Prisma Studio):** `npm run prisma:studio` na pasta `backend` (`http://localhost:5555`)
 
----
-
-### 2. Execucao do Mobile (React Native / Expo)
-
-Em outro terminal, execute o aplicativo movel:
+#### B. Mobile (React Native / Expo)
 
 ```powershell
-# 1. Entrar na pasta do mobile
 cd mobile
-
-# 2. Instalar dependencias (se primeira vez)
 npm install
-
-# 3. Iniciar o servidor de desenvolvimento Expo:
 npm start
-
-# (Opcional) Para abrir direto no navegador web:
-npm run web
 ```
 
-#### Como visualizar a aplicacao:
-- **No Celular Físico (Expo Go):**
-  - **Android:** Abra o app **Expo Go** e escaneie o QR Code exibido no terminal.
-  - **iOS:** Abra a câmera nativa, aponte para o QR Code e toque no link do Expo Go.
+- **No Celular Fisico (Expo Go):** Escaneie o QR Code exibido no terminal com o app **Expo Go** (Android) ou a Camera (iOS).
 - **No Navegador Web:** Pressione `w` no terminal do Expo ou acesse `http://localhost:8081`.
 
 #### Conectando o Celular ao Backend:
@@ -159,32 +149,22 @@ npm run web
 
 ## Execucao dos Testes Automatizados
 
-O projeto conta com suítes de testes automatizados com protecao de integridade:
+O projeto conta com suites de testes automatizados com protecao de integridade:
 
 ### Testes do Backend (Jest / Supertest)
 ```powershell
 cd backend
-
-# Executa testes unitarios das regras de negocio em banco isolado (test.db)
-npm test
-
-# Executa testes de ponta a ponta (E2E)
-npm run test:e2e
-
-# Checagem de tipos estrita e linter
-npm run lint
+npm test          # Executa testes unitarios das regras de negocio em banco isolado (test.db)
+npm run test:e2e  # Executa testes de ponta a ponta (E2E)
+npm run lint      # Checagem de tipos estrita e linter
 npm run build
 ```
 
 ### Testes do Mobile (Jest / React Test Renderer)
 ```powershell
 cd mobile
-
-# Executa testes unitarios de componentes, telas e regras
-npm test
-
-# Verificacao estrita de tipos TypeScript
-npm run typecheck
+npm test          # Executa testes unitarios de componentes, telas e regras (5/5 suites aprovadas)
+npm run typecheck # Verificacao estrita de tipos TypeScript (tsc --noEmit)
 ```
 
 ---
@@ -205,14 +185,11 @@ Durante a fase de desenho do backend, foi considerada a utilizacao do **PocketBa
 - **Visoes Agrupadas:** O painel exige agregacao simultanea por cliente e por imovel, necessitando de views SQL manuais no PocketBase.
 - **Alinhamento Curricular:** Por se tratar de um projeto academico de Sistemas para Internet, o NestJS proporciona maior visibilidade sobre camadas de servico, tipagem estatica, injecao de dependencias e execucao formal de testes automatizados.
 
-Dessa forma, optou-se pelo NestJS com Prisma ORM e SQLite para garantir controle pleno sobre a logica de negocio, extensibilidade futura e conformidade com as boas praticas de engenharia de software.
-
 ---
 
 ## Referencias
 
 - Arquitetura e System Design do Modulo Mobile: [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md)
-
 - Diagnostico da Problematica e Plano de Intervencao: `docs/MODELO DIAGNOSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO.docx`
 - Especificacao Funcional do Backend: `docs/superpowers/specs/2026-10-17-domus-backend-nestjs-design.md`
 - Roteiro de Apresentacao Academica: `docs/guia-apresentacao-academica.md`
