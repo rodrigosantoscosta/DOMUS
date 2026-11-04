@@ -256,7 +256,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
               withSpring(
                 SHEET_HEIGHT,
                 {
-                  duration: reducedMotion ? 1 : 300,
+
                   dampingRatio: 1,
                   velocity: e.velocityY,
                   overshootClamping: true,
@@ -271,7 +271,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
           } else {
             translateY.set(
               withSpring(0, {
-                duration: reducedMotion ? 1 : 300,
+
                 dampingRatio: 0.8,
                 velocity: e.velocityY,
               })
@@ -1311,13 +1311,13 @@ const styles = StyleSheet.create({
   },
   sheetFeedbackSuccess: {
     backgroundColor: DOMUS_THEME.successSoft,
-    borderLeftWidth: 4,
-    borderLeftColor: DOMUS_THEME.success,
+    borderWidth: 1,
+    borderColor: DOMUS_THEME.successBorder,
   },
   sheetFeedbackError: {
     backgroundColor: DOMUS_THEME.dangerSoft,
-    borderLeftWidth: 4,
-    borderLeftColor: DOMUS_THEME.danger,
+    borderWidth: 1,
+    borderColor: DOMUS_THEME.dangerBorder,
   },
   sheetFeedbackText: {
     fontSize: 13,

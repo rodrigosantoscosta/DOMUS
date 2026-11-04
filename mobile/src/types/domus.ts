@@ -206,7 +206,11 @@ export interface ProgramarRetornoInput {
 }
 
 export interface ConcluirAgendamentoInput {
+  observacao?: string;
   observacaoConclusao?: string;
+  proximaAcao?: string;
+  dataRetorno?: string;
+  gerarAgendamentoRetorno?: boolean;
   programarRetornoAutomatico?: boolean;
   retorno?: ProgramarRetornoInput;
 }
