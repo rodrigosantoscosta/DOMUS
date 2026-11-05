@@ -193,6 +193,9 @@ Durante o desenvolvimento da arquitetura móvel, foram superados desafios técni
 | **Erro de compilação TS no `FlashListProps`** | A versão `@shopify/flash-list@^2.3.3` removeu temporariamente a declaração de tipo da propriedade `estimatedItemSize`. | Criação do arquivo de aumento de módulo [`mobile/src/types/flash-list.d.ts`](../mobile/src/types/flash-list.d.ts) estendendo `FlashListProps` para aceitar `estimatedItemSize?: number`. |
 | **Erro Metro: `Unable to resolve react-native-worklets`** | O `react-native-reanimated` v4 depende do pacote de baixo nível `react-native-worklets` para empacotamento web e mobile. | Instalação explícita de `react-native-worklets` no `package.json`, destravando o bundle web (`npx expo export -p web` com 1154 módulos compilados). |
 | **Badge não atualizava para "API Online"** | O aplicativo inicializava com um token mock (`domus-mock-token-...`). Ao conectar na API NestJS, o `JwtAuthGuard` rejeitava o token malformado com 401, acionando o fallback offline. | Implementação de auto-autenticação transparente em `domusApi.ts`: se o token for mock, ele faz login na rota `/api/auth/login` com as credenciais da Persona Junior (`junior.corretor` / `Domus@2026`), adquire o JWT real e atualiza a badge imediatamente. |
+| **Reentrância e disparos concorrentes em formulários móveis** | Toques rápidos (double-tap) na tela do celular disparavam múltiplos envios assíncronos antes que o estado React (`setSalvando(true)`) concluísse a re-renderização. | Implementação de guardas síncronas com referências mutáveis (`useRef`), bloqueando execuções concorrentes imediatamente no início do evento (`if (submetendoRef.current) return; submetendoRef.current = true;`) com liberação no bloco `finally`. |
+| **Colapso de Flexbox em telas estreitas no React Native Web** | No React Native Web, o elemento `<input>` HTML é estilizado por padrão com `min-width: auto`. Em layouts de duas colunas (50% de largura em telas compactas como simulador de iPhone), o campo de texto esticava e expulsava o ícone do `rightElement` da área visível. | Configuração explícita de `minWidth: 0` e `flexShrink: 1` no input de texto e `flexShrink: 0` no container do ícone, neutralizando o contorno nativo com `outlineStyle: 'none'`. |
+| **Seletores visuais e multiplataforma de data e hora** | A digitação manual de datas em dispositivos móveis aumentava a fricção do corretor e suscetibilidade a erros sintáticos. | Integração de `@react-native-community/datetimepicker` acoplado ao `DomusInput` via `rightElement` com ícones dedicados. No Android e iOS nativos, aciona os diálogos oficiais do sistema operacional; no ambiente web, dispara a API nativa HTML5 `.showPicker()`, mantendo fechamento mútuo e máscaras dinâmicas de digitação. |
 
 ---
 
@@ -421,3 +424,9 @@ Esta seção reúne as fontes primárias, especificações normativas e links of
 - **NestJS Authentication & Role-Based Access Control (RBAC):**
   - **Definição Técnica:** Arquitetura do NestJS baseada em interceptores (`CanActivate`) que combinam `JwtAuthGuard` (validação de integridade de token) e `RolesGuard` (inspeção de papéis autorizados via decoradores de metadados `@Roles()`).
   - **Links Oficiais:** [NestJS Authentication](https://docs.nestjs.com/security/authentication) | [NestJS Authorization](https://docs.nestjs.com/security/authorization)
+
+### 7. Componentes Nativos de Selecao de Tempo e Data
+
+- **React Native Community DateTimePicker:**
+  - **Definicao Tecnica:** Modulo nativo que conecta a aplicacao React Native aos dialogos oficiais do sistema operacional movel (`DatePickerDialog` e `TimePickerDialog` no Android via classes nativas do Android Framework, e `UIDatePicker` no UIKit do iOS). Garante conformidade com o formato regional, calendario local e acessibilidade nativa do sistema.
+  - **Link Oficial:** [React Native DateTimePicker Documentation](https://github.com/react-native-datetimepicker/datetimepicker)

@@ -87,8 +87,9 @@ O modulo movel (`mobile/`) foi concebido segundo padroes de engenharia de softwa
 | [**Expo Haptics**](https://docs.expo.dev/versions/latest/sdk/haptics/) (`expo-haptics`) | `^58.0.7` | Feedback tatil sensorial em botoes e acoes com camada de degradacao graciosa para web e testes. |
 | [**AsyncStorage**](https://docs.expo.dev/versions/latest/sdk/async-storage/) (`@react-native-async-storage/async-storage`) | `^2.2.0` | Persistencia local assincrona nao-volatil para cache de dados offline, token JWT e configuracoes de rede. |
 | [**Vector Icons**](https://icons.expo.fyi/) (`@expo/vector-icons`) | `^15.1.1` | Iconografia vetorial nitida (Ionicons, Feather) em todas as densidades de tela (`@2x`, `@3x`, Retina). |
+| [**DateTimePicker**](https://github.com/react-native-datetimepicker/datetimepicker) (`@react-native-community/datetimepicker`) | `^9.2.1` | Seletores nativos de data e hora para Android/iOS com fallback web transparente via API `showPicker()`. |
 | [**Suporte Web**](https://necolas.github.io/react-native-web/) (`react-native-web` / `@expo/metro-runtime`) | `^0.21.4` | Mapeamento de primitivas nativas para elementos DOM semanticos, permitindo execucao no navegador (`port 8081`). |
-| <a href="https://jestjs.io/"><img src="https://cdn.simpleicons.org/jest/C21325" width="14" height="14" alt="" /> **Testes Unitarios**</a> (`jest`, `ts-jest`, `react-test-renderer`) | `~30.5.2` | Execucao automatizada de 5 suites de testes com dubles nativos em `__mocks__/` e cobertura de regras de negocio. |
+| <a href="https://jestjs.io/"><img src="https://cdn.simpleicons.org/jest/C21325" width="14" height="14" alt="" /> **Testes Unitarios**</a> (`jest`, `ts-jest`, `react-test-renderer`) | `~30.5.2` | Execucao automatizada de 8 suites de testes com dubles nativos em `__mocks__/` e 68 testes aprovados (80 testes integrados com a API). |
 
 ### Stack Tecnologica do Modulo Backend (API)
 
@@ -257,7 +258,7 @@ npm run build
 ### Testes do Mobile ([Jest](https://jestjs.io/) / [React Test Renderer](https://react.dev/))
 ```powershell
 cd mobile
-npm test          # Executa testes unitarios de componentes, telas e regras (6/6 suites, 55 testes aprovados)
+npm test          # Executa testes unitarios de componentes, telas e regras (8/8 suites, 68 testes aprovados)
 npm run typecheck # Verificacao estrita de tipos TypeScript (tsc --noEmit)
 ```
 
