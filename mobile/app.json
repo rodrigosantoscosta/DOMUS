@@ -5,11 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#FFE099"
-    },
     "ios": {
       "supportsTablet": true
     },
@@ -19,7 +14,15 @@
       }
     },
     "plugins": [
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFE099",
+          "resizeMode": "contain"
+        }
+      ]
     ]
   }
 }
