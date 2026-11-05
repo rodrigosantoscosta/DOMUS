@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Clean Install, Typecheck, Lint, Build & Tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Clean install dependencies (triggers postinstall prisma generate)
+        run: npm ci
+
+      - name: Typecheck (full tsconfig.json)
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build NestJS
+        run: npm run build
+
+      - name: Apply Prisma migrations on isolated test database
+        env:
+          DATABASE_URL: "file:./test.db"
+        run: npm run prisma:migrate:deploy
+
+      - name: Run unit tests
+        env:
+          DATABASE_URL: "file:./test.db"
+          JWT_SECRET: "domus-ci-jwt-secret"
+          DISABLE_AUTH: "false"
+        run: npm test
+
+      - name: Run E2E tests
+        env:
+          DATABASE_URL: "file:./test.db"
+          JWT_SECRET: "domus-ci-jwt-secret"
+          DISABLE_AUTH: "false"
+        run: npm run test:e2e
+
+  mobile:
+    name: Mobile (Clean Install, Typecheck & Tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Clean install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm test -- --ci --runInBand
