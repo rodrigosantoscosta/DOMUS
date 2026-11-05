@@ -212,25 +212,54 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     });
   }, [buscaImovel, imoveisDisponiveis, idsImoveisInteresseCliente]);
 
-  const handleSelecionarTipo = useCallback((novoTipo: TipoAgendamento) => {
-    triggerSelectionHaptic();
-    setTipo(novoTipo);
-    setErroLocal(null);
-  }, []);
+  const gerarTituloPorTipo = useCallback(
+    (novoTipo: TipoAgendamento): string => {
+      const nomeCliente = clienteSelecionado?.nomeCompleto?.trim();
+
+      switch (novoTipo) {
+        case 'VISITA': {
+          if (imovelSelecionado) {
+            const parteBairro = imovelSelecionado.bairro ? ` - ${imovelSelecionado.bairro}` : '';
+            return `Visita ao imóvel (${imovelSelecionado.tipoImovel}${parteBairro})`;
+          }
+          return 'Visita ao imóvel';
+        }
+        case 'RETORNO':
+          return nomeCliente ? `Retorno com ${nomeCliente}` : 'Retorno de atendimento';
+        case 'ATENDIMENTO':
+        default:
+          return nomeCliente ? `Atendimento com ${nomeCliente}` : 'Atendimento';
+      }
+    },
+    [clienteSelecionado, imovelSelecionado]
+  );
+
+  const handleSelecionarTipo = useCallback(
+    (novoTipo: TipoAgendamento) => {
+      triggerSelectionHaptic();
+      setTipo(novoTipo);
+      setErroLocal(null);
+
+      // Sugere titulo inteligente com base no tipo de compromisso escolhido
+      setTitulo((prev) => {
+        const prevLimpo = prev.trim();
+        const tituloAutomatico = ['Visita', 'Retorno', 'Atendimento'].some((prefixo) =>
+          prevLimpo.startsWith(prefixo)
+        );
+        if (!prevLimpo || tituloAutomatico) {
+          return gerarTituloPorTipo(novoTipo);
+        }
+        return prev;
+      });
+    },
+    [gerarTituloPorTipo]
+  );
 
   const handleSelecionarCliente = useCallback((c: Cliente) => {
     triggerSelectionHaptic();
     setClienteId(c.id);
     setMostrarListaClientes(false);
     setErroLocal(null);
-
-    // Sugere titulo inteligente caso ainda esteja em branco
-    setTitulo((prev) => {
-      if (!prev.trim()) {
-        return `Atendimento com ${c.nomeCompleto}`;
-      }
-      return prev;
-    });
   }, []);
 
   const handleTrocarCliente = useCallback(() => {
@@ -243,15 +272,6 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     setImovelId(imv.id);
     setMostrarListaImoveis(false);
     setErroLocal(null);
-
-    // Se o tipo for visita e o titulo tiver sugestao padrao, aprimora
-    setTitulo((prev) => {
-      if (!prev.trim() || prev.startsWith('Atendimento') || prev.startsWith('Visita')) {
-        const parteBairro = imv.bairro ? ` - ${imv.bairro}` : '';
-        return `Visita ao imóvel (${imv.tipoImovel}${parteBairro})`;
-      }
-      return prev;
-    });
   }, []);
 
   const handleTrocarImovel = useCallback(() => {
