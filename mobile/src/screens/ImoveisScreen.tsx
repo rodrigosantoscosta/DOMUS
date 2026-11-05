@@ -380,6 +380,7 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
   const [salvando, setSalvando] = useState<boolean>(false);
   const [sucessoBotao, setSucessoBotao] = useState<boolean>(false);
   const timerSucessoRef = useRef<NodeJS.Timeout | null>(null);
+  const submetendoRef = useRef<boolean>(false);
 
   useEffect(() => {
     return () => {
@@ -395,6 +396,7 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
   }, []);
 
   const handleCadastrarImovel = async () => {
+    if (submetendoRef.current || salvando) return;
     setErroLocal(null);
     setSucessoLocal(null);
 
@@ -407,6 +409,7 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
     }
 
     try {
+      submetendoRef.current = true;
       setSalvando(true);
       const novoImovel = await domus.criarImovel({
         numeroInscricao: numeroInscricao.trim() || undefined,
@@ -463,6 +466,7 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
       setErroLocal(erroMsg);
       domus.mostrarToast?.(`[ERRO] ${erroMsg}`, 'erro');
     } finally {
+      submetendoRef.current = false;
       setSalvando(false);
     }
   };

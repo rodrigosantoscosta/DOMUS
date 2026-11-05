@@ -30,6 +30,7 @@ import {
   DOMUS_RADIUS,
 } from '../theme/tokens';
 import { Agendamento } from '../types/domus';
+import { formatarDataBr, formatarHora, validarDataBr, validarHora } from '../utils/formatters';
 import { projectVelocity, rubberband } from '../utils/motion';
 import {
   triggerLightImpact,
@@ -219,6 +220,17 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
   const [proximaAcaoRetorno, setProximaAcaoRetorno] = useState<string>('');
   const [obsConclusao, setObsConclusao] = useState<string>('');
   const [executandoAcao, setExecutandoAcao] = useState<boolean>(false);
+  const submetendoRef = useRef<boolean>(false);
+  const timerFecharSheetRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerFecharSheetRef.current) {
+        clearTimeout(timerFecharSheetRef.current);
+        timerFecharSheetRef.current = null;
+      }
+    };
+  }, []);
   const [feedbackSheet, setFeedbackSheet] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
 
   // Bottom Sheet Gestures & Animation

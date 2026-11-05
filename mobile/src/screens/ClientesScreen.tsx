@@ -288,6 +288,7 @@ export const ClientesScreen: React.FC<ClientesScreenProps> = ({
   const [salvando, setSalvando] = useState<boolean>(false);
   const [sucessoBotao, setSucessoBotao] = useState<boolean>(false);
   const timerSucessoRef = useRef<NodeJS.Timeout | null>(null);
+  const submetendoRef = useRef<boolean>(false);
 
   useEffect(() => {
     return () => {
@@ -307,6 +308,7 @@ export const ClientesScreen: React.FC<ClientesScreenProps> = ({
   }, []);
 
   const handleCadastrarCliente = async () => {
+    if (submetendoRef.current || salvando) return;
     setErroLocal(null);
     setSucessoLocal(null);
 
@@ -331,6 +333,7 @@ export const ClientesScreen: React.FC<ClientesScreenProps> = ({
     }
 
     try {
+      submetendoRef.current = true;
       setSalvando(true);
       const novoCliente = await domus.criarCliente({
         nomeCompleto: nomeLimpo,
@@ -374,6 +377,7 @@ export const ClientesScreen: React.FC<ClientesScreenProps> = ({
       setErroLocal(erroMsg);
       domus.mostrarToast?.(`[ERRO] ${erroMsg}`, 'erro');
     } finally {
+      submetendoRef.current = false;
       setSalvando(false);
     }
   };

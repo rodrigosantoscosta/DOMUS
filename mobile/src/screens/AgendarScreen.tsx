@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ import {
   Imovel,
   TipoAgendamento,
 } from '../types/domus';
-import { formatarMoedaBrl, formatarTelefone } from '../utils/formatters';
+import { formatarMoedaBrl, formatarTelefone, formatarDataBr, formatarHora, validarDataBr, validarHora } from '../utils/formatters';
 import {
   triggerSelectionHaptic,
   triggerSuccessHaptic,
@@ -128,6 +128,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
   const [buscaImovel, setBuscaImovel] = useState<string>('');
   const [mostrarListaClientes, setMostrarListaClientes] = useState<boolean>(!clientePreSelecionadoId);
   const [mostrarListaImoveis, setMostrarListaImoveis] = useState<boolean>(!imovelPreSelecionadoId);
+  const submetendoRef = useRef<boolean>(false);
 
   // Estados de feedback e submissao
   const [salvando, setSalvando] = useState<boolean>(false);
@@ -279,13 +280,33 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     setMostrarListaImoveis(true);
   }, []);
 
+  const handleDataChange = useCallback((texto: string) => {
+    setData(formatarDataBr(texto));
+  }, []);
+
+  const handleHoraChange = useCallback((texto: string) => {
+    setHora(formatarHora(texto));
+  }, []);
+
+  // Exibe toast no Provider global (App.tsx) se disponivel, evitando renderizacao duplicada de toasts
+  const exibirToast = useCallback(
+    (msg: string, tipo: 'sucesso' | 'erro' | 'info' = 'info') => {
+      if (domus?.mostrarToast) {
+        domus.mostrarToast(msg, tipo);
+      } else {
+        setToastLocal({ visivel: true, mensagem: msg, tipo });
+      }
+    },
+    [domus]
+  );
+
   const handleToggleGoogleCalendar = useCallback(() => {
     triggerSelectionHaptic();
     setSincronizarGoogleCalendar((prev) => !prev);
   }, []);
 
   const handleSubmeterAgendamento = useCallback(async () => {
-    if (salvando) return;
+    if (submetendoRef.current || salvando) return;
     setErroLocal(null);
     setSucessoLocal(null);
 
@@ -295,8 +316,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     if (!tituloLimpo) {
       const msg = 'O título do agendamento é obrigatório';
       setErroLocal(msg);
-      domus?.mostrarToast?.(msg, 'erro');
-      setToastLocal({ visivel: true, mensagem: msg, tipo: 'erro' });
+      exibirToast(msg, 'erro');
       triggerErrorHaptic();
       return;
     }
@@ -305,8 +325,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     if (!clienteId) {
       const msg = 'Cliente é obrigatório para criar o agendamento (RN10)';
       setErroLocal(msg);
-      domus?.mostrarToast?.(msg, 'erro');
-      setToastLocal({ visivel: true, mensagem: msg, tipo: 'erro' });
+      exibirToast(msg, 'erro');
       triggerErrorHaptic();
       return;
     }
@@ -316,8 +335,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
       const msg =
         'Para agendar uma visita (tipo VISITA), é obrigatório selecionar um imóvel cadastrado (RN08)';
       setErroLocal(msg);
-      domus?.mostrarToast?.(msg, 'erro');
-      setToastLocal({ visivel: true, mensagem: msg, tipo: 'erro' });
+      exibirToast(msg, 'erro');
       triggerErrorHaptic();
       return;
     }
@@ -327,8 +345,25 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
       const msg =
         'Para agendar uma visita (tipo VISITA), é obrigatório informar a data e hora do compromisso (RN08)';
       setErroLocal(msg);
-      domus?.mostrarToast?.(msg, 'erro');
-      setToastLocal({ visivel: true, mensagem: msg, tipo: 'erro' });
+      exibirToast(msg, 'erro');
+      triggerErrorHaptic();
+      return;
+    }
+
+    // Pre-validacao de formato de data no cliente (DD/MM/AAAA)
+    if (data.trim() && !validarDataBr(data.trim())) {
+      const msg = 'Data informada inválida. Utilize o formato DD/MM/AAAA (ex: 25/10/2026)';
+      setErroLocal(msg);
+      exibirToast(msg, 'erro');
+      triggerErrorHaptic();
+      return;
+    }
+
+    // Pre-validacao de formato de hora no cliente (HH:MM)
+    if (hora.trim() && !validarHora(hora.trim())) {
+      const msg = 'Hora informada inválida. Utilize o formato HH:MM (ex: 14:30)';
+      setErroLocal(msg);
+      exibirToast(msg, 'erro');
       triggerErrorHaptic();
       return;
     }
@@ -352,13 +387,13 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     };
 
     try {
+      submetendoRef.current = true;
       setSalvando(true);
       const novo = await domus.criarAgendamento(inputAgendamento);
 
       const msgSucesso = 'Agendamento criado com sucesso!';
       setSucessoLocal(msgSucesso);
-      domus?.mostrarToast?.(msgSucesso, 'sucesso');
-      setToastLocal({ visivel: true, mensagem: msgSucesso, tipo: 'sucesso' });
+      exibirToast(msgSucesso, 'sucesso');
       triggerSuccessHaptic();
 
       // Limpeza do formulario
@@ -384,10 +419,10 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     } catch (err: any) {
       const msgFalha = err.message || 'Erro ao criar agendamento';
       setErroLocal(msgFalha);
-      domus?.mostrarToast?.(msgFalha, 'erro');
-      setToastLocal({ visivel: true, mensagem: msgFalha, tipo: 'erro' });
+      exibirToast(msgFalha, 'erro');
       triggerErrorHaptic();
     } finally {
+      submetendoRef.current = false;
       setSalvando(false);
     }
   }, [
@@ -407,6 +442,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     imovelPreSelecionadoId,
     onAgendamentoCriado,
     salvando,
+    exibirToast,
   ]);
 
   return (
@@ -750,7 +786,9 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
                 testID="input-agendamento-data"
                 placeholder="DD/MM/AAAA"
                 value={data}
-                onChangeText={setData}
+                onChangeText={handleDataChange}
+                keyboardType="numeric"
+                maxLength={10}
               />
             </View>
             <View style={styles.dataHoraCol}>
@@ -759,7 +797,9 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
                 testID="input-agendamento-hora"
                 placeholder="HH:MM"
                 value={hora}
-                onChangeText={setHora}
+                onChangeText={handleHoraChange}
+                keyboardType="numeric"
+                maxLength={5}
               />
             </View>
           </View>
@@ -871,14 +911,16 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
         </View>
       </ScrollView>
 
-      {/* Toast Flutuante embutido para feedback instantaneo nao-bloqueante */}
-      <DomusToast
-        visivel={toastLocal.visivel}
-        mensagem={toastLocal.mensagem}
-        tipo={toastLocal.tipo}
-        onDismiss={() => setToastLocal((prev) => ({ ...prev, visivel: false }))}
-        testID="agendar-toast"
-      />
+      {/* Toast Flutuante embutido (apenas fallback caso executado isoladamente sem Provider global) */}
+      {!domus?.mostrarToast ? (
+        <DomusToast
+          visivel={toastLocal.visivel}
+          mensagem={toastLocal.mensagem}
+          tipo={toastLocal.tipo}
+          onDismiss={() => setToastLocal((prev) => ({ ...prev, visivel: false }))}
+          testID="agendar-toast"
+        />
+      ) : null}
     </View>
   );
 };

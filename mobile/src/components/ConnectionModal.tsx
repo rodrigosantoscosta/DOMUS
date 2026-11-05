@@ -57,6 +57,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
   const translateY = useSharedValue(0);
   const dragContext = useSharedValue(0);
   const timerFecharRef = useRef<NodeJS.Timeout | null>(null);
+  const submetendoRef = useRef<boolean>(false);
 
   useEffect(() => {
     return () => {
@@ -144,6 +145,8 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
   });
 
   const handleTestar = async () => {
+    if (submetendoRef.current || testando || salvando) return;
+    submetendoRef.current = true;
     setTestando(true);
     setMensagemFeedback(null);
     try {
@@ -169,10 +172,13 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
       });
     } finally {
       setTestando(false);
+      submetendoRef.current = false;
     }
   };
 
   const handleSalvarEConectar = async () => {
+    if (submetendoRef.current || testando || salvando) return;
+    submetendoRef.current = true;
     setSalvando(true);
     setMensagemFeedback(null);
     try {
@@ -213,10 +219,13 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
       });
     } finally {
       setSalvando(false);
+      submetendoRef.current = false;
     }
   };
 
   const handleAtivarOffline = async () => {
+    if (submetendoRef.current || testando || salvando) return;
+    submetendoRef.current = true;
     setSalvando(true);
     setMensagemFeedback(null);
     try {
@@ -247,6 +256,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
       });
     } finally {
       setSalvando(false);
+      submetendoRef.current = false;
     }
   };
 
