@@ -99,8 +99,11 @@ export class AvisosService {
       select: { agendamentoId: true, tipoAviso: true },
     });
 
-    const dispensadosSet = new Set(
-      avisosDispensados.map((a) => `${a.agendamentoId}:${a.tipoAviso}`),
+    const dispensadosSet = new Set<string>(
+      avisosDispensados.map(
+        (a: { agendamentoId: number; tipoAviso: string }) =>
+          `${a.agendamentoId}:${a.tipoAviso}`,
+      ),
     );
 
     const { proximos, atrasados, semData } =
