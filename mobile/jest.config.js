@@ -20,6 +20,7 @@ module.exports = {
     '^react-native-reanimated$': '<rootDir>/src/__mocks__/react-native-reanimated.ts',
     '^react-native-gesture-handler$': '<rootDir>/src/__mocks__/react-native-gesture-handler.ts',
     '^@shopify/flash-list$': '<rootDir>/src/__mocks__/flash-list.ts',
+    '^@react-native-community/datetimepicker$': '<rootDir>/src/__mocks__/datetimepicker.ts',
   },
   transform: {
     '^.+\\.tsx?$': [

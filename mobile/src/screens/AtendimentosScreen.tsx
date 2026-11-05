@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Pressable,
   Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -20,6 +21,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { DomusInput } from '../components/DomusInput';
 import { DomusButton } from '../components/DomusButton';
 import { AvisoBanner } from '../components/AvisoBanner';
@@ -30,7 +32,7 @@ import {
   DOMUS_RADIUS,
 } from '../theme/tokens';
 import { Agendamento } from '../types/domus';
-import { formatarDataBr, formatarHora, validarDataBr, validarHora } from '../utils/formatters';
+import { formatarDataBr, formatarHora, validarDataBr, validarHora, dataParaStringBr, horaParaString, stringBrParaData } from '../utils/formatters';
 import { projectVelocity, rubberband } from '../utils/motion';
 import {
   triggerLightImpact,
@@ -217,6 +219,9 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
   const [modoAcaoSheet, setModoAcaoSheet] = useState<'visualizar' | 'retorno' | 'concluir'>('visualizar');
   const [dataRetorno, setDataRetorno] = useState<string>('');
   const [horaRetorno, setHoraRetorno] = useState<string>('09:00');
+  const [mostrarDatePickerRetorno, setMostrarDatePickerRetorno] = useState<boolean>(false);
+  const [mostrarTimePickerRetorno, setMostrarTimePickerRetorno] = useState<boolean>(false);
+
   const [proximaAcaoRetorno, setProximaAcaoRetorno] = useState<string>('');
   const [obsConclusao, setObsConclusao] = useState<string>('');
   const [executandoAcao, setExecutandoAcao] = useState<boolean>(false);
@@ -232,6 +237,107 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
     };
   }, []);
   const [feedbackSheet, setFeedbackSheet] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
+
+  const handleDataRetornoChange = useCallback((texto: string) => {
+    if (/^\d{4}/.test(texto)) {
+      setDataRetorno(texto);
+    } else {
+      setDataRetorno(formatarDataBr(texto));
+    }
+  }, []);
+
+  const handleHoraRetornoChange = useCallback((texto: string) => {
+    setHoraRetorno(formatarHora(texto));
+  }, []);
+
+  const handleAbrirDatePickerRetorno = useCallback(() => {
+    triggerLightImpact();
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const input = document.createElement('input');
+      input.type = 'date';
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      input.style.pointerEvents = 'none';
+      document.body.appendChild(input);
+      input.addEventListener('change', (e: any) => {
+        const val = e.target.value;
+        if (val) {
+          const [ano, mes, dia] = val.split('-');
+          setDataRetorno(`${dia}/${mes}/${ano}`);
+        }
+        if (input.parentNode) {
+          input.parentNode.removeChild(input);
+        }
+      });
+      if (typeof (input as any).showPicker === 'function') {
+        (input as any).showPicker();
+      } else {
+        input.click();
+      }
+      return;
+    }
+    setMostrarTimePickerRetorno(false);
+    setMostrarDatePickerRetorno(true);
+  }, []);
+
+  const handleAbrirTimePickerRetorno = useCallback(() => {
+    triggerLightImpact();
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const input = document.createElement('input');
+      input.type = 'time';
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      input.style.pointerEvents = 'none';
+      document.body.appendChild(input);
+      input.addEventListener('change', (e: any) => {
+        const val = e.target.value;
+        if (val) {
+          setHoraRetorno(val.slice(0, 5));
+        }
+        if (input.parentNode) {
+          input.parentNode.removeChild(input);
+        }
+      });
+      if (typeof (input as any).showPicker === 'function') {
+        (input as any).showPicker();
+      } else {
+        input.click();
+      }
+      return;
+    }
+    setMostrarDatePickerRetorno(false);
+    setMostrarTimePickerRetorno(true);
+  }, []);
+
+  const handleDatePickerRetornoChange = useCallback(
+    (event: any, selectedDate?: Date) => {
+      if (Platform.OS === 'android') {
+        setMostrarDatePickerRetorno(false);
+      }
+      if (event?.type === 'set' && selectedDate) {
+        triggerSelectionHaptic();
+        setDataRetorno(dataParaStringBr(selectedDate));
+      } else if (event?.type === 'dismissed') {
+        setMostrarDatePickerRetorno(false);
+      }
+    },
+    []
+  );
+
+  const handleTimePickerRetornoChange = useCallback(
+    (event: any, selectedTime?: Date) => {
+      if (Platform.OS === 'android') {
+        setMostrarTimePickerRetorno(false);
+      }
+      if (event?.type === 'set' && selectedTime) {
+        triggerSelectionHaptic();
+        setHoraRetorno(horaParaString(selectedTime));
+      } else if (event?.type === 'dismissed') {
+        setMostrarTimePickerRetorno(false);
+      }
+    },
+    []
+  );
 
   // Bottom Sheet Gestures & Animation
   const SHEET_HEIGHT = 620;
@@ -373,7 +479,15 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
       setExecutandoAcao(true);
       await domus.programarRetorno(atendimentoSelecionado.id, {
         titulo: `Retorno com ${atendimentoSelecionado.cliente?.nomeCompleto || 'Cliente'}`,
-        data: dataRetorno.trim() || undefined,
+        data: (() => {
+          const val = dataRetorno.trim();
+          if (!val) return undefined;
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
+            const [d, m, y] = val.split('/');
+            return `${y}-${m}-${d}`;
+          }
+          return val;
+        })(),
         hora: horaRetorno.trim() || undefined,
         proximaAcao: proximaAcaoRetorno.trim() || undefined,
       });
@@ -828,17 +942,51 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                   <Text style={styles.actionPanelTitle}>Programar Retorno</Text>
                   <DomusInput
                     label="Data de Retorno"
-                    placeholder="YYYY-MM-DD"
+                    placeholder="DD/MM/AAAA"
                     value={dataRetorno}
-                    onChangeText={setDataRetorno}
+                    onChangeText={handleDataRetornoChange}
+                    keyboardType="numeric"
+                    maxLength={10}
                     testID="input-retorno-data"
+                    rightElement={
+                      <Pressable
+                        onPress={handleAbrirDatePickerRetorno}
+                        testID="btn-abrir-datepicker-retorno"
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={({ pressed }) => [
+                          styles.botaoIconeInput,
+                          pressed && styles.pressedScale,
+                        ]}
+                        accessibilityLabel="Selecionar data do retorno no calendário"
+                        accessibilityRole="button"
+                      >
+                        <Ionicons name="calendar-outline" size={20} color={DOMUS_THEME.primary} />
+                      </Pressable>
+                    }
                   />
                   <DomusInput
                     label="Hora de Retorno"
-                    placeholder="HH:mm (ex: 09:00)"
+                    placeholder="HH:MM"
                     value={horaRetorno}
-                    onChangeText={setHoraRetorno}
+                    onChangeText={handleHoraRetornoChange}
+                    keyboardType="numeric"
+                    maxLength={5}
                     testID="input-retorno-hora"
+                    rightElement={
+                      <Pressable
+                        onPress={handleAbrirTimePickerRetorno}
+                        testID="btn-abrir-timepicker-retorno"
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={({ pressed }) => [
+                          styles.botaoIconeInput,
+                          pressed && styles.pressedScale,
+                        ]}
+                        accessibilityLabel="Selecionar horário do retorno no relógio"
+                        accessibilityRole="button"
+                      >
+                        <Ionicons name="time-outline" size={20} color={DOMUS_THEME.primary} />
+                      </Pressable>
+                    }
                   />
                   <DomusInput
                     label="Próxima Ação"
@@ -847,6 +995,27 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                     onChangeText={setProximaAcaoRetorno}
                     testID="input-retorno-proxima-acao"
                   />
+
+                  
+                  {Platform.OS !== 'web' && mostrarDatePickerRetorno && (
+                    <DateTimePicker
+                      testID="retorno-date-picker"
+                      value={stringBrParaData(dataRetorno, horaRetorno)}
+                      mode="date"
+                      display="default"
+                      onChange={handleDatePickerRetornoChange}
+                    />
+                  )}
+                  {Platform.OS !== 'web' && mostrarTimePickerRetorno && (
+                    <DateTimePicker
+                      testID="retorno-time-picker"
+                      value={stringBrParaData(dataRetorno, horaRetorno)}
+                      mode="time"
+                      is24Hour={true}
+                      display="default"
+                      onChange={handleTimePickerRetornoChange}
+                    />
+                  )}
 
                   <View style={styles.sheetBtnRow}>
                     <DomusButton
@@ -1419,6 +1588,14 @@ const styles = StyleSheet.create({
   filterPillPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.98 }],
+  },
+  botaoIconeInput: {
+    padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pressedScale: {
+    transform: [{ scale: 0.96 }],
   },
   sheetCloseBtnPressed: {
     opacity: 0.6,

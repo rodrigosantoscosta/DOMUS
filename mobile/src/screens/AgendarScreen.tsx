@@ -7,8 +7,10 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { DomusInput } from '../components/DomusInput';
 import { DomusToast } from '../components/DomusToast';
 import DomusContext, { DomusContextData } from '../context/DomusContext';
@@ -24,7 +26,7 @@ import {
   Imovel,
   TipoAgendamento,
 } from '../types/domus';
-import { formatarMoedaBrl, formatarTelefone, formatarDataBr, formatarHora, validarDataBr, validarHora } from '../utils/formatters';
+import { formatarMoedaBrl, formatarTelefone, formatarDataBr, formatarHora, validarDataBr, validarHora, dataParaStringBr, horaParaString, stringBrParaData } from '../utils/formatters';
 import {
   triggerSelectionHaptic,
   triggerSuccessHaptic,
@@ -128,6 +130,9 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
   const [buscaImovel, setBuscaImovel] = useState<string>('');
   const [mostrarListaClientes, setMostrarListaClientes] = useState<boolean>(!clientePreSelecionadoId);
   const [mostrarListaImoveis, setMostrarListaImoveis] = useState<boolean>(!imovelPreSelecionadoId);
+  const [mostrarDatePicker, setMostrarDatePicker] = useState<boolean>(false);
+  const [mostrarTimePicker, setMostrarTimePicker] = useState<boolean>(false);
+
   const submetendoRef = useRef<boolean>(false);
 
   // Estados de feedback e submissao
@@ -287,6 +292,100 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
   const handleHoraChange = useCallback((texto: string) => {
     setHora(formatarHora(texto));
   }, []);
+
+  const handleAbrirDatePicker = useCallback(() => {
+    triggerLightImpact();
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const input = document.createElement('input');
+      input.type = 'date';
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      input.style.pointerEvents = 'none';
+      document.body.appendChild(input);
+      input.addEventListener('change', (e: any) => {
+        const val = e.target.value;
+        if (val) {
+          const [ano, mes, dia] = val.split('-');
+          setData(`${dia}/${mes}/${ano}`);
+          if (erroLocal) setErroLocal(null);
+        }
+        if (input.parentNode) {
+          input.parentNode.removeChild(input);
+        }
+      });
+      if (typeof (input as any).showPicker === 'function') {
+        (input as any).showPicker();
+      } else {
+        input.click();
+      }
+      return;
+    }
+    setMostrarTimePicker(false);
+    setMostrarDatePicker(true);
+  }, [erroLocal]);
+
+  const handleAbrirTimePicker = useCallback(() => {
+    triggerLightImpact();
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const input = document.createElement('input');
+      input.type = 'time';
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      input.style.pointerEvents = 'none';
+      document.body.appendChild(input);
+      input.addEventListener('change', (e: any) => {
+        const val = e.target.value;
+        if (val) {
+          setHora(val.slice(0, 5));
+          if (erroLocal) setErroLocal(null);
+        }
+        if (input.parentNode) {
+          input.parentNode.removeChild(input);
+        }
+      });
+      if (typeof (input as any).showPicker === 'function') {
+        (input as any).showPicker();
+      } else {
+        input.click();
+      }
+      return;
+    }
+    setMostrarDatePicker(false);
+    setMostrarTimePicker(true);
+  }, [erroLocal]);
+
+  const handleDatePickerChange = useCallback(
+    (event: any, selectedDate?: Date) => {
+      if (Platform.OS === 'android') {
+        setMostrarDatePicker(false);
+      }
+      if (event?.type === 'set' && selectedDate) {
+        triggerSelectionHaptic();
+        setData(dataParaStringBr(selectedDate));
+        if (erroLocal) setErroLocal(null);
+      } else if (event?.type === 'dismissed') {
+        setMostrarDatePicker(false);
+      }
+    },
+    [erroLocal]
+  );
+
+  const handleTimePickerChange = useCallback(
+    (event: any, selectedTime?: Date) => {
+      if (Platform.OS === 'android') {
+        setMostrarTimePicker(false);
+      }
+      if (event?.type === 'set' && selectedTime) {
+        triggerSelectionHaptic();
+        setHora(horaParaString(selectedTime));
+        if (erroLocal) setErroLocal(null);
+      } else if (event?.type === 'dismissed') {
+        setMostrarTimePicker(false);
+      }
+    },
+    [erroLocal]
+  );
+
 
   // Exibe toast no Provider global (App.tsx) se disponivel, evitando renderizacao duplicada de toasts
   const exibirToast = useCallback(
@@ -789,6 +888,21 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
                 onChangeText={handleDataChange}
                 keyboardType="numeric"
                 maxLength={10}
+                rightElement={
+                  <Pressable
+                    onPress={handleAbrirDatePicker}
+                    testID="btn-abrir-datepicker"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={({ pressed }) => [
+                      styles.botaoIconeInput,
+                      pressed && styles.pressedScale,
+                    ]}
+                    accessibilityLabel="Selecionar data no calendário"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="calendar-outline" size={20} color={DOMUS_THEME.primary} />
+                  </Pressable>
+                }
               />
             </View>
             <View style={styles.dataHoraCol}>
@@ -800,6 +914,21 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
                 onChangeText={handleHoraChange}
                 keyboardType="numeric"
                 maxLength={5}
+                rightElement={
+                  <Pressable
+                    onPress={handleAbrirTimePicker}
+                    testID="btn-abrir-timepicker"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={({ pressed }) => [
+                      styles.botaoIconeInput,
+                      pressed && styles.pressedScale,
+                    ]}
+                    accessibilityLabel="Selecionar horário no relógio"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="time-outline" size={20} color={DOMUS_THEME.primary} />
+                  </Pressable>
+                }
               />
             </View>
           </View>
@@ -910,6 +1039,26 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
           </Pressable>
         </View>
       </ScrollView>
+      {Platform.OS !== 'web' && mostrarDatePicker && (
+        <DateTimePicker
+          testID="agendar-date-picker"
+          value={stringBrParaData(data, hora)}
+          mode="date"
+          display="default"
+          onChange={handleDatePickerChange}
+        />
+      )}
+      {Platform.OS !== 'web' && mostrarTimePicker && (
+        <DateTimePicker
+          testID="agendar-time-picker"
+          value={stringBrParaData(data, hora)}
+          mode="time"
+          is24Hour={true}
+          display="default"
+          onChange={handleTimePickerChange}
+        />
+      )}
+
 
       {/* Toast Flutuante embutido (apenas fallback caso executado isoladamente sem Provider global) */}
       {!domus?.mostrarToast ? (
@@ -1046,6 +1195,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: DOMUS_THEME.textMuted,
     marginTop: DOMUS_SPACING.xs,
+  },
+  botaoIconeInput: {
+    padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   pressedScale: {
     transform: [{ scale: 0.96 }],

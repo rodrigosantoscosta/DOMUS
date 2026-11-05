@@ -77,3 +77,42 @@ export function validarHora(hora?: string | null): boolean {
   const m = parseInt(match[2], 10);
   return h >= 0 && h <= 23 && m >= 0 && m <= 59;
 }
+
+export function dataParaStringBr(d: Date): string {
+  const dia = String(d.getDate()).padStart(2, '0');
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const ano = d.getFullYear();
+  return `${dia}/${mes}/${ano}`;
+}
+
+export function horaParaString(d: Date): string {
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+export function stringBrParaData(dataBr?: string | null, horaBr?: string | null): Date {
+  const agora = new Date();
+  if (!dataBr || !validarDataBr(dataBr)) {
+    return agora;
+  }
+  const matchData = dataBr.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!matchData) return agora;
+  const dia = parseInt(matchData[1], 10);
+  const mes = parseInt(matchData[2], 10) - 1;
+  const ano = parseInt(matchData[3], 10);
+
+  let hora = agora.getHours();
+  let minuto = agora.getMinutes();
+
+  if (horaBr && validarHora(horaBr)) {
+    const matchHora = horaBr.trim().match(/^(\d{2}):(\d{2})$/);
+    if (matchHora) {
+      hora = parseInt(matchHora[1], 10);
+      minuto = parseInt(matchHora[2], 10);
+    }
+  }
+
+  const d = new Date(ano, mes, dia, hora, minuto, 0, 0);
+  return isNaN(d.getTime()) ? agora : d;
+}
