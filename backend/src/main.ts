@@ -38,8 +38,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   configurarApp(app);
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-  await app.listen(port);
-  console.log(`DOMUS Backend rodando em: http://localhost:${port}/api`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`DOMUS Backend rodando em: http://localhost:${port}/api (escutando em todas as interfaces de rede 0.0.0.0)`);
   console.log(`Swagger Docs disponível em: http://localhost:${port}/api/docs`);
   try {
     const prisma = app.get(PrismaService);

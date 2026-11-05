@@ -8,7 +8,10 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:apk": "npx --yes eas-cli build -p android --profile preview",
+    "build:apk:local": "npx --yes eas-cli build -p android --profile preview --local",
+    "export:web": "expo export --platform web --output-dir dist-web"
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.17",

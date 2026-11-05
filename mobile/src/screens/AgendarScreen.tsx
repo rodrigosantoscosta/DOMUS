@@ -285,6 +285,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
   }, []);
 
   const handleSubmeterAgendamento = useCallback(async () => {
+    if (salvando) return;
     setErroLocal(null);
     setSucessoLocal(null);
 
@@ -405,6 +406,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     clientePreSelecionadoId,
     imovelPreSelecionadoId,
     onAgendamentoCriado,
+    salvando,
   ]);
 
   return (

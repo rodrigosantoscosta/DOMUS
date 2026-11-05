@@ -153,8 +153,10 @@ Este comando utiliza [`concurrently`](https://github.com/open-cli-tools/concurre
 | Comando na Raiz | Finalidade |
 | :--- | :--- |
 | `npm run dev` | Inicia o Backend [NestJS](https://nestjs.com/) e o [Expo Web](https://expo.dev/) simultaneamente |
+| `npm run dev:lan` | Inicia o Backend detectando o IP da maquina e escutando na rede local (LAN / Wi-Fi) para conexao do celular |
 | `npm run dev:backend` | Inicia apenas o Backend [NestJS](https://nestjs.com/) em modo watch |
-| `npm run dev:mobile` | Inicia apenas o [Expo Web](https://expo.dev/) |
+| `npm run dev:mobile` | Inicia apenas o aplicativo [Expo](https://expo.dev/) no terminal |
+| `npm run build:apk` | Compila o instalador `.apk` Android via nuvem do Expo EAS Build |
 | `npm test` | Executa todas as suites de testes automatizados do workspace |
 
 ---
@@ -193,13 +195,49 @@ npm start
 - **No Celular Fisico (Expo Go):** Escaneie o QR Code exibido no terminal com o app [**Expo Go**](https://expo.dev/go) (Android) ou a Camera (iOS).
 - **No Navegador Web:** Pressione `w` no terminal do [Expo](https://expo.dev/) ou acesse `http://localhost:8081`.
 
-#### Conectando o Celular ao Backend:
-- O app possui **deteccao automatica do IP da maquina** na rede local via [expo-constants](https://docs.expo.dev/versions/latest/sdk/constants/).
-- **Badge Interativa no Cabecalho:** Toque na badge de status no topo da tela ("Modo Demo Local" ou "API Online") para abrir o **Modal de Conexao**. Nele voce pode:
-  - Verificar a URL ativa da API;
-  - Digitar um novo IP (caso use Wi-Fi ou roteador de dados moveis);
-  - Testar o ping da API em tempo real;
-  - Alternar entre comunicacao online com o banco e o modo demo offline.
+---
+
+### 3. Conexao do Celular com o Backend na Rede Local (LAN / Wi-Fi)
+
+> [!NOTE]
+> **TL;DR:** Conecte o computador e o smartphone no mesmo Wi-Fi, execute `npm run dev:lan` na raiz para iniciar o backend e identificar seu IP local, abra o DOMUS no celular (via Expo Go ou APK instalado) e confirme a URL no Modal de Conexao.
+
+```mermaid
+flowchart LR
+    A["Computador (Host LAN)<br/>npm run dev:lan"] -->|0.0.0.0:3000| B["Roteador Wi-Fi (LAN)"]
+    B -->|http://192.168.x.x:3000/api| C["Celular Fisico<br/>(Expo Go ou APK Instalado)"]
+    C -->|Toque no Cabecalho| D["Modal de Conexao<br/>(Testar Ping / Alternar Online)"]
+    D -->|Sucesso| E["Sincronizacao em Tempo Real<br/>com o Banco SQLite"]
+```
+
+#### Passo a Passo para Conectar via Wi-Fi:
+
+1. **Mesma Rede:** Conecte o computador e o celular na mesma rede Wi-Fi (ou conecte o computador ao ponto de acesso 4G/hotspot do proprio celular).
+2. **Iniciar o Servidor na LAN:**
+   Na pasta raiz do projeto, execute:
+   ```bash
+   npm run dev:lan
+   ```
+   O script [host-lan.js](scripts/host-lan.js) detecta automaticamente o endereco IPv4 da maquina e inicia o backend NestJS escutando em `0.0.0.0:3000`, exibindo na tela:
+   ```text
+   [OK] IP Local da sua maquina detectado: 192.168.1.15
+   [OK] Backend API: http://192.168.1.15:3000/api
+   [OK] Swagger Docs: http://192.168.1.15:3000/api/docs
+   ```
+3. **Abrir o Aplicativo no Celular:**
+   - **Pelo Expo Go:** Em outro terminal, execute `npm run dev:mobile` e aponte a camera do celular para o QR Code.
+   - **Pelo APK Instalado:** Abra o aplicativo **DOMUS** diretamente no seu celular Android.
+4. **Validar e Ativar a Conexao no App:**
+   - Toque no badge de status no cabecalho (topo da tela) para abrir o **Modal de Conexao**.
+   - O aplicativo tenta detectar o IP automaticamente via `expo-constants`. Caso necessario, confirme ou digite o endereco informado pelo terminal (ex.: `http://192.168.1.15:3000/api`).
+   - Toque em **Testar Conexao (Ping)** e depois em **Alternar para Modo Online (Usar API)**.
+   - O indicador mudara para **Online** (verde) e todos os cadastros e agendamentos serao sincronizados no banco de dados SQLite real.
+
+#### Diagnostico e Casos Especiais:
+- **Bloqueio de Firewall:** Se o celular nao conseguir alcancar o backend, verifique se o Firewall do Windows liberou permissoes de rede privada para o executavel do Node.js.
+- **Alternativa via Cabo USB (ADB Reverse):** Com o celular conectado via USB e depuracao ativada, execute `adb reverse tcp:3000 tcp:3000` e utilize `http://localhost:3000/api` no celular.
+- **Resiliencia do Modo Offline:** Caso a rede local da faculdade/banca bloqueie portas locais, o DOMUS ativa automaticamente o **Modo Offline** com todos os dados pre-carregados da Persona Junior, permitindo navegacao e demonstracao completa de todas as 4 abas sem depender de conexao ativa.
+- **Guia do Instalador APK:** Para gerar e instalar o arquivo `.apk` compilado via nuvem, veja o [docs/GUIA_BUILD_APK_E_BACKEND.md](docs/GUIA_BUILD_APK_E_BACKEND.md).
 
 ---
 
@@ -219,7 +257,7 @@ npm run build
 ### Testes do Mobile ([Jest](https://jestjs.io/) / [React Test Renderer](https://react.dev/))
 ```powershell
 cd mobile
-npm test          # Executa testes unitarios de componentes, telas e regras (5/5 suites aprovadas)
+npm test          # Executa testes unitarios de componentes, telas e regras (6/6 suites, 55 testes aprovados)
 npm run typecheck # Verificacao estrita de tipos TypeScript (tsc --noEmit)
 ```
 
@@ -245,6 +283,7 @@ Durante a fase de desenho do backend, foi considerada a utilizacao do [**PocketB
 
 ## Referencias
 
+- **Guia de Geracao do APK e Integracao com Backend:** [docs/GUIA_BUILD_APK_E_BACKEND.md](docs/GUIA_BUILD_APK_E_BACKEND.md)
 - **Arquitetura e System Design do Modulo Mobile:** [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md)
 - **Diagnostico da Problematica e Plano de Intervencao:** [docs/MODELO DIAGNOSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO.md](docs/MODELO%20DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.md) ([Versao DOCX](docs/MODELO%20DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.docx))
 - **Roteiro de Apresentacao Academica:** [docs/guia-apresentacao-academica.md](docs/guia-apresentacao-academica.md)

@@ -67,3 +67,8 @@ temp/
 
 # Generated screenshots and visual previews
 docs/prototipos/print-*.png
+
+# Executables and App Installers
+*.exe
+*.apk
+*.aab
