@@ -262,6 +262,12 @@ npm test          # Executa testes unitarios de componentes, telas e regras (8/8
 npm run typecheck # Verificacao estrita de tipos TypeScript (tsc --noEmit)
 ```
 
+### Validacao Completa Pre-Apresentacao e CI (Raiz)
+```powershell
+npm run preflight  # Executa geracao Prisma, typecheck fullstack, 80 testes e auditoria de seguranca (0 vulnerabilidades)
+npm run audit      # Executa auditoria quantitativa npm audit na raiz, backend e mobile
+```
+
 ---
 
 ## Decisoes Tecnicas e Alternativas Avaliadas
@@ -284,6 +290,7 @@ Durante a fase de desenho do backend, foi considerada a utilizacao do [**PocketB
 
 ## Referencias
 
+- **Decisao Arquitetural de Seguranca, ORM e CI/CD:** [docs/decisions/0001-remediacao-vulnerabilidades-npm-blindagem-prisma-ci-hardening.md](docs/decisions/0001-remediacao-vulnerabilidades-npm-blindagem-prisma-ci-hardening.md)
 - **Guia de Geracao do APK e Integracao com Backend:** [docs/GUIA_BUILD_APK_E_BACKEND.md](docs/GUIA_BUILD_APK_E_BACKEND.md)
 - **Arquitetura e System Design do Modulo Mobile:** [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md)
 - **Diagnostico da Problematica e Plano de Intervencao:** [docs/MODELO DIAGNOSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO.md](docs/MODELO%20DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.md) ([Versao DOCX](docs/MODELO%20DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.docx))

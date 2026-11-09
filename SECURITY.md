@@ -1,25 +1,34 @@
 # SECURITY.md — Dossie de Segurança do DOMUS
 
+```
+TL;DR:
+- Status de Dependencias (npm audit): 0 vulnerabilidades em root, backend/ e mobile/ (saneadas via overrides + patch CWE-1321 em deepmerge@4.3.2).
+- Blindagem de Cache ORM: Hooks explicitos (postinstall, prebuild, prestart:dev, preflight) contornando o bloqueio allowScripts do npm 11+.
+- Automacao CI/CD: Pipeline .github/workflows/ci-security.yml (actions pinadas por SHA, permissions: contents: read) + .github/dependabot.yml.
+```
+
 ## Contexto
 
-Projeto de estudo pessoal (extensionista UNIESP, 2026.2). Backend NestJS 11 + Prisma 6 + SQLite consumido por app mobile Expo. **Nao ha producao nem dados reais de usuarios.** Este documento registra a auditoria de segurança executada em 2026-10-25, as correcoes aplicadas e o que permanece pendente (lista de estudos).
+Projeto de estudo pessoal (extensionista UNIESP, 2026.2). Backend NestJS 11 + Prisma 6 + SQLite consumido por app mobile Expo. **Nao ha producao nem dados reais de usuarios.** Este documento registra a auditoria de segurança executada em 2026-10-25 e atualizada em 2026-11-08, as correcoes aplicadas e o que permanece pendente (lista de estudos).
 
-Auditoria em modo de revisao focada: evidencia estatica (leitura dos fontes), `npm audit --package-lock-only`, e `git ls-files`. Nenhum codigo do alvo foi executado fora de testes automatizados.
+Auditoria em modo de revisao focada: evidencia estatica (leitura dos fontes), `npm audit`, e `git ls-files`. Nenhum codigo do alvo foi executado fora de testes automatizados.
 
 ---
 
 ## Correcoes aplicadas (CONFIRMED resolvidas)
 
-| ID | Achado | Correcao | Commit |
-|----|--------|----------|--------|
+| ID | Achado | Correcao | Commit / Data |
+|----|--------|----------|---------------|
 | C1 | Escalacao vertical: `CORRETOR` podia se auto-elevar a `CADASTRADOR` via `PATCH /api/usuarios/:id`, ou alterar contas de terceiros. `backend/src/usuarios/usuarios.controller.ts:45` (antes) + `usuarios.service.ts:192` | `@Roles('CADASTRADOR')` no PATCH. Nota de comportamento: CORRETOR comum perde autoedicao de perfil basico (trade-off aceito) | `8914b38` |
 | C2 | Auto-cadastro publico aceitava `perfis: ['CADASTRADOR']` (`usuarios.controller.ts:24` + `create-usuario.dto.ts:52-59`) | `ForbiddenException` no `UsuariosService.create` se CADASTRADOR solicitado; emissao do perfil privilegiado ocorre apenas via seed Prisma (`prisma/seed.ts`). Ajuste do spec RN03 (`auth.service.spec.ts`) provisiona via Prisma — escopo do teste e autenticacao, nao cadastro | `504d4cb` |
-| C11 | `npm audit`: 9 vulnerabilidades (6 high, 3 moderate). As 4 residuais travadas em deps exatas dos pais (`multer@2.4.0` fixado por `@nestjs/platform-express`, `js-yaml@5.3.0` fixado por `@nestjs/swagger`) | `npm audit fix` (5 primeiras) + bloco `overrides` no `backend/package.json` (`multer@2.5.0`, `js-yaml@^5.4.1`). Estado final: **0 vulnerabilidades** | `653cd70` |
+| C11 | `npm audit`: vulnerabilidades transitivas em `backend/` (20 alertas: `deepmerge-ts`, `minimatch`, `glob`, `deepmerge`, `multer`, `js-yaml`) e `mobile/` (23 alertas: `minimatch`, `glob`, `deepmerge`) | Bloco `overrides` em `backend/package.json` (`multer@2.5.0`, `js-yaml@^5.4.1`, `deepmerge-ts@^8.0.2`, `minimatch@^11.0.5`, `glob@^14.0.4`, `deepmerge@4.3.2` local CWE-1321 fix) e em `mobile/package.json` (`minimatch@^11.0.5`, `glob@^14.0.4`, `deepmerge@4.3.2`). Estado final: **0 vulnerabilidades** em `root`, `backend/` e `mobile/` | `653cd70` + `2026-11-08` |
+| C12 | Risco de cache defasado do Prisma Client sob bloqueio padrao `allowScripts` do `npm 11+` | Adicionados hooks explicitos no `backend/package.json` (`postinstall`, `prebuild`, `prestart:dev`, `typecheck`), script `npm run preflight` na raiz e pipeline `.github/workflows/ci-security.yml` com actions pinadas por SHA e `permissions: contents: read` | `2026-11-08` |
 
 Validacao executada apos as correcoes (todas verdes):
 
-- `backend/`: `npm test` (12/12), `npm run test:e2e` (1/1), `npm run lint` (zero avisos), `npm run build`, `npm audit` (0 vulnerabilidades).
-- `mobile/` (nao modificado, validado por seguranca): `npm test` (36/36, 4 suites), `npm run typecheck` (zero erros).
+- `backend/`: `npm test` (12/12, 5 suites), `npm run test:e2e` (1/1), `npm run lint` (zero avisos), `npm run typecheck` (zero erros), `npm run build`, `npm audit` (0 vulnerabilidades).
+- `mobile/`: `npm test` (68/68, 8 suites), `npm run typecheck` (zero erros), `npm audit` (0 vulnerabilidades).
+- `root`: `npm run preflight` (codegen Prisma + typecheck fullstack + 80 testes + 3 auditorias `npm audit` = 0 vulnerabilidades).
 
 ---
 
@@ -45,7 +54,7 @@ Validacao executada apos as correcoes (todas verdes):
 4. **Gestao de segredos (C3 — aceito)** — `.env` + `.env.example` + fail-closed; por que segredo versionado nunca volta a ser secreto (regenerar > reescrever historico).
 5. **Rate limiting e enumeracao (C8/C10 — NAO corrigido)** — `@nestjs/throttler`, hash dummy para usuario inexistente, backoff.
 6. **CORS, Helmet e superficie da API (C7/C9 — NAO corrigido)** — por que `origin: true + credentials: true` quebra CORS; quando Swagger fica publico.
-7. **Cadeia de dependencias (C11 — RESOLVIDO, manter)** — `npm audit` no CI; risco de transitive deps; `overrides` quando o pai fixa a versao exata; GitHub Dependabot ativo (`.github/dependabot.yml` com alertas de vulnerabilidades e atualizacoes semanais de seguranca/versao para backend, mobile e docker).
+7. **Cadeia de dependencias (C11 — RESOLVIDO, automatizado em CI)** — `npm audit` automatizado em `.github/workflows/ci-security.yml`; `overrides` para transitive deps; GitHub Dependabot ativo (`.github/dependabot.yml` com alertas de vulnerabilidades e atualizacoes semanais de seguranca/versao para backend, mobile, docker e github-actions).
 8. **Multi-tenancy (evolucao futura)** — endpoints por agencia transformariam a visao compartilhada atual em IDOR real. Anotado como arquitetura, nao exploit hoje.
 
 ---
@@ -62,10 +71,11 @@ Validacao executada apos as correcoes (todas verdes):
 
 - **N1** — `dev.db` na imagem Docker (`Dockerfile` copia `prisma/` inteiro; volume `./backend/prisma:/app/prisma`). Validar com `docker run --rm domus-backend ls /app/prisma` em ambiente isolado; conferir se o `.dockerignore` exclui `prisma/dev.db`.
 - **N2** — Comportamento nativo de rede (ATS/cleartext) no build nativo vs Expo Go. Codigo escolhe HTTP (`domusApi.ts:115-136`); fix real e no codigo (C4).
-- **N3** — `npm audit` no `mobile/` ainda nao executado. Rodar `npm audit --package-lock-only` em `mobile/`.
+- **N3 (RESOLVIDO em 2026-11-08)** — `npm audit` no `mobile/` executado, saneado via `overrides` (preservando Expo SDK 58 / React 19) e automatizado em `.github/workflows/ci-security.yml` (**0 vulnerabilidades**).
 
 ---
 
 ## Histórico
 
 - 2026-10-25 — Auditoria focada executada; C1/C2/C11 corrigidos e validados (commits `8914b38`, `504d4cb`, `653cd70`); memoria Serena `backend/core` sincronizada.
+- 2026-11-08 — Saneamento completo das novas vulnerabilidades transitivas em `backend/` (20 -> 0) e `mobile/` (23 -> 0) via `overrides` + patch CWE-1321 (`deepmerge@4.3.2`); blindagem contra cache do Prisma ORM (`postinstall`, `prebuild`, `prestart:dev`, `preflight`); criacao do workflow `.github/workflows/ci-security.yml` endurecido (`github-actions-hardening`).

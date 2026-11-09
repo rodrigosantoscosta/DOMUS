@@ -7,6 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache openssl libc6-compat
 
 COPY package*.json ./
+COPY vendor ./vendor/
 COPY prisma ./prisma/
 
 RUN npm install

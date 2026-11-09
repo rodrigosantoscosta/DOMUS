@@ -13,7 +13,14 @@
     "test": "npm run test:backend && npm run test:mobile",
     "build:apk": "npm run build:apk --prefix mobile",
     "build:apk:local": "npm run build:apk:local --prefix mobile",
-    "export:full": "npm run build --prefix backend && npm run export:web --prefix mobile"
+    "export:full": "npm run build --prefix backend && npm run export:web --prefix mobile",
+    "typecheck:backend": "npm run typecheck --prefix backend",
+    "typecheck:mobile": "npm run typecheck --prefix mobile",
+    "typecheck": "npm run typecheck:backend && npm run typecheck:mobile",
+    "audit:backend": "npm audit --prefix backend",
+    "audit:mobile": "npm audit --prefix mobile",
+    "audit": "npm audit && npm run audit:backend && npm run audit:mobile",
+    "preflight": "npm run prisma:generate --prefix backend && npm run typecheck && npm test && npm run audit"
   },
   "author": "Equipe DOMUS",
   "license": "GPL-3.0",

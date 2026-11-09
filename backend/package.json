@@ -22,11 +22,19 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "postinstall": "prisma generate",
+    "prebuild": "prisma generate",
+    "prestart:dev": "prisma generate",
+    "typecheck": "tsc --noEmit"
   },
   "overrides": {
     "multer": "2.5.0",
-    "js-yaml": "^5.4.1"
+    "js-yaml": "^5.4.1",
+    "deepmerge-ts": "^8.0.2",
+    "minimatch": "^11.0.5",
+    "glob": "^14.0.4",
+    "deepmerge": "$deepmerge"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -67,7 +75,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+    "deepmerge": "file:./vendor/deepmerge-4.3.2.tgz"
   },
   "jest": {
     "moduleFileExtensions": [
