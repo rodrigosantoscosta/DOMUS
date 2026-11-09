@@ -10,6 +10,7 @@
     "dev:lan": "node scripts/host-lan.js",
     "test:backend": "npm test --prefix backend",
     "test:mobile": "npm test --prefix mobile",
+    "typecheck": "npm run typecheck --prefix backend && npm run typecheck --prefix mobile",
     "test": "npm run test:backend && npm run test:mobile",
     "build:apk": "npm run build:apk --prefix mobile",
     "build:apk:local": "npm run build:apk:local --prefix mobile",
