@@ -46,6 +46,15 @@ jobs:
         env:
           DOMUS_SKIP_DB: '1'
 
+      # Os testes usam um SQLite isolado (test/setup-env.ts define
+      # DATABASE_URL=file:./test.db). Aplica as migracoes nele antes
+      # de rodar as suites, protegendo o dev.db de desenvolvimento.
+      - name: Preparar banco de testes
+        run: npx prisma migrate deploy
+        working-directory: backend
+        env:
+          DATABASE_URL: 'file:./test.db'
+
       - name: Testes do backend (cobertura)
         run: npm run test:cov --prefix backend
 
