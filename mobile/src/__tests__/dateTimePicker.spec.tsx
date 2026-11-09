@@ -7,7 +7,13 @@ import {
   dataParaStringBr,
   horaParaString,
   stringBrParaData,
+  adicionarDiasDataBr,
+  dataBrParaIsoInput,
+  gerarDiasCalendarioMes,
+  ajustarMinutosHoraBr,
 } from '../utils/formatters';
+import { DomusDateTimePresets } from '../components/DomusDateTimePresets';
+import { DomusWebPickerModal } from '../components/DomusWebPickerModal';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -210,5 +216,184 @@ describe('Integracao de DateTimePicker e Icones na AgendarScreen', () => {
     // O input de hora agora deve ter o horario formatado
     const inputHora = root.root.findByProps({ testID: 'input-agendamento-hora' });
     expect(inputHora.props.value).toBe('15:45');
+  });
+
+  it('permite selecionar data via chips rapidos (Hoje, Amanha) em 1 toque na AgendarScreen', () => {
+    const mockContext = criarContextoMock();
+    let root: any;
+
+    act(() => {
+      root = renderer.create(<AgendarScreen context={mockContext} />);
+    });
+
+    const chipHoje = root.root.findByProps({ testID: 'chip-data-hoje' });
+    expect(chipHoje).toBeDefined();
+
+    const dataHojeEsperada = adicionarDiasDataBr(0);
+    act(() => {
+      chipHoje.props.onPress();
+    });
+
+    const inputData = root.root.findByProps({ testID: 'input-agendamento-data' });
+    expect(inputData.props.value).toBe(dataHojeEsperada);
+
+    const chipAmanha = root.root.findByProps({ testID: 'chip-data-amanha' });
+    const dataAmanhaEsperada = adicionarDiasDataBr(1);
+    act(() => {
+      chipAmanha.props.onPress();
+    });
+    expect(inputData.props.value).toBe(dataAmanhaEsperada);
+  });
+
+  it('permite selecionar horario via chips rapidos comerciais em 1 toque na AgendarScreen', () => {
+    const mockContext = criarContextoMock();
+    let root: any;
+
+    act(() => {
+      root = renderer.create(<AgendarScreen context={mockContext} />);
+    });
+
+    const chip14 = root.root.findByProps({ testID: 'chip-hora-14-00' });
+    expect(chip14).toBeDefined();
+
+    act(() => {
+      chip14.props.onPress();
+    });
+
+    const inputHora = root.root.findByProps({ testID: 'input-agendamento-hora' });
+    expect(inputHora.props.value).toBe('14:00');
+
+    const chip16 = root.root.findByProps({ testID: 'chip-hora-16-00' });
+    act(() => {
+      chip16.props.onPress();
+    });
+    expect(inputHora.props.value).toBe('16:00');
+  });
+});
+
+describe('Utilitarios Avancados de Data/Hora e Componente DomusDateTimePresets', () => {
+  it('adicionarDiasDataBr calcula datas relativas corretamente a partir de uma data base', () => {
+    const base = new Date(2026, 10, 10); // 10/11/2026
+    expect(adicionarDiasDataBr(0, base)).toBe('10/11/2026');
+    expect(adicionarDiasDataBr(1, base)).toBe('11/11/2026');
+    expect(adicionarDiasDataBr(3, base)).toBe('13/11/2026');
+    expect(adicionarDiasDataBr(7, base)).toBe('17/11/2026');
+  });
+
+  it('dataBrParaIsoInput converte data DD/MM/AAAA para formato ISO YYYY-MM-DD para ancoragem no picker web', () => {
+    expect(dataBrParaIsoInput('25/10/2026')).toBe('2026-10-25');
+    expect(dataBrParaIsoInput('05/01/2027')).toBe('2027-01-05');
+    expect(dataBrParaIsoInput('')).toBe('');
+    expect(dataBrParaIsoInput('invalida')).toBe('');
+  });
+
+  it('renderiza o componente DomusDateTimePresets isoladamente com callbacks funcionais', () => {
+    const onSelectData = jest.fn();
+    const onSelectHora = jest.fn();
+    let root: any;
+
+    act(() => {
+      root = renderer.create(
+        <DomusDateTimePresets
+          dataAtual=""
+          horaAtual=""
+          onSelectData={onSelectData}
+          onSelectHora={onSelectHora}
+          testIDPrefix="teste"
+        />
+      );
+    });
+
+    const container = root.root.findByProps({ testID: 'teste-presets-container' });
+    expect(container).toBeDefined();
+
+    const chipHoje = root.root.findByProps({ testID: 'chip-data-hoje' });
+    act(() => {
+      chipHoje.props.onPress();
+    });
+    expect(onSelectData).toHaveBeenCalledWith(adicionarDiasDataBr(0));
+
+    const chip09 = root.root.findByProps({ testID: 'chip-hora-09-00' });
+    act(() => {
+      chip09.props.onPress();
+    });
+    expect(onSelectHora).toHaveBeenCalledWith('09:00');
+  });
+
+  it('gerarDiasCalendarioMes gera matriz completa de semanas para o mes solicitado', () => {
+    // Novembro de 2026 (mes base zero 10): inicia no domingo (1 de nov) e tem 30 dias
+    const dias = gerarDiasCalendarioMes(2026, 10);
+    expect(dias.length % 7).toBe(0);
+    expect(dias.length).toBeGreaterThanOrEqual(35);
+    const diasAtuais = dias.filter((d) => d.mesAtual);
+    expect(diasAtuais.length).toBe(30);
+    expect(diasAtuais[0].dia).toBe(1);
+    expect(diasAtuais[29].dia).toBe(30);
+  });
+
+  it('ajustarMinutosHoraBr adiciona e subtrai minutos com limites de 24 horas', () => {
+    expect(ajustarMinutosHoraBr('14:00', 15)).toBe('14:15');
+    expect(ajustarMinutosHoraBr('14:00', -15)).toBe('13:45');
+    expect(ajustarMinutosHoraBr('23:45', 30)).toBe('00:15');
+    expect(ajustarMinutosHoraBr('00:10', -20)).toBe('23:50');
+  });
+});
+
+describe('Componente DomusWebPickerModal para Expo Web', () => {
+  it('renderiza seletor de data e confirma valor selecionado', () => {
+    const onConfirmar = jest.fn();
+    const onFechar = jest.fn();
+    let root: any;
+
+    act(() => {
+      root = renderer.create(
+        <DomusWebPickerModal
+          visivel={true}
+          tipo="date"
+          valorAtual="10/11/2026"
+          onConfirmar={onConfirmar}
+          onFechar={onFechar}
+          testIDPrefix="teste-web"
+        />
+      );
+    });
+
+    const modal = root.root.findByProps({ testID: 'teste-web-modal' });
+    expect(modal).toBeDefined();
+
+    const btnConfirmar = root.root.findByProps({ testID: 'teste-web-btn-confirmar' });
+    act(() => {
+      btnConfirmar.props.onPress();
+    });
+
+    expect(onConfirmar).toHaveBeenCalledWith('10/11/2026');
+    expect(onFechar).toHaveBeenCalled();
+  });
+
+  it('renderiza seletor de horario e permite confirmar', () => {
+    const onConfirmar = jest.fn();
+    const onFechar = jest.fn();
+    let root: any;
+
+    act(() => {
+      root = renderer.create(
+        <DomusWebPickerModal
+          visivel={true}
+          tipo="time"
+          valorAtual="16:00"
+          onConfirmar={onConfirmar}
+          onFechar={onFechar}
+          testIDPrefix="teste-web-hora"
+        />
+      );
+    });
+
+    const btnConfirmar = root.root.findByProps({ testID: 'teste-web-hora-btn-confirmar' });
+    act(() => {
+      btnConfirmar.props.onPress();
+    });
+
+    expect(onConfirmar).toHaveBeenCalledWith('16:00');
+    expect(onFechar).toHaveBeenCalled();
   });
 });

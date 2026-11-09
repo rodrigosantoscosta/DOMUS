@@ -21,8 +21,10 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { DomusInput } from '../components/DomusInput';
+import { DomusDateTimePresets } from '../components/DomusDateTimePresets';
+import { DomusWebPickerModal } from '../components/DomusWebPickerModal';
 import { DomusButton } from '../components/DomusButton';
 import { AvisoBanner } from '../components/AvisoBanner';
 import { useDomus, DomusContextData } from '../context/DomusContext';
@@ -221,6 +223,8 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
   const [horaRetorno, setHoraRetorno] = useState<string>('09:00');
   const [mostrarDatePickerRetorno, setMostrarDatePickerRetorno] = useState<boolean>(false);
   const [mostrarTimePickerRetorno, setMostrarTimePickerRetorno] = useState<boolean>(false);
+  const [webPickerVisivelRetorno, setWebPickerVisivelRetorno] = useState<boolean>(false);
+  const [webPickerTipoRetorno, setWebPickerTipoRetorno] = useState<'date' | 'time'>('date');
 
   const [proximaAcaoRetorno, setProximaAcaoRetorno] = useState<string>('');
   const [obsConclusao, setObsConclusao] = useState<string>('');
@@ -250,67 +254,36 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
     setHoraRetorno(formatarHora(texto));
   }, []);
 
-  const handleAbrirDatePickerRetorno = useCallback(() => {
-    triggerLightImpact();
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      const input = document.createElement('input');
-      input.type = 'date';
-      input.style.position = 'fixed';
-      input.style.opacity = '0';
-      input.style.pointerEvents = 'none';
-      document.body.appendChild(input);
-      input.addEventListener('change', (e: any) => {
-        const val = e.target.value;
-        if (val) {
-          const [ano, mes, dia] = val.split('-');
-          setDataRetorno(`${dia}/${mes}/${ano}`);
-        }
-        if (input.parentNode) {
-          input.parentNode.removeChild(input);
-        }
-      });
-      if (typeof (input as any).showPicker === 'function') {
-        (input as any).showPicker();
-      } else {
-        input.click();
+  const handleAbrirDatePickerRetorno = useCallback(
+    () => {
+      triggerLightImpact();
+      if (Platform.OS === 'web') {
+        setWebPickerTipoRetorno('date');
+        setWebPickerVisivelRetorno(true);
+        return;
       }
-      return;
-    }
-    setMostrarTimePickerRetorno(false);
-    setMostrarDatePickerRetorno(true);
-  }, []);
+      setMostrarTimePickerRetorno(false);
+      setMostrarDatePickerRetorno(true);
+    },
+    []
+  );
 
-  const handleAbrirTimePickerRetorno = useCallback(() => {
-    triggerLightImpact();
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      const input = document.createElement('input');
-      input.type = 'time';
-      input.style.position = 'fixed';
-      input.style.opacity = '0';
-      input.style.pointerEvents = 'none';
-      document.body.appendChild(input);
-      input.addEventListener('change', (e: any) => {
-        const val = e.target.value;
-        if (val) {
-          setHoraRetorno(val.slice(0, 5));
-        }
-        if (input.parentNode) {
-          input.parentNode.removeChild(input);
-        }
-      });
-      if (typeof (input as any).showPicker === 'function') {
-        (input as any).showPicker();
-      } else {
-        input.click();
+  const handleAbrirTimePickerRetorno = useCallback(
+    () => {
+      triggerLightImpact();
+      if (Platform.OS === 'web') {
+        setWebPickerTipoRetorno('time');
+        setWebPickerVisivelRetorno(true);
+        return;
       }
-      return;
-    }
-    setMostrarDatePickerRetorno(false);
-    setMostrarTimePickerRetorno(true);
-  }, []);
+      setMostrarDatePickerRetorno(false);
+      setMostrarTimePickerRetorno(true);
+    },
+    []
+  );
 
   const handleDatePickerRetornoChange = useCallback(
-    (event: any, selectedDate?: Date) => {
+    (event: DateTimePickerEvent, selectedDate?: Date) => {
       if (Platform.OS === 'android') {
         setMostrarDatePickerRetorno(false);
       }
@@ -325,7 +298,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
   );
 
   const handleTimePickerRetornoChange = useCallback(
-    (event: any, selectedTime?: Date) => {
+    (event: DateTimePickerEvent, selectedTime?: Date) => {
       if (Platform.OS === 'android') {
         setMostrarTimePickerRetorno(false);
       }
@@ -988,6 +961,16 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                       </Pressable>
                     }
                   />
+
+                  {/* Pilulas de Atalho Rapido de Retorno */}
+                  <DomusDateTimePresets
+                    dataAtual={dataRetorno}
+                    horaAtual={horaRetorno}
+                    onSelectData={(d) => setDataRetorno(d)}
+                    onSelectHora={(h) => setHoraRetorno(h)}
+                    testIDPrefix="retorno"
+                  />
+
                   <DomusInput
                     label="Próxima Ação"
                     placeholder="Ex: Apresentar proposta revisada..."
@@ -996,13 +979,15 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                     testID="input-retorno-proxima-acao"
                   />
 
-                  
                   {Platform.OS !== 'web' && mostrarDatePickerRetorno && (
                     <DateTimePicker
                       testID="retorno-date-picker"
                       value={stringBrParaData(dataRetorno, horaRetorno)}
                       mode="date"
                       display="default"
+                      locale="pt-BR"
+                      accentColor={DOMUS_THEME.primary}
+                      themeVariant="light"
                       onChange={handleDatePickerRetornoChange}
                     />
                   )}
@@ -1013,7 +998,26 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                       mode="time"
                       is24Hour={true}
                       display="default"
+                      locale="pt-BR"
+                      accentColor={DOMUS_THEME.primary}
+                      themeVariant="light"
                       onChange={handleTimePickerRetornoChange}
+                    />
+                  )}
+                  {Platform.OS === 'web' && (
+                    <DomusWebPickerModal
+                      visivel={webPickerVisivelRetorno}
+                      tipo={webPickerTipoRetorno}
+                      valorAtual={webPickerTipoRetorno === 'date' ? dataRetorno : horaRetorno}
+                      onConfirmar={(novoVal) => {
+                        if (webPickerTipoRetorno === 'date') {
+                          handleDataRetornoChange(novoVal);
+                        } else {
+                          handleHoraRetornoChange(novoVal);
+                        }
+                      }}
+                      onFechar={() => setWebPickerVisivelRetorno(false)}
+                      testIDPrefix="retorno-web-picker"
                     />
                   )}
 
