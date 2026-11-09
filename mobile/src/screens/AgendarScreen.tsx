@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   View,
   Text,
-  Image,
   ScrollView,
   Pressable,
   StyleSheet,
@@ -10,8 +9,10 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { DomusInput } from '../components/DomusInput';
+import { DomusDateTimePresets } from '../components/DomusDateTimePresets';
+import { DomusWebPickerModal } from '../components/DomusWebPickerModal';
 import { DomusToast } from '../components/DomusToast';
 import DomusContext, { DomusContextData } from '../context/DomusContext';
 import {
@@ -33,8 +34,6 @@ import {
   triggerErrorHaptic,
   triggerLightImpact,
 } from '../utils/haptics';
-
-const domusLogo = require('../../assets/logo.png');
 
 const DEFAULT_CONTEXT_FALLBACK: DomusContextData = {
   usuario: null,
@@ -132,6 +131,8 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
   const [mostrarListaImoveis, setMostrarListaImoveis] = useState<boolean>(!imovelPreSelecionadoId);
   const [mostrarDatePicker, setMostrarDatePicker] = useState<boolean>(false);
   const [mostrarTimePicker, setMostrarTimePicker] = useState<boolean>(false);
+  const [webPickerVisivel, setWebPickerVisivel] = useState<boolean>(false);
+  const [webPickerTipo, setWebPickerTipo] = useState<'date' | 'time'>('date');
 
   const submetendoRef = useRef<boolean>(false);
 
@@ -293,69 +294,36 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     setHora(formatarHora(texto));
   }, []);
 
-  const handleAbrirDatePicker = useCallback(() => {
-    triggerLightImpact();
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      const input = document.createElement('input');
-      input.type = 'date';
-      input.style.position = 'fixed';
-      input.style.opacity = '0';
-      input.style.pointerEvents = 'none';
-      document.body.appendChild(input);
-      input.addEventListener('change', (e: any) => {
-        const val = e.target.value;
-        if (val) {
-          const [ano, mes, dia] = val.split('-');
-          setData(`${dia}/${mes}/${ano}`);
-          if (erroLocal) setErroLocal(null);
-        }
-        if (input.parentNode) {
-          input.parentNode.removeChild(input);
-        }
-      });
-      if (typeof (input as any).showPicker === 'function') {
-        (input as any).showPicker();
-      } else {
-        input.click();
+  const handleAbrirDatePicker = useCallback(
+    () => {
+      triggerLightImpact();
+      if (Platform.OS === 'web') {
+        setWebPickerTipo('date');
+        setWebPickerVisivel(true);
+        return;
       }
-      return;
-    }
-    setMostrarTimePicker(false);
-    setMostrarDatePicker(true);
-  }, [erroLocal]);
+      setMostrarTimePicker(false);
+      setMostrarDatePicker(true);
+    },
+    []
+  );
 
-  const handleAbrirTimePicker = useCallback(() => {
-    triggerLightImpact();
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      const input = document.createElement('input');
-      input.type = 'time';
-      input.style.position = 'fixed';
-      input.style.opacity = '0';
-      input.style.pointerEvents = 'none';
-      document.body.appendChild(input);
-      input.addEventListener('change', (e: any) => {
-        const val = e.target.value;
-        if (val) {
-          setHora(val.slice(0, 5));
-          if (erroLocal) setErroLocal(null);
-        }
-        if (input.parentNode) {
-          input.parentNode.removeChild(input);
-        }
-      });
-      if (typeof (input as any).showPicker === 'function') {
-        (input as any).showPicker();
-      } else {
-        input.click();
+  const handleAbrirTimePicker = useCallback(
+    () => {
+      triggerLightImpact();
+      if (Platform.OS === 'web') {
+        setWebPickerTipo('time');
+        setWebPickerVisivel(true);
+        return;
       }
-      return;
-    }
-    setMostrarDatePicker(false);
-    setMostrarTimePicker(true);
-  }, [erroLocal]);
+      setMostrarDatePicker(false);
+      setMostrarTimePicker(true);
+    },
+    []
+  );
 
   const handleDatePickerChange = useCallback(
-    (event: any, selectedDate?: Date) => {
+    (event: DateTimePickerEvent, selectedDate?: Date) => {
       if (Platform.OS === 'android') {
         setMostrarDatePicker(false);
       }
@@ -371,7 +339,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
   );
 
   const handleTimePickerChange = useCallback(
-    (event: any, selectedTime?: Date) => {
+    (event: DateTimePickerEvent, selectedTime?: Date) => {
       if (Platform.OS === 'android') {
         setMostrarTimePicker(false);
       }
@@ -552,16 +520,17 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Topo Visual: Imagem Logo DOMUS e Titulo (fiel ao wireframe 02) */}
+        <View style={styles.centerContainer}>
+        {/* Topo Visual: Icone e Titulo Padronizados com as demais telas */}
         <View style={styles.headerHero}>
-          <Image
-            source={domusLogo}
-            style={styles.logo}
-            resizeMode="contain"
+          <View
+            style={styles.formIconWrapper}
             testID="agendar-logo"
             accessibilityRole="image"
-            accessibilityLabel="Logo DOMUS"
-          />
+            accessibilityLabel="Ícone de Agendamento"
+          >
+            <Ionicons name="calendar" size={18} color={DOMUS_THEME.primary} />
+          </View>
           <View style={styles.headerHeroTexts}>
             <Text style={styles.headerHeroTitle}>Criar seu Agendamento</Text>
             <Text style={styles.headerHeroSubtitle}>
@@ -933,6 +902,21 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
             </View>
           </View>
 
+          {/* Pilulas de Atalho Rapido (1 toque com o polegar) */}
+          <DomusDateTimePresets
+            dataAtual={data}
+            horaAtual={hora}
+            onSelectData={(novaData) => {
+              setData(novaData);
+              if (erroLocal) setErroLocal(null);
+            }}
+            onSelectHora={(novaHora) => {
+              setHora(novaHora);
+              if (erroLocal) setErroLocal(null);
+            }}
+            testIDPrefix="agendar"
+          />
+
           {/* Duracao */}
           <DomusInput
             label="Duração"
@@ -1038,6 +1022,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
             )}
           </Pressable>
         </View>
+        </View>
       </ScrollView>
       {Platform.OS !== 'web' && mostrarDatePicker && (
         <DateTimePicker
@@ -1045,6 +1030,9 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
           value={stringBrParaData(data, hora)}
           mode="date"
           display="default"
+          locale="pt-BR"
+          accentColor={DOMUS_THEME.primary}
+          themeVariant="light"
           onChange={handleDatePickerChange}
         />
       )}
@@ -1055,7 +1043,27 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
           mode="time"
           is24Hour={true}
           display="default"
+          locale="pt-BR"
+          accentColor={DOMUS_THEME.primary}
+          themeVariant="light"
           onChange={handleTimePickerChange}
+        />
+      )}
+      {Platform.OS === 'web' && (
+        <DomusWebPickerModal
+          visivel={webPickerVisivel}
+          tipo={webPickerTipo}
+          valorAtual={webPickerTipo === 'date' ? data : hora}
+          onConfirmar={(novoVal) => {
+            if (webPickerTipo === 'date') {
+              setData(novoVal);
+            } else {
+              setHora(novoVal);
+            }
+            if (erroLocal) setErroLocal(null);
+          }}
+          onFechar={() => setWebPickerVisivel(false)}
+          testIDPrefix="agendar-web-picker"
         />
       )}
 
@@ -1084,6 +1092,11 @@ const styles = StyleSheet.create({
     paddingTop: DOMUS_SPACING.sm,
     paddingBottom: DOMUS_SPACING.xl * 2,
   },
+  centerContainer: {
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
+  },
   headerHero: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1093,11 +1106,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: DOMUS_THEME.border,
     marginBottom: DOMUS_SPACING.md,
+    gap: DOMUS_SPACING.sm,
   },
-  logo: {
-    width: 48,
-    height: 48,
-    marginRight: DOMUS_SPACING.md,
+  formIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: DOMUS_THEME.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: DOMUS_THEME.primaryBorder,
   },
   headerHeroTexts: {
     flex: 1,

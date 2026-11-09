@@ -116,3 +116,81 @@ export function stringBrParaData(dataBr?: string | null, horaBr?: string | null)
   const d = new Date(ano, mes, dia, hora, minuto, 0, 0);
   return isNaN(d.getTime()) ? agora : d;
 }
+
+export function adicionarDiasDataBr(dias: number, baseDate?: Date): string {
+  const base = baseDate ? new Date(baseDate.getTime()) : new Date();
+  base.setDate(base.getDate() + dias);
+  return dataParaStringBr(base);
+}
+
+export function dataBrParaIsoInput(dataBr?: string | null): string {
+  if (!dataBr || !validarDataBr(dataBr)) {
+    return '';
+  }
+  const match = dataBr.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return '';
+  const [, dia, mes, ano] = match;
+  return `${ano}-${mes}-${dia}`;
+}
+
+export const NOMES_MESES_BR = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+export interface DiaCalendarioInfo {
+  dia: number;
+  mesAtual: boolean;
+  dataBr: string;
+}
+
+export function gerarDiasCalendarioMes(ano: number, mesBaseZero: number): DiaCalendarioInfo[] {
+  const primeiroDiaSemana = new Date(ano, mesBaseZero, 1).getDay();
+  const totalDiasMes = new Date(ano, mesBaseZero + 1, 0).getDate();
+  const totalDiasMesAnterior = new Date(ano, mesBaseZero, 0).getDate();
+
+  const dias: DiaCalendarioInfo[] = [];
+
+  for (let i = primeiroDiaSemana - 1; i >= 0; i--) {
+    const diaNum = totalDiasMesAnterior - i;
+    const mesAnt = mesBaseZero === 0 ? 11 : mesBaseZero - 1;
+    const anoAnt = mesBaseZero === 0 ? ano - 1 : ano;
+    const dStr = `${String(diaNum).padStart(2, '0')}/${String(mesAnt + 1).padStart(2, '0')}/${anoAnt}`;
+    dias.push({ dia: diaNum, mesAtual: false, dataBr: dStr });
+  }
+
+  for (let dia = 1; dia <= totalDiasMes; dia++) {
+    const dStr = `${String(dia).padStart(2, '0')}/${String(mesBaseZero + 1).padStart(2, '0')}/${ano}`;
+    dias.push({ dia, mesAtual: true, dataBr: dStr });
+  }
+
+  const sobra = dias.length % 7;
+  if (sobra !== 0) {
+    const faltam = 7 - sobra;
+    const mesProx = mesBaseZero === 11 ? 0 : mesBaseZero + 1;
+    const anoProx = mesBaseZero === 11 ? ano + 1 : ano;
+    for (let dia = 1; dia <= faltam; dia++) {
+      const dStr = `${String(dia).padStart(2, '0')}/${String(mesProx + 1).padStart(2, '0')}/${anoProx}`;
+      dias.push({ dia, mesAtual: false, dataBr: dStr });
+    }
+  }
+
+  return dias;
+}
+
+export function ajustarMinutosHoraBr(horaBr: string, deltaMinutos: number): string {
+  let h = 9;
+  let m = 0;
+  if (horaBr && validarHora(horaBr)) {
+    const parts = horaBr.split(':');
+    h = parseInt(parts[0], 10);
+    m = parseInt(parts[1], 10);
+  }
+  let totalMin = h * 60 + m + deltaMinutos;
+  if (totalMin < 0) totalMin = 24 * 60 + (totalMin % (24 * 60));
+  totalMin = totalMin % (24 * 60);
+
+  const novoH = Math.floor(totalMin / 60);
+  const novoM = totalMin % 60;
+  return `${String(novoH).padStart(2, '0')}:${String(novoM).padStart(2, '0')}`;
+}
