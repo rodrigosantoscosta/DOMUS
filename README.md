@@ -455,3 +455,4 @@ Durante a fase de desenho do backend, foi considerada a utilizacao do [**PocketB
 - **Catalogo de Prototipos e Wireframes:** [docs/prototipos/expo/README.md](docs/prototipos/expo/README.md)
 - **Estudo de Caso e Entrevistas com Corretores:** [docs/entrevistas/roteiro-estudo-caso-domus.md](docs/entrevistas/roteiro-estudo-caso-domus.md)
 - **Modelos e Propostas Academicas (PDM e PE):** [docs/modelos/MODELO PROPOSTA DE PROJETO - PDM E PE.md](docs/modelos/MODELO%20PROPOSTA%20DE%20PROJETO%20-%20PDM%20E%20PE.md)
+- **Repositorio Legado (Versao Anterior da DOMUS):** [Plessiossauro/DOMUS](https://github.com/Plessiossauro/DOMUS)
