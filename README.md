@@ -120,10 +120,12 @@ O modulo de backend (`backend/`) foi estruturado seguindo principios SOLID, Clea
 ```text
 DOMUS/
 ├── backend/          # API REST modular em NestJS 11 e Prisma ORM
+│   ├── .env.example  # Modelo de variaveis de ambiente da API (porta, JWT e banco)
 │   ├── prisma/       # Schema do banco SQLite, migrations SQL e seed
 │   ├── src/          # Modulos de auth, clientes, imoveis, agendamentos e avisos
 │   └── test/         # Testes unitarios, testes E2E e setup isolado
 ├── mobile/           # Aplicativo movel em React Native / Expo SDK 58
+│   ├── .env.example  # Modelo de variaveis do app mobile (URL da API)
 │   ├── assets/       # Imagens e logotipos estaticos (logo.png)
 │   ├── src/          # Telas, componentes Apple HIG, contexto e servicos
 │   └── __tests__/    # Testes unitarios de componentes, telas e regras
@@ -132,10 +134,163 @@ DOMUS/
 │   ├── modelos/      # Modelos PDM/PE e jornada do corretor
 │   ├── prototipos/   # Wireframes e prints de validacao do Expo Go
 │   └── MOBILE_SYSTEM_DESIGN.md # Especificacao arquitetural completa do mobile
+├── scripts/          # Utilitarios de automacao e execucao em rede local (host-lan.js)
 ├── package.json      # Orquestracao unificada de scripts dev/test para a raiz
 ├── docker-compose.yml# Orquestracao do backend com volume persistente SQLite
 └── README.md         # Visao geral do projeto DOMUS (este arquivo)
 ```
+
+---
+
+## Instalacao e Configuracao Inicial
+
+Siga o passo a passo abaixo para clonar, instalar dependencias, configurar os arquivos de ambiente (`.env`) e inicializar o banco de dados antes da primeira execucao.
+
+### 1. Pre-requisitos do Sistema
+
+Antes de iniciar, certifique-se de ter instalado em sua maquina:
+
+| Ferramenta | Versao Minima / Recomendada | Finalidade |
+| :--- | :--- | :--- |
+| [Node.js](https://nodejs.org/) | `>= 20.x` (Recomendado `22.x LTS`) | Runtime JavaScript para backend e empacotamento mobile |
+| [npm](https://www.npmjs.com/) | `>= 10.x` | Gerenciador de pacotes do workspace e modulos |
+| [Git](https://git-scm.com/) | Qualquer versao recente | Controle de versao e clonagem do repositorio |
+| [Docker](https://www.docker.com/) e Docker Compose | Opcional | Execucao conteinerizada do backend com volume persistente |
+| [Expo Go](https://expo.dev/go) | Aplicativo no smartphone | Visualizacao do app no celular fisico (Android / iOS) |
+
+---
+
+### 2. Clonagem do Repositorio
+
+Abra o terminal no diretorio de sua preferencia e clone o projeto:
+
+```bash
+git clone https://github.com/rodrigosantoscosta/DOMUS.git
+cd DOMUS
+```
+
+---
+
+### 3. Instalacao das Dependencias
+
+O DOMUS adota arquitetura monorepo com pacotes isolados. Instale as dependencias da raiz (responsavel pelo orquestrador [`concurrently`](https://github.com/open-cli-tools/concurrently)), do backend e do mobile:
+
+```bash
+# 1. Dependencias da raiz (orquestrador de scripts e testes unificados)
+npm install
+
+# 2. Dependencias do Backend (NestJS, Prisma ORM, JWT, Swagger)
+npm install --prefix backend
+
+# 3. Dependencias do Mobile (Expo SDK 58, React Native, Safe Area, Reanimated)
+npm install --prefix mobile
+```
+
+> [!TIP]
+> Caso prefira, voce tambem pode navegar em cada pasta individualmente e executar `npm install`:
+> `cd backend && npm install && cd ../mobile && npm install && cd ..`.
+
+---
+
+### 4. Configuracao das Variaveis de Ambiente (`.env`)
+
+#### A. Backend (`backend/.env`) — [OBRIGATORIO]
+
+O modulo backend requer um arquivo `.env` para carregar as credenciais de conexao com o banco SQLite/MySQL e a chave de assinatura de tokens [JWT](https://jwt.io/).
+
+1. Copie o arquivo de exemplo disponibilizado no backend:
+
+   **No Linux / macOS / Git Bash:**
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
+
+   **No Windows PowerShell:**
+   ```powershell
+   Copy-Item backend/.env.example backend/.env
+   ```
+
+2. Revise os parametros no arquivo `backend/.env`:
+
+   ```env
+   # SQLite (Desenvolvimento / Testes locais zero-config)
+   DATABASE_URL="file:./dev.db"
+
+   # Autenticacao e Seguranca
+   JWT_SECRET="troque-por-uma-chave-secreta-forte-em-producao"
+   JWT_EXPIRES_IN="8h"
+
+   # Servidor e Rede
+   PORT=3000
+   # CORS_ORIGIN="http://localhost:8081,http://localhost:3000"
+   # DISABLE_AUTH=false
+   ```
+
+   | Variavel | Descricao | Valor Padrao / Recomendado |
+   | :--- | :--- | :--- |
+   | `DATABASE_URL` | String de conexao do banco de dados relacional | `"file:./dev.db"` (SQLite embutido zero-config em `backend/prisma/dev.db`) |
+   | `JWT_SECRET` | Chave secreta para assinatura dos tokens JWT | String forte e unica (obrigatoria em ambiente de producao) |
+   | `JWT_EXPIRES_IN` | Tempo de expiracao do token de sessao | `"8h"` |
+   | `PORT` | Porta TCP na qual o servidor NestJS escutara | `3000` |
+   | `CORS_ORIGIN` | Lista de origens autorizadas no CORS | Opcional (quando omitido, libera origens locais) |
+   | `DISABLE_AUTH` | Desativa temporariamente a guarda JWT para testes | `false` (ou omitido) |
+
+> [!NOTE]
+> **Zero-Config com SQLite:** Por padrao, `DATABASE_URL="file:./dev.db"` utiliza SQLite local. Nao e necessario instalar MySQL, PostgreSQL ou servicos adicionais para rodar o projeto localmente.
+
+---
+
+#### B. Mobile (`mobile/.env`) — [OPCIONAL]
+
+O modulo mobile possui deteccao automatica e inteligente de rotas: conecta em `localhost:3000/api` na Web e infere dinamicamente o IP da maquina no Wi-Fi via `expo-constants` no smartphone. 
+
+Caso queira fixar explicitamente o endereco da API (por exemplo, ao usar dispositivo fisico, emulador ou tunel):
+
+1. Copie o modelo de ambiente do mobile:
+
+   **No Linux / macOS / Git Bash:**
+   ```bash
+   cp mobile/.env.example mobile/.env
+   ```
+
+   **No Windows PowerShell:**
+   ```powershell
+   Copy-Item mobile/.env.example mobile/.env
+   ```
+
+2. Parametros disponiveis em `mobile/.env`:
+
+   ```env
+   # URL base da API DOMUS Backend (NestJS)
+   EXPO_PUBLIC_API_URL=http://localhost:3000/api
+   ```
+
+   | Variavel | Descricao | Exemplo de Uso |
+   | :--- | :--- | :--- |
+   | `EXPO_PUBLIC_API_URL` | Ponto de entrada REST consumido pelo aplicativo | `http://localhost:3000/api` (Web/Local) ou `http://192.168.1.15:3000/api` (Wi-Fi) |
+
+---
+
+### 5. Preparacao do Banco de Dados e Carga Inicial (Seed)
+
+Antes de iniciar os servicos pela primeira vez, execute as migrations do [Prisma ORM](https://www.prisma.io/) para criar a estrutura de tabelas e faca o seed com os dados do estudo de caso da Persona Junior:
+
+```bash
+cd backend
+npx prisma migrate deploy
+npm run prisma:seed
+cd ..
+```
+
+> [!IMPORTANT]
+> **Credenciais de Teste Geradas no Seed:**
+> O seed popula automaticamente os registros validados no plano academico (Persona Junior, clientes cadastrados, imoveis e agendamentos de visita):
+> - **Login:** `junior.corretor` (ou e-mail `junior@domus.com.br`)
+> - **Senha:** `Domus@2026`
+> - **Perfis Vinculados:** `CORRETOR` e `CADASTRADOR`
+> - **Cliente Inicial:** Carlos Eduardo Mendes
+> - **Imovel Inicial:** Apartamento em Manaira (Cod: `JP-MAN-2026-01`)
+> - **Agendamento Inicial:** Visita confirmada com simulacao de financiamento
 
 ---
 
