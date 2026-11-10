@@ -1,0 +1,64 @@
+# SonarCloud — analise estatica + cobertura de testes (backend + mobile)
+#
+# Requisitos no GitHub:
+#   - Secret "SONAR": token de conta gerado em
+#     https://sonarcloud.io/account/security/ (tipo "Global analysis token")
+#   - Projeto importado no SonarCloud (sonarcloud.io) na organizacao
+#     configurada em sonar-project.properties
+
+name: SonarCloud
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - develop
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonarcloud:
+    name: Analise estatica e cobertura
+    runs-on: ubuntu-latest
+
+    steps:
+      # Historico completo necessario para o Sonar atribuir codigo aos autores
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            mobile/package-lock.json
+
+      # Reaproveita scripts/install.js (raiz + backend + mobile).
+      # DOMUS_SKIP_DB=1 pula a criacao do banco SQLite no runner.
+      - name: Instalar dependencias
+        run: npm install
+        env:
+          DOMUS_SKIP_DB: '1'
+
+      - name: Testes do backend (cobertura)
+        run: npm run test:cov --prefix backend
+
+      - name: Testes do mobile (cobertura)
+        run: npm test --prefix mobile -- --coverage
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR }}
+
+      - name: Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@master
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR }}
