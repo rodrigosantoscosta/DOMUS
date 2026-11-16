@@ -59,8 +59,8 @@ flowchart TD
 
     SCREENS --> CTX
     CTX --> API
-    API -->|Se Offline / Sem Rede| STORAGE
-    API -->|Se Conectado (JWT)| NEST
+    API -->|"Se Offline / Sem Rede"| STORAGE
+    API -->|"Se Conectado (JWT)"| NEST
     NEST --> SQLITE
 ```
 
