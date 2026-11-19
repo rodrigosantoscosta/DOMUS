@@ -1,7 +1,7 @@
 # Guia de Geracao do APK Android e Integracao com o Backend
 
 > [!NOTE]
-> **TL;DR:** O arquivo `.apk` e gerado diretamente pelo Expo EAS Cloud (`npm run build:apk`) sem exigir instalacao manual do Android Studio. O aplicativo instalado no celular Android funciona de duas maneiras complementares: 100% autonomo no Modo Offline (com dados embutidos da Persona Junior) ou conectado ao backend via Wi-Fi (`npm run dev:lan`).
+> **TL;DR:** O arquivo `.apk` e gerado diretamente pelo Expo EAS Cloud (`npm run build:apk`) sem exigir instalacao manual do Android Studio. O aplicativo instalado no celular Android opera conectado ao backend via Wi-Fi (`npm run dev:lan`) ou cabo USB (`adb reverse`), exigindo autenticacao JWT real na `LoginScreen`. O modo demonstrativo offline legado esta preservado na branch `feat/modo-demo-local`.
 
 ---
 
@@ -15,8 +15,8 @@ flowchart TD
 
     subgraph Dispositivo_Android["2. Celular do Usuario"]
         APK --> APP["App DOMUS Instalado"]
-        APP -->|Sem conexao / offline| OFFLINE["Modo Offline Local<br/>(Dados da Persona Junior)"]
-        APP -->|Na mesma rede Wi-Fi| ONLINE["Conexao com Backend<br/>(http://IP_DA_MAQUINA:3000/api)"]
+        APP -->|"Autenticacao JWT Real"| LOGIN["LoginScreen (POST /api/auth/login)"]
+        LOGIN -->|"Na mesma rede Wi-Fi ou USB"| ONLINE["Conexao com Backend<br/>(http://IP_DA_MAQUINA:3000/api)"]
     end
 
     subgraph Computador_Servidor["3. Servidor Local / Nuvem"]
@@ -58,8 +58,8 @@ Se for a primeira vez usando o EAS no seu computador:
 
 | Modo de Uso | Como Funciona | Quando Utilizar |
 | :--- | :--- | :--- |
-| **Modo 1: 100% Autonomo (Offline)** | O aplicativo possui todos os dados de demonstracao da Persona Junior embutidos. Nao necessita de computador ou servidor ligado. | Apresentacoes rapidas, demonstracoes academicas, bancas e locais sem internet. |
-| **Modo 2: Integrado com Backend Local** | Execute `npm run dev:lan` no computador. O app no celular se conecta via Wi-Fi ao backend NestJS e sincroniza o banco SQLite. | Demonstracao de fluxo ponta a ponta (login real, persistencia no banco e rotas de API). |
+| **Modo Padrao: Integrado com Backend (Online-First)** | Execute `npm run dev:lan` no computador. O app no celular autentica via JWT na `LoginScreen`, conecta-se via Wi-Fi ou USB ao backend NestJS e sincroniza o banco SQLite. | Uso operacional real, demonstracoes ponta a ponta, login real, persistencia no banco e rotas de API. |
+| **Branch Legada: Modo Demo Offline (`feat/modo-demo-local`)** | Caso seja necessario apresentar sem servidor backend disponivel, utilize a branch dedicada `feat/modo-demo-local` que preserva os dados embutidos da Persona Junior. | Contingencia em locais sem acesso a rede local ou sem computador servidor. |
 
 ---
 
@@ -74,9 +74,9 @@ Para testar a integracao com o backend em tempo real:
    ```
 3. O terminal informara o IP da sua maquina, por exemplo: `http://192.168.1.15:3000/api`.
 4. No aplicativo DOMUS no celular:
-   - Toque no indicador de status no cabecalho (topo da tela).
-   - Confirme ou digite o endereco informado pelo terminal.
-   - O aplicativo alternara o status para `Online` e se comunicara diretamente com o backend.
+   - Toque no indicador de status na tela de login ou no cabecalho.
+   - Confirme ou digite o endereco informado pelo terminal e toque em **Conectar a API e Sincronizar**.
+   - O indicador alternara para `API Online` e voce podera autenticar com um usuario cadastrado (ex.: seed `junior.corretor` ou novo cadastro de corretor).
 
 ---
 

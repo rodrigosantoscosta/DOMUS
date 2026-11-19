@@ -43,7 +43,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
   visivel,
   onFechar,
 }) => {
-  const { modoOffline, configurarModo, recarregarDados } = useDomus();
+  const { apiOnline, usuario, configurarApiUrl } = useDomus();
   const [urlInput, setUrlInput] = useState<string>(domusApi.baseUrl);
   const [testando, setTestando] = useState<boolean>(false);
   const [salvando, setSalvando] = useState<boolean>(false);
@@ -70,9 +70,14 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
 
   useEffect(() => {
     if (visivel) {
+      setUrlInput(domusApi.baseUrl);
+      setMensagemFeedback(null);
       translateY.set(0);
       dragContext.set(0);
       triggerLightImpact();
+    } else if (timerFecharRef.current) {
+      clearTimeout(timerFecharRef.current);
+      timerFecharRef.current = null;
     }
   }, [visivel, translateY, dragContext]);
 
@@ -155,7 +160,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
         triggerSuccessHaptic();
         setMensagemFeedback({
           tipo: 'sucesso',
-          texto: '[OK] Conexão estabelecida com a API backend na porta 3000!',
+          texto: '[OK] Conexão estabelecida com a API backend!',
         });
       } else {
         triggerErrorHaptic();
@@ -182,61 +187,13 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
     setSalvando(true);
     setMensagemFeedback(null);
     try {
-      await configurarModo({
-        baseUrl: urlInput.trim(),
-        forcarOffline: false,
-      });
-      await recarregarDados();
-      const offline = domusApi.obterModoOffline();
-      if (!offline) {
-        triggerSuccessHaptic();
-        setMensagemFeedback({
-          tipo: 'sucesso',
-          texto: '[OK] Conectado à API e dados sincronizados com o banco SQLite!',
-        });
-        if (timerFecharRef.current) {
-          clearTimeout(timerFecharRef.current);
-        }
-        const timer = setTimeout(() => {
-          onFechar();
-        }, 800);
-        if (timer && typeof timer.unref === 'function') {
-          timer.unref();
-        }
-        timerFecharRef.current = timer;
-      } else {
-        triggerErrorHaptic();
-        setMensagemFeedback({
-          tipo: 'erro',
-          texto: '[FALHA] Servidor inacessível ou não autenticado na porta 3000. Verifique se o backend NestJS está iniciado com banco populado (npm run prisma:seed).',
-        });
-      }
-    } catch (err: any) {
-      triggerErrorHaptic();
+      await configurarApiUrl(urlInput.trim());
+      triggerSuccessHaptic();
       setMensagemFeedback({
-        tipo: 'erro',
-        texto: `[FALHA] ${err.message || 'Erro ao sincronizar com a API'}`,
-      });
-    } finally {
-      setSalvando(false);
-      submetendoRef.current = false;
-    }
-  };
-
-  const handleAtivarOffline = async () => {
-    if (submetendoRef.current || testando || salvando) return;
-    submetendoRef.current = true;
-    setSalvando(true);
-    setMensagemFeedback(null);
-    try {
-      await configurarModo({
-        forcarOffline: true,
-      });
-      await recarregarDados();
-      triggerLightImpact();
-      setMensagemFeedback({
-        tipo: 'info',
-        texto: '[INFO] Modo Demo Local ativado.',
+        tipo: 'sucesso',
+        texto: usuario
+          ? '[OK] Conectado à API e dados sincronizados com o banco SQLite!'
+          : '[OK] Conexão com a API configurada com sucesso!',
       });
       if (timerFecharRef.current) {
         clearTimeout(timerFecharRef.current);
@@ -252,7 +209,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
       triggerErrorHaptic();
       setMensagemFeedback({
         tipo: 'erro',
-        texto: `[ERRO] ${err.message}`,
+        texto: `[FALHA] ${err.message || 'Servidor inacessível. Verifique se o backend NestJS está iniciado com banco populado (npm run prisma:seed).'}`,
       });
     } finally {
       setSalvando(false);
@@ -316,7 +273,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
             <View
               style={[
                 styles.statusBox,
-                modoOffline ? styles.statusBoxOffline : styles.statusBoxOnline,
+                apiOnline ? styles.statusBoxOnline : styles.statusBoxOffline,
               ]}
               testID="modal-status-box"
             >
@@ -324,22 +281,22 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                 style={[
                   styles.statusDot,
                   {
-                    backgroundColor: modoOffline
-                      ? DOMUS_THEME.warning
-                      : DOMUS_THEME.success,
+                    backgroundColor: apiOnline
+                      ? DOMUS_THEME.success
+                      : DOMUS_THEME.danger,
                   },
                 ]}
               />
               <View style={styles.statusTextGroup}>
                 <Text style={styles.statusLabel}>
-                  {modoOffline
-                    ? 'Status: Modo Demo Local (Offline)'
-                    : 'Status: API Online (Banco SQLite Ativo)'}
+                  {apiOnline
+                    ? 'Status: API Online (Banco SQLite Ativo)'
+                    : 'Status: API Offline (Sem Conexão)'}
                 </Text>
                 <Text style={styles.statusSubtext}>
-                  {modoOffline
-                    ? 'Operando na memória local do dispositivo. Conecte à API para persistência SQLite.'
-                    : `Sincronizando em tempo real com ${domusApi.baseUrl}`}
+                  {apiOnline
+                    ? `Sincronizando em tempo real com ${domusApi.baseUrl}`
+                    : 'Não foi possível conectar ao servidor backend. Verifique a URL e a rede.'}
                 </Text>
               </View>
             </View>
@@ -403,30 +360,13 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                 variant="primary"
                 testID="btn-salvar-conectar"
               />
-
-              <Pressable
-                onPress={handleAtivarOffline}
-                style={({ pressed }) => [
-                  styles.btnSecondaryText,
-                  pressed && styles.pressedFeedback,
-                ]}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                disabled={testando || salvando}
-                testID="btn-alternar-offline"
-                accessibilityRole="button"
-                accessibilityLabel="Usar Modo Demo Local Offline"
-              >
-                <Text style={styles.btnSecondaryTextLabel}>
-                  Usar Modo Demo Local (Offline)
-                </Text>
-              </Pressable>
             </View>
 
             {/* Guia Rapido de IPs */}
             <View style={styles.guideBox}>
-              <Text style={styles.guideTitle}>Dicas para Apresentação:</Text>
+              <Text style={styles.guideTitle}>Dicas de Rede:</Text>
               <Text style={styles.guideItem}>
-                - No Celular via USB: Execute 'adb reverse tcp:3000 tcp:3000' e use http://localhost:3000/api
+                - No Celular via USB: Execute &apos;adb reverse tcp:3000 tcp:3000&apos; e use http://localhost:3000/api
               </Text>
               <Text style={styles.guideItem}>
                 - No Celular via Wi-Fi: Utilize o IP da sua máquina na rede (ex: http://192.168.1.100:3000/api)
@@ -532,8 +472,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusBoxOffline: {
-    backgroundColor: DOMUS_THEME.warningSoft,
-    borderColor: DOMUS_THEME.warningBorder,
+    backgroundColor: DOMUS_THEME.dangerSoft,
+    borderColor: DOMUS_THEME.dangerBorder,
   },
   statusBoxOnline: {
     backgroundColor: DOMUS_THEME.successSoft,
@@ -596,18 +536,6 @@ const styles = StyleSheet.create({
   buttonGroup: {
     gap: DOMUS_SPACING.sm,
     marginTop: DOMUS_SPACING.sm,
-  },
-  btnSecondaryText: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingVertical: DOMUS_SPACING.sm,
-  },
-  btnSecondaryTextLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: DOMUS_THEME.textSecondary,
-    textDecorationLine: 'underline',
   },
   pressedFeedback: {
     opacity: 0.7,

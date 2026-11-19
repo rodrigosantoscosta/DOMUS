@@ -64,14 +64,14 @@ A tela de **Cadastro de Clientes** implementada em [React Native](https://reactn
 
 O sistema e estruturado em uma arquitetura desacoplada cliente-servidor:
 
-- **Mobile (Frontend):** Desenvolvido em [<img src="https://cdn.simpleicons.org/react/61DAFB" width="14" height="14" alt="" /> **React Native**](https://reactnative.dev/) com [<img src="https://cdn.simpleicons.org/expo/000000" width="14" height="14" alt="" /> **Expo SDK 58**](https://expo.dev/) e [<img src="https://cdn.simpleicons.org/typescript/3178C6" width="14" height="14" alt="" /> **TypeScript**](https://www.typescriptlang.org/), priorizando uso em smartphones por corretores em deslocamento e suporte multiplataforma (Android, iOS e Web). Os padroes de arquitetura, ergonomia [Apple HIG](https://developer.apple.com/design/human-interface-guidelines/), fisica de gestos e persistencia offline-first estao detalhados em [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md).
+- **Mobile (Frontend):** Desenvolvido em [<img src="https://cdn.simpleicons.org/react/61DAFB" width="14" height="14" alt="" /> **React Native**](https://reactnative.dev/) com [<img src="https://cdn.simpleicons.org/expo/000000" width="14" height="14" alt="" /> **Expo SDK 58**](https://expo.dev/) e [<img src="https://cdn.simpleicons.org/typescript/3178C6" width="14" height="14" alt="" /> **TypeScript**](https://www.typescriptlang.org/), priorizando uso em smartphones por corretores em deslocamento e suporte multiplataforma (Android, iOS e Web). Os padroes de arquitetura, ergonomia [Apple HIG](https://developer.apple.com/design/human-interface-guidelines/), fisica de gestos e comunicacao online-first com autenticacao JWT real estao detalhados em [docs/MOBILE_SYSTEM_DESIGN.md](docs/MOBILE_SYSTEM_DESIGN.md).
 - **Backend (API):** Desenvolvido em [<img src="https://cdn.simpleicons.org/nodedotjs/339933" width="14" height="14" alt="" /> **Node.js 22**](https://nodejs.org/) com [<img src="https://cdn.simpleicons.org/typescript/3178C6" width="14" height="14" alt="" /> **TypeScript**](https://www.typescriptlang.org/) e [<img src="https://cdn.simpleicons.org/nestjs/E0234E" width="14" height="14" alt="" /> **NestJS 11**](https://nestjs.com/), seguindo principios de arquitetura modular, injecao de dependencias e validacao estrita por DTOs com [**class-validator**](https://github.com/typestack/class-validator). Detalhes em [backend/README.md](backend/README.md).
 - **Banco de Dados e Persistencia:** [<img src="https://cdn.simpleicons.org/prisma/2D3748" width="14" height="14" alt="" /> **Prisma ORM**](https://www.prisma.io/) com [<img src="https://cdn.simpleicons.org/sqlite/003B57" width="14" height="14" alt="" /> **SQLite**](https://www.sqlite.org/) persistente (`dev.db`) e historico de **Migrations SQL versionadas**, permitindo execucao zero-config tanto nativa quanto via [<img src="https://cdn.simpleicons.org/docker/2496ED" width="14" height="14" alt="" /> **Docker**](https://www.docker.com/).
 - **Testes e Qualidade:** Cobertura de testes unitarios e ponta a ponta (E2E) com [<img src="https://cdn.simpleicons.org/jest/C21325" width="14" height="14" alt="" /> **Jest**](https://jestjs.io/) e [**Supertest**](https://github.com/ladjs/supertest), alem de tipagem estrita com [<img src="https://cdn.simpleicons.org/typescript/3178C6" width="14" height="14" alt="" /> **TypeScript**](https://www.typescriptlang.org/).
 
 ### Stack Tecnologica do Modulo Mobile
 
-O modulo movel (`mobile/`) foi concebido segundo padroes de engenharia de software movel de alta performance, garantindo resposta tatil fluida a 60/120 FPS, suporte offline-first e fidelidade ergonomica as diretrizes [Apple HIG](https://developer.apple.com/design/human-interface-guidelines/):
+O modulo movel (`mobile/`) foi concebido segundo padroes de engenharia de software movel de alta performance, garantindo resposta tatil fluida a 60/120 FPS, integracao online-first autenticada via JWT e fidelidade ergonomica as diretrizes [Apple HIG](https://developer.apple.com/design/human-interface-guidelines/):
 
 | Camada / Tecnologia | Versao | Papel Arquitetural e Justificativa Tecnica |
 | :--- | :--- | :--- |
@@ -85,7 +85,7 @@ O modulo movel (`mobile/`) foi concebido segundo padroes de engenharia de softwa
 | [**FlashList**](https://shopify.github.io/flash-list/) (`@shopify/flash-list`) | `^2.3.2` | Virtualizacao de listas de alta performance com reciclagem de celulas, reduzindo uso de memoria e coletas de lixo. |
 | [**Safe Area Context**](https://github.com/th3rdwave/react-native-safe-area-context) (`react-native-safe-area-context`) | `~5.11.1` | Metricas dinamicas de hardware (Dynamic Island, notch e barra de gestos), garantindo touch targets >= 44pt. |
 | [**Expo Haptics**](https://docs.expo.dev/versions/latest/sdk/haptics/) (`expo-haptics`) | `^58.0.7` | Feedback tatil sensorial em botoes e acoes com camada de degradacao graciosa para web e testes. |
-| [**AsyncStorage**](https://docs.expo.dev/versions/latest/sdk/async-storage/) (`@react-native-async-storage/async-storage`) | `^2.2.0` | Persistencia local assincrona nao-volatil para cache de dados offline, token JWT e configuracoes de rede. |
+| [**AsyncStorage**](https://docs.expo.dev/versions/latest/sdk/async-storage/) (`@react-native-async-storage/async-storage`) | `^2.2.0` | Persistencia local assincrona nao-volatil para token JWT de sessao e URL configurada da API backend. |
 | [**Vector Icons**](https://icons.expo.fyi/) (`@expo/vector-icons`) | `^15.1.1` | Iconografia vetorial nitida (Ionicons, Feather) em todas as densidades de tela (`@2x`, `@3x`, Retina). |
 | [**DateTimePicker**](https://github.com/react-native-datetimepicker/datetimepicker) (`@react-native-community/datetimepicker`) | `^9.2.1` | Seletores nativos de data e hora para Android/iOS com fallback web transparente via API `showPicker()`. |
 | [**Suporte Web**](https://necolas.github.io/react-native-web/) (`react-native-web` / `@expo/metro-runtime`) | `^0.21.4` | Mapeamento de primitivas nativas para elementos DOM semanticos, permitindo execucao no navegador (`port 8081`). |
@@ -111,7 +111,7 @@ O modulo de backend (`backend/`) foi estruturado seguindo principios SOLID, Clea
 #### Pilares Tecnicos da Interface Mobile:
 - **Componentes Basicos Nativos:** Uso comprovado de `View`, `Text`, `Image` (logotipo oficial em [mobile/assets/logo.png](mobile/assets/logo.png)), `ScrollView` e `Pressable` (com feedback tatil e microescala).
 - **Feedback Nao-Bloqueante:** Notificacoes flutuantes no topo (`DomusToast`), botoes integrados com 3 estados (`idle` -> `loading` -> `success`) e confirmacoes inline em dois toques.
-- **Arquitetura Hibrida Offline-First:** Deteccao automatica do IP da maquina via `expo-constants`, auto-autenticacao JWT e alternancia transparente entre o banco real e o modo demo local.
+- **Arquitetura Online-First Autenticada:** Deteccao automatica do IP da maquina via `expo-constants`, autenticacao JWT real na `LoginScreen` (`POST /api/auth/login` e `POST /api/usuarios`) e feedback explicito de conectividade via `ConnectionModal` (o modo demo offline legado permanece preservado na branch `feat/modo-demo-local`).
 
 ---
 
@@ -362,7 +362,7 @@ npm start
 flowchart LR
     A["Computador (Host LAN)<br/>npm run dev:lan"] -->|0.0.0.0:3000| B["Roteador Wi-Fi (LAN)"]
     B -->|http://192.168.x.x:3000/api| C["Celular Fisico<br/>(Expo Go ou APK Instalado)"]
-    C -->|Toque no Cabecalho| D["Modal de Conexao<br/>(Testar Ping / Alternar Online)"]
+    C -->|Toque no Cabecalho ou Login| D["Modal de Conexao<br/>(Testar Ping e Salvar URL)"]
     D -->|Sucesso| E["Sincronizacao em Tempo Real<br/>com o Banco SQLite"]
 ```
 
@@ -384,15 +384,15 @@ flowchart LR
    - **Pelo Expo Go:** Em outro terminal, execute `npm run dev:mobile` e aponte a camera do celular para o QR Code.
    - **Pelo APK Instalado:** Abra o aplicativo **DOMUS** diretamente no seu celular Android.
 4. **Validar e Ativar a Conexao no App:**
-   - Toque no badge de status no cabecalho (topo da tela) para abrir o **Modal de Conexao**.
+   - Toque no indicador de status na tela de login ou no cabecalho para abrir o **Modal de Conexao**.
    - O aplicativo tenta detectar o IP automaticamente via `expo-constants`. Caso necessario, confirme ou digite o endereco informado pelo terminal (ex.: `http://192.168.1.15:3000/api`).
-   - Toque em **Testar Conexao (Ping)** e depois em **Alternar para Modo Online (Usar API)**.
-   - O indicador mudara para **Online** (verde) e todos os cadastros e agendamentos serao sincronizados no banco de dados SQLite real.
+   - Toque em **Testar Conexao** e depois em **Conectar a API e Sincronizar**.
+   - O indicador mudara para **API Online** (verde), permitindo fazer login com sua conta (ou criar conta de corretor) e sincronizar todos os dados com o banco SQLite real.
 
 #### Diagnostico e Casos Especiais:
 - **Bloqueio de Firewall:** Se o celular nao conseguir alcancar o backend, verifique se o Firewall do Windows liberou permissoes de rede privada para o executavel do Node.js.
 - **Alternativa via Cabo USB (ADB Reverse):** Com o celular conectado via USB e depuracao ativada, execute `adb reverse tcp:3000 tcp:3000` e utilize `http://localhost:3000/api` no celular.
-- **Resiliencia do Modo Offline:** Caso a rede local da faculdade/banca bloqueie portas locais, o DOMUS ativa automaticamente o **Modo Offline** com todos os dados pre-carregados da Persona Junior, permitindo navegacao e demonstracao completa de todas as 4 abas sem depender de conexao ativa.
+- **Branch de Modo Demo Offline:** O antigo Modo Demo Local com dados embutidos foi removido do fluxo principal e preservado integralmente na branch `feat/modo-demo-local` para eventuais apresentacoes sem rede.
 - **Guia do Instalador APK:** Para gerar e instalar o arquivo `.apk` compilado via nuvem, veja o [docs/GUIA_BUILD_APK_E_BACKEND.md](docs/GUIA_BUILD_APK_E_BACKEND.md).
 
 ---

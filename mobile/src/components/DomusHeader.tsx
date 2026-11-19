@@ -15,18 +15,15 @@ import {
   DOMUS_SPACING,
   DOMUS_RADIUS,
 } from '../theme/tokens';
-import { triggerLightImpact, triggerMediumImpact } from '../utils/haptics';
-import { useSafeState, useSafeRef, useSafeEffect } from '../utils/safeHooks';
+import { useSafeState } from '../utils/safeHooks';
 
 const domusLogo = require('../../assets/logo.png');
 
 export interface DomusHeaderProps {
   titulo?: string;
   usuarioNome?: string;
-  modoOffline?: boolean;
-  confirmarResetEmDoisToques?: boolean;
+  apiOnline?: boolean;
   onLogout?: () => void;
-  onResetDemo?: () => void;
   onPressStatus?: () => void;
   style?: StyleProp<ViewStyle>;
 }
@@ -34,57 +31,12 @@ export interface DomusHeaderProps {
 export const DomusHeader: React.FC<DomusHeaderProps> = ({
   titulo = 'DOMUS',
   usuarioNome,
-  modoOffline = true,
-  confirmarResetEmDoisToques = false,
+  apiOnline = true,
   onLogout,
-  onResetDemo,
   onPressStatus,
   style,
 }) => {
-  const [confirmandoReset, setConfirmandoReset] = useSafeState<boolean>(false);
   const [logoErro, setLogoErro] = useSafeState<boolean>(false);
-  const resetTimerRef = useSafeRef<NodeJS.Timeout | null>(null);
-
-  useSafeEffect(() => {
-    return () => {
-      if (resetTimerRef.current) {
-        clearTimeout(resetTimerRef.current);
-        resetTimerRef.current = null;
-      }
-    };
-  }, []);
-
-  const handlePressResetDemo = () => {
-    if (!onResetDemo) return;
-
-    if (!confirmarResetEmDoisToques) {
-      onResetDemo();
-      return;
-    }
-
-    if (!confirmandoReset) {
-      setConfirmandoReset(true);
-      triggerLightImpact();
-      if (resetTimerRef.current) {
-        clearTimeout(resetTimerRef.current);
-      }
-      const timer = setTimeout(() => {
-        setConfirmandoReset(false);
-      }, 3500);
-      if (timer && typeof timer.unref === 'function') {
-        timer.unref();
-      }
-      resetTimerRef.current = timer;
-    } else {
-      if (resetTimerRef.current) {
-        clearTimeout(resetTimerRef.current);
-        resetTimerRef.current = null;
-      }
-      setConfirmandoReset(false);
-      triggerMediumImpact();
-      onResetDemo();
-    }
-  };
 
   return (
     <SafeAreaView style={[styles.safeArea, style]}>
@@ -134,7 +86,7 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
           <Pressable
             style={({ pressed }) => [
               styles.statusBadge,
-              modoOffline ? styles.statusBadgeOffline : styles.statusBadgeOnline,
+              apiOnline ? styles.statusBadgeOnline : styles.statusBadgeOffline,
               pressed && onPressStatus ? styles.statusBadgePressed : null,
             ]}
             onPress={onPressStatus}
@@ -142,15 +94,15 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             testID="header-status-badge"
             accessibilityRole="button"
-            accessibilityLabel={`Status: ${modoOffline ? 'Modo Demo Local' : 'API Online'}`}
+            accessibilityLabel={`Status: ${apiOnline ? 'API Online' : 'API Offline'}`}
           >
             <View
               style={[
                 styles.statusDot,
                 {
-                  backgroundColor: modoOffline
-                    ? DOMUS_THEME.warning
-                    : DOMUS_THEME.success,
+                  backgroundColor: apiOnline
+                    ? DOMUS_THEME.success
+                    : DOMUS_THEME.danger,
                 },
               ]}
             />
@@ -158,82 +110,43 @@ export const DomusHeader: React.FC<DomusHeaderProps> = ({
               style={[
                 styles.statusText,
                 {
-                  color: modoOffline
-                    ? DOMUS_THEME.warning
-                    : DOMUS_THEME.success,
+                  color: apiOnline
+                    ? DOMUS_THEME.success
+                    : DOMUS_THEME.danger,
                 },
               ]}
             >
-              {modoOffline ? 'Modo Demo Local' : 'API Online'}
+              {apiOnline ? 'API Online' : 'API Offline'}
             </Text>
           </Pressable>
         </View>
 
-        {/* Linha Inferior: Botoes de Acao (Reset Demo e Sair) */}
-        {(onResetDemo || onLogout) && (
+        {/* Linha Inferior: Botao de Acao (Sair) */}
+        {onLogout ? (
           <View style={styles.actionsRow}>
-            {onResetDemo ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.actionButton,
-                  confirmandoReset && styles.actionButtonConfirming,
-                  pressed && styles.actionButtonPressed,
-                ]}
-                onPress={handlePressResetDemo}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                testID="btn-header-reset-demo"
-                accessibilityLabel={
-                  confirmandoReset
-                    ? 'Confirmar Reset?'
-                    : 'Resetar dados de demonstracao'
-                }
-                accessibilityRole="button"
-              >
-                <Ionicons
-                  name={confirmandoReset ? 'alert-circle' : 'refresh-outline'}
-                  size={15}
-                  color={
-                    confirmandoReset
-                      ? DOMUS_THEME.primaryText
-                      : DOMUS_THEME.textSecondary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.actionButtonText,
-                    confirmandoReset && styles.actionButtonTextConfirming,
-                  ]}
-                >
-                  {confirmandoReset ? 'Confirmar Reset?' : 'Reset Demo'}
-                </Text>
-              </Pressable>
-            ) : null}
-
-            {onLogout ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.actionButton,
-                  styles.logoutButton,
-                  pressed && styles.actionButtonPressed,
-                ]}
-                onPress={onLogout}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                testID="btn-header-logout"
-                accessibilityLabel="Sair do aplicativo"
-                accessibilityRole="button"
-              >
-                <Ionicons
-                  name="log-out-outline"
-                  size={15}
-                  color={DOMUS_THEME.danger}
-                />
-                <Text style={[styles.actionButtonText, styles.logoutButtonText]}>
-                  Sair
-                </Text>
-              </Pressable>
-            ) : null}
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionButton,
+                styles.logoutButton,
+                pressed && styles.actionButtonPressed,
+              ]}
+              onPress={onLogout}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              testID="btn-header-logout"
+              accessibilityLabel="Sair do aplicativo"
+              accessibilityRole="button"
+            >
+              <Ionicons
+                name="log-out-outline"
+                size={15}
+                color={DOMUS_THEME.danger}
+              />
+              <Text style={[styles.actionButtonText, styles.logoutButtonText]}>
+                Sair
+              </Text>
+            </Pressable>
           </View>
-        )}
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -304,8 +217,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusBadgeOffline: {
-    backgroundColor: DOMUS_THEME.warningSoft,
-    borderColor: DOMUS_THEME.warningBorder,
+    backgroundColor: DOMUS_THEME.dangerSoft,
+    borderColor: DOMUS_THEME.dangerBorder,
   },
   statusBadgeOnline: {
     backgroundColor: DOMUS_THEME.successSoft,
@@ -354,10 +267,6 @@ const styles = StyleSheet.create({
     borderColor: DOMUS_THEME.border,
     gap: 6,
   },
-  actionButtonConfirming: {
-    backgroundColor: DOMUS_THEME.danger,
-    borderColor: DOMUS_THEME.danger,
-  },
   logoutButton: {
     backgroundColor: DOMUS_THEME.dangerSoft,
     borderColor: DOMUS_THEME.dangerBorder,
@@ -369,10 +278,6 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: DOMUS_THEME.danger,
-  },
-  actionButtonTextConfirming: {
-    color: DOMUS_THEME.primaryText,
-    fontWeight: '700',
   },
   statusBadgePressed: {
     opacity: 0.7,

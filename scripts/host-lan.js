@@ -34,10 +34,11 @@ console.log('-------------------------------------------------------------------
 console.log(' [COMO CONECTAR O APLICATIVO ANDROID (APK)]');
 console.log(' 1. Certifique-se de que o celular esta conectado no mesmo Wi-Fi.');
 console.log(' 2. Abra o app DOMUS no celular.');
-console.log(' 3. Toque no status de conexao (topo do app) e confirme a URL:');
+console.log(' 3. Toque no indicador de status (na tela de login ou no topo)');
+console.log('    e confirme a URL da API:');
 console.log(`    http://${localIp}:${port}/api`);
-console.log(' 4. Caso o celular esteja offline ou fora do Wi-Fi, o app');
-console.log('    continuara funcionando 100% no Modo Offline integrado.');
+console.log(' 4. Autentique-se com um usuario cadastrado no backend (ou crie');
+console.log('    uma nova conta na aba "Criar Conta" da tela de Login).');
 console.log('===================================================================\n');
 
 // Inicia o backend NestJS

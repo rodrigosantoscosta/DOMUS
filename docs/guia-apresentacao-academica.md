@@ -70,7 +70,7 @@ npm run prisma:studio
 
 ## 4. Passo 3: Conectar o Celular (Expo Go) ao Backend
 
-Ao abrir o app no celular, toque na **badge de status no cabecalho** ("Modo Demo Local" ou "API Online") para abrir o **Modal de Conexao**. Escolha uma das tres formas de conectar:
+Ao abrir o app no celular, toque na **badge de status** ("API Online" ou "API Offline", na tela de login ou no cabecalho) para abrir o **Modal de Conexao**. Escolha uma das tres formas de conectar:
 
 ### Cenario 1: Conexao via Cabo USB com ADB (A mais rapida e imune a quedas de Wi-Fi)
 1. Conecte o celular ao computador via cabo USB (com Depuracao USB ativada no celular).
@@ -116,5 +116,5 @@ Ao abrir o app no celular, toque na **badge de status no cabecalho** ("Modo Demo
 4. **Comprovar a Persistencia no Banco de Dados:**
    - Alternar para a aba do **Prisma Studio** no computador (`http://localhost:5555`) ou Swagger (`http://localhost:3000/api/docs`).
    - Mostrar para a banca o registro persistido na tabela `Cliente` do banco SQLite.
-5. **Demonstrar a Resiliencia (Plano de Contingencia):**
-   - Caso seja questionado sobre funcionamento offline (ex: corretor em garagem ou subsolo de predio sem sinal), demonstrar o **Modo Demo Local**, provando que o app nunca trava em tela branca e atende a rotina de mobilidade do corretor.
+5. **Demonstrar a Resiliencia e Preservacao de Branch:**
+   - Em caso de perda de conexao com a API, o aplicativo exibe status `API Offline` e banner nao-bloqueante com acoes de tentativa de reconexao e ajuste da URL sem travar a interface; caso seja necessario demonstrar sem servidor backend disponivel, a versao com Modo Demo Local offline encontra-se preservada na branch `feat/modo-demo-local`.

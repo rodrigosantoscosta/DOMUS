@@ -73,27 +73,23 @@ function encontrarPorTestId(node: any, testId: string): any {
 
 describe('Componentes Visuais do Prototipo DOMUS', () => {
   describe('DomusHeader', () => {
-    it('renderiza o titulo DOMUS, badge de conexao e suporta acoes de logout e reset demo', () => {
+    it('renderiza o titulo DOMUS, badge de conexao "API Offline" e suporta acao de logout sem botao reset demo', () => {
       const onLogout = jest.fn();
-      const onResetDemo = jest.fn();
 
       const el = DomusHeader({
         titulo: 'DOMUS',
-        modoOffline: true,
+        apiOnline: false,
         usuarioNome: 'Junior Corretor',
         onLogout,
-        onResetDemo,
       });
 
       const textos = coletarTextos(el);
       expect(textos.join(' ')).toContain('DOMUS');
-      expect(textos.join(' ')).toContain('Modo Demo Local');
+      expect(textos.join(' ')).toContain('API Offline');
       expect(textos.join(' ')).toContain('Junior');
 
       const btnReset = encontrarPorTestId(el, 'btn-header-reset-demo');
-      expect(btnReset).toBeDefined();
-      btnReset.props.onPress();
-      expect(onResetDemo).toHaveBeenCalledTimes(1);
+      expect(btnReset).toBeNull();
 
       const btnLogout = encontrarPorTestId(el, 'btn-header-logout');
       expect(btnLogout).toBeDefined();
@@ -101,43 +97,12 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
       expect(onLogout).toHaveBeenCalledTimes(1);
     });
 
-    it('exibe badge "API Online" quando modoOffline for falso', () => {
+    it('exibe badge "API Online" quando apiOnline for verdadeiro', () => {
       const el = DomusHeader({
-        modoOffline: false,
+        apiOnline: true,
       });
       const textos = coletarTextos(el);
       expect(textos.join(' ')).toContain('API Online');
-    });
-
-    it('suporta modo de confirmacao em dois toques para reset demo quando habilitado', () => {
-      const onResetDemo = jest.fn();
-      let root: any;
-      renderer.act(() => {
-        root = renderer.create(
-          <DomusHeader
-            onResetDemo={onResetDemo}
-            confirmarResetEmDoisToques={true}
-          />
-        );
-      });
-
-      const btnReset = root.root.findByProps({ testID: 'btn-header-reset-demo' });
-      let textos = coletarTextos(root.toJSON());
-      expect(textos).toContain('Reset Demo');
-
-      // 1o clique: entra em confirmacao
-      renderer.act(() => {
-        btnReset.props.onPress();
-      });
-      expect(onResetDemo).not.toHaveBeenCalled();
-      textos = coletarTextos(root.toJSON());
-      expect(textos).toContain('Confirmar Reset?');
-
-      // 2o clique: confirma execucao
-      renderer.act(() => {
-        btnReset.props.onPress();
-      });
-      expect(onResetDemo).toHaveBeenCalledTimes(1);
     });
 
     it('garante touch targets minimos de 44pt no header (Apple HIG)', () => {
@@ -146,16 +111,12 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
         root = renderer.create(
           <DomusHeader
             usuarioNome="Junior"
-            onResetDemo={jest.fn()}
+            apiOnline={true}
             onLogout={jest.fn()}
             onPressStatus={jest.fn()}
           />
         );
       });
-
-      const btnReset = root.root.findByProps({ testID: 'btn-header-reset-demo' });
-      const styleReset = StyleSheet.flatten(btnReset.props.style);
-      expect(styleReset.minHeight).toBeGreaterThanOrEqual(44);
 
       const btnLogout = root.root.findByProps({ testID: 'btn-header-logout' });
       const styleLogout = StyleSheet.flatten(btnLogout.props.style);
@@ -446,13 +407,13 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
   });
 
   describe('ConnectionModal', () => {
-    it('renderiza os elementos principais de conexao', () => {
+    it('renderiza os elementos principais de conexao sem botao de modo demo/offline', () => {
       const onFechar = jest.fn();
       let root: any;
 
       renderer.act(() => {
         root = renderer.create(
-          <DomusProvider autoLoginDemo={false}>
+          <DomusProvider verificarSessaoInicial={false}>
             <ConnectionModal visivel={true} onFechar={onFechar} />
           </DomusProvider>
         );
@@ -463,6 +424,12 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
       expect(modal).toBeDefined();
       expect(modal.props.visible).toBe(true);
 
+      const btnTestar = root.root.findByProps({ testID: 'btn-testar-conexao' });
+      const btnConectar = root.root.findByProps({ testID: 'btn-salvar-conectar' });
+      expect(btnTestar).toBeDefined();
+      expect(btnConectar).toBeDefined();
+      expect(root.root.findAllByProps({ testID: 'btn-alternar-offline' })).toHaveLength(0);
+
       const btnFechar = root.root.findByProps({ testID: 'btn-fechar-modal-conexao' });
       expect(btnFechar).toBeDefined();
       btnFechar.props.onPress();
@@ -472,11 +439,11 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
       });
     });
 
-    it('garante touch targets minimos de 44pt no botao fechar e alternar offline do Bottom Sheet', () => {
+    it('garante touch targets minimos de 44pt nos botoes do Bottom Sheet de conexao', () => {
       let root: any;
       renderer.act(() => {
         root = renderer.create(
-          <DomusProvider autoLoginDemo={false}>
+          <DomusProvider verificarSessaoInicial={false}>
             <ConnectionModal visivel={true} onFechar={jest.fn()} />
           </DomusProvider>
         );
@@ -487,9 +454,14 @@ describe('Componentes Visuais do Prototipo DOMUS', () => {
       expect(styleFechar.minHeight).toBeGreaterThanOrEqual(44);
       expect(styleFechar.minWidth).toBeGreaterThanOrEqual(44);
 
-      const btnOffline = root.root.findByProps({ testID: 'btn-alternar-offline' });
-      const styleOffline = StyleSheet.flatten(btnOffline.props.style);
-      expect(styleOffline.minHeight).toBeGreaterThanOrEqual(44);
+      const btnTestar = root.root.findByProps({ testID: 'btn-testar-conexao' });
+      const styleTestar = StyleSheet.flatten(btnTestar.findByType('Pressable').props.style);
+      expect(styleTestar.minHeight).toBeGreaterThanOrEqual(44);
+
+      const btnConectar = root.root.findByProps({ testID: 'btn-salvar-conectar' });
+      const styleConectar = StyleSheet.flatten(btnConectar.findByType('Pressable').props.style);
+      expect(styleConectar.minHeight).toBeGreaterThanOrEqual(44);
+
       renderer.act(() => {
         root.unmount();
       });

@@ -53,8 +53,9 @@ export interface CreateUsuarioInput {
   login: string;
   email: string;
   senha: string;
+  confirmarSenha?: string;
   cpf?: string;
-  perfis?: string;
+  perfis?: ('CORRETOR' | 'CADASTRADOR')[];
 }
 
 export interface LoginInput {
@@ -65,7 +66,6 @@ export interface LoginInput {
 export interface LoginResponse {
   accessToken: string;
   usuario: Usuario;
-  modoOffline: boolean;
 }
 
 export interface Cliente {
@@ -266,16 +266,6 @@ export interface ResumoAvisosProximos {
   alertas: AvisoItem[];
 }
 
-export interface DomusLocalState {
-  usuarios: Usuario[];
-  clientes: Cliente[];
-  imoveis: Imovel[];
-  agendamentos: Agendamento[];
-  avisos: AvisoItem[];
-  usuarioLogadoId: number | null;
-  modoOfflineForcado: boolean;
-  apiBaseUrl: string;
-}
 
 export interface FiltroAgendamentos {
   status?: StatusAgendamento;
