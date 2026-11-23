@@ -86,7 +86,8 @@ describe('AgendamentosService (RN07 a RN12, RN16)', () => {
     expect(visita.tipo).toBe('VISITA');
     expect(visita.canalContato).toBe('WHATSAPP');
     expect(visita.duracaoMinutos).toBe(60);
-    expect(visita.dataHora?.toISOString()).toBe('2026-10-20T15:00:00.000Z');
+    // 15:00 no fuso padrao America/Recife (-03:00) equivale a 18:00 UTC
+    expect(visita.dataHora?.toISOString()).toBe('2026-10-20T18:00:00.000Z');
   });
 
   it('RN10: deve bloquear conflito de horário na agenda do mesmo corretor', async () => {
@@ -185,5 +186,97 @@ describe('AgendamentosService (RN07 a RN12, RN16)', () => {
       observacao: 'Visita realizada com sucesso',
     });
     expect(concluido.status).toBe('CONCLUIDO');
+  });
+
+  it('RN16 (Solucao 1): deve preservar horario local (-03:00) com ctz=America/Recife e recalcular URL/eventId no update', async () => {
+    const cliente = await clientesService.create({
+      nomeCompleto: 'Beatriz Oliveira',
+      cpf: '55566677788',
+      telefone: '83991234567',
+      canalPrincipalContato: 'WHATSAPP',
+    });
+    const imovel1 = await imoveisService.create({
+      endereco: 'Av. Epitacio Pessoa, 100',
+      bairro: 'Estados',
+    });
+    const imovel2 = await imoveisService.create({
+      endereco: 'Rua Tambau, 250',
+      bairro: 'Tambau',
+    });
+
+    const criado = await agendamentosService.create({
+      titulo: 'Visita inicial',
+      descricao: 'Apresentar planta padrao',
+      tipo: 'VISITA',
+      data: '2026-11-15',
+      hora: '14:00',
+      duracaoMinutos: 60,
+      clienteId: cliente.id,
+      imovelId: imovel1.id,
+      sincronizarGoogleCalendar: true,
+    });
+
+    expect(criado.dataHora?.toISOString()).toBe('2026-11-15T17:00:00.000Z');
+    expect(criado.googleCalendarEventId).toBe(`domus-evt-${criado.id}`);
+    expect(criado.googleCalendarUrl).toContain('dates=20261115T170000Z%2F20261115T180000Z');
+    expect(criado.googleCalendarUrl).toContain('ctz=America%2FRecife');
+    expect(criado.googleCalendarUrl).toContain('Epitacio+Pessoa');
+
+    const atualizado = await agendamentosService.update(criado.id, {
+      titulo: 'Visita remarcada Tambau',
+      descricao: 'Levar chaves e proposta revisada',
+      data: '2026-11-16',
+      hora: '16:30',
+      duracaoMinutos: 90,
+      imovelId: imovel2.id,
+    });
+
+    expect(atualizado.dataHora?.toISOString()).toBe('2026-11-16T19:30:00.000Z');
+    expect(atualizado.googleCalendarEventId).toBe(`domus-evt-${criado.id}`);
+    expect(atualizado.googleCalendarUrl).toContain('dates=20261116T193000Z%2F20261116T210000Z');
+    expect(atualizado.googleCalendarUrl).toContain('ctz=America%2FRecife');
+    expect(atualizado.googleCalendarUrl).toContain('Visita+remarcada+Tambau');
+    expect(atualizado.googleCalendarUrl).toContain('Levar+chaves+e+proposta+revisada');
+    expect(atualizado.googleCalendarUrl).toContain('Tambau');
+
+    // Alteracao parcial apenas de hora (cruzando meia-noite UTC: 23:00 -03:00 -> 02:00 UTC do dia seguinte)
+    const apenasHora = await agendamentosService.update(criado.id, {
+      hora: '23:00',
+    });
+    expect(apenasHora.dataHora?.toISOString()).toBe('2026-11-17T02:00:00.000Z');
+    expect(apenasHora.googleCalendarUrl).toContain('dates=20261117T020000Z%2F20261117T033000Z');
+
+    // Alteracao parcial apenas de data deve preservar a hora local existente (23:00)
+    const apenasData = await agendamentosService.update(criado.id, {
+      data: '2026-11-18',
+    });
+    expect(apenasData.dataHora?.toISOString()).toBe('2026-11-19T02:00:00.000Z');
+
+    // Data de calendario inexistente deve falhar explicitamente
+    await expect(
+      agendamentosService.create({
+        titulo: 'Data inexistente',
+        tipo: 'ATENDIMENTO',
+        data: '31/02/2026',
+        hora: '10:00',
+        clienteId: cliente.id,
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    // Remocao de data em ATENDIMENTO limpa os campos de URL/eventId do Google Calendar
+    const semData = await agendamentosService.update(criado.id, {
+      tipo: 'ATENDIMENTO',
+      data: '',
+    });
+    expect(semData.dataHora).toBeNull();
+    expect(semData.googleCalendarEventId).toBeNull();
+    expect(semData.googleCalendarUrl).toBeNull();
+
+    const desativado = await agendamentosService.update(criado.id, {
+      sincronizarGoogleCalendar: false,
+    });
+    expect(desativado.sincronizarGoogleCalendar).toBe(false);
+    expect(desativado.googleCalendarEventId).toBeNull();
+    expect(desativado.googleCalendarUrl).toBeNull();
   });
 });

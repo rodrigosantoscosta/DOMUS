@@ -10,6 +10,21 @@ import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { ProgramarRetornoDto } from './dto/programar-retorno.dto';
 import { UpdateAgendamentoDto } from './dto/update-agendamento.dto';
 
+const DEFAULT_TIMEZONE_OFFSET = /^[+-]\d{2}:\d{2}$/.test(
+  process.env.APP_TIMEZONE_OFFSET || '',
+)
+  ? (process.env.APP_TIMEZONE_OFFSET as string)
+  : '-03:00';
+const DEFAULT_GOOGLE_TIMEZONE =
+  process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Recife';
+
+function obterOffsetEmMinutos(offset: string): number {
+  const matchOffset = /^([+-])(\d{2}):(\d{2})$/.exec(offset);
+  if (!matchOffset) return -180;
+  const sinal = matchOffset[1] === '-' ? -1 : 1;
+  return sinal * (Number(matchOffset[2]) * 60 + Number(matchOffset[3]));
+}
+
 @Injectable()
 export class AgendamentosService {
   constructor(private readonly prisma: PrismaService) {}
@@ -20,7 +35,13 @@ export class AgendamentosService {
     dataHoraIso?: string | null,
   ): Date | null {
     if (dataHoraIso && dataHoraIso.trim()) {
-      const parsed = new Date(dataHoraIso.trim());
+      const valor = dataHoraIso.trim();
+      const normalizado = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(
+        valor,
+      )
+        ? `${valor}${DEFAULT_TIMEZONE_OFFSET}`
+        : valor;
+      const parsed = new Date(normalizado);
       if (isNaN(parsed.getTime())) {
         throw new BadRequestException(
           `Formato de dataHora inválido: ${dataHoraIso}`,
@@ -47,7 +68,12 @@ export class AgendamentosService {
       const partes = dataLimpa.split('/').map(Number);
       [dia, mes, ano] = partes;
     } else {
-      const tentativa = new Date(dataLimpa);
+      const normalizado = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(
+        dataLimpa,
+      )
+        ? `${dataLimpa}${DEFAULT_TIMEZONE_OFFSET}`
+        : dataLimpa;
+      const tentativa = new Date(normalizado);
       if (isNaN(tentativa.getTime())) {
         throw new BadRequestException(
           `Formato de data inválido: ${data}. Use YYYY-MM-DD ou DD/MM/YYYY`,
@@ -78,13 +104,22 @@ export class AgendamentosService {
       throw new BadRequestException('Data ou hora fora do intervalo válido');
     }
 
+    const verificacaoCalendario = new Date(Date.UTC(ano, mes - 1, dia));
+    if (
+      verificacaoCalendario.getUTCFullYear() !== ano ||
+      verificacaoCalendario.getUTCMonth() + 1 !== mes ||
+      verificacaoCalendario.getUTCDate() !== dia
+    ) {
+      throw new BadRequestException('Data ou hora fora do intervalo válido');
+    }
+
     const isoString = `${String(ano).padStart(4, '0')}-${String(mes).padStart(
       2,
       '0',
     )}-${String(dia).padStart(2, '0')}T${String(horas).padStart(
       2,
       '0',
-    )}:${String(minutos).padStart(2, '0')}:00.000Z`;
+    )}:${String(minutos).padStart(2, '0')}:00${DEFAULT_TIMEZONE_OFFSET}`;
 
     const resultado = new Date(isoString);
     if (isNaN(resultado.getTime())) {
@@ -178,6 +213,7 @@ export class AgendamentosService {
       action: 'TEMPLATE',
       text: `[DOMUS] ${agendamento.titulo}`,
       dates: `${this.formatarDataGoogle(inicio)}/${this.formatarDataGoogle(fim)}`,
+      ctz: DEFAULT_GOOGLE_TIMEZONE,
       details: detailsTexto,
       ...(locationTexto ? { location: locationTexto } : {}),
     });
@@ -192,8 +228,14 @@ export class AgendamentosService {
         summary: `[DOMUS] ${agendamento.titulo}`,
         description: detailsTexto,
         location: locationTexto || undefined,
-        start: { dateTime: inicio.toISOString() },
-        end: { dateTime: fim.toISOString() },
+        start: {
+          dateTime: inicio.toISOString(),
+          timeZone: DEFAULT_GOOGLE_TIMEZONE,
+        },
+        end: {
+          dateTime: fim.toISOString(),
+          timeZone: DEFAULT_GOOGLE_TIMEZONE,
+        },
         reminders: {
           useDefault: false,
           overrides: [
@@ -747,11 +789,63 @@ export class AgendamentosService {
     const novoCorretorId =
       dto.corretorId !== undefined ? dto.corretorId : existente.corretorId;
 
+    if (
+      dto.clienteId !== undefined &&
+      dto.clienteId !== existente.clienteId
+    ) {
+      const cliente = await this.prisma.cliente.findUnique({
+        where: { id: dto.clienteId },
+      });
+      if (!cliente) {
+        throw new NotFoundException(
+          `Cliente com ID ${dto.clienteId} não encontrado`,
+        );
+      }
+    }
+
+    if (
+      dto.imovelId !== undefined &&
+      dto.imovelId !== null &&
+      dto.imovelId !== existente.imovelId
+    ) {
+      const imovel = await this.prisma.imovel.findUnique({
+        where: { id: dto.imovelId },
+      });
+      if (!imovel) {
+        throw new NotFoundException(
+          `Imóvel com ID ${dto.imovelId} não encontrado`,
+        );
+      }
+    }
+
+    let dataParaInterpretar = dto.data;
+    let horaParaInterpretar = dto.hora;
+
+    if (dto.dataHora === undefined && existente.dataHora) {
+      const dataNoOffset = new Date(
+        existente.dataHora.getTime() +
+          obterOffsetEmMinutos(DEFAULT_TIMEZONE_OFFSET) * 60_000,
+      );
+      if (dto.data === undefined && dto.hora !== undefined) {
+        dataParaInterpretar = dataNoOffset.toISOString().slice(0, 10);
+      } else if (
+        dto.data !== undefined &&
+        dto.data.trim() !== '' &&
+        dto.hora === undefined
+      ) {
+        horaParaInterpretar = dataNoOffset.toISOString().slice(11, 16);
+      }
+    }
+
     const novaDataHora =
       dto.data !== undefined ||
       dto.hora !== undefined ||
       dto.dataHora !== undefined
-        ? this.interpretarDataHora(dto.data, dto.hora, dto.dataHora)
+        ? this.interpretarDataHora(
+            dataParaInterpretar,
+            horaParaInterpretar,
+            dto.dataHora,
+          )
         : existente.dataHora;
 
     if (novoTipo === 'VISITA' && !novoImovelId) {
@@ -783,48 +877,109 @@ export class AgendamentosService {
         ? this.interpretarDataHora(null, null, dto.dataRetorno)
         : existente.dataRetorno;
 
-    return this.prisma.agendamento.update({
-      where: { id },
-      data: {
-        ...(dto.titulo !== undefined ? { titulo: dto.titulo.trim() } : {}),
-        ...(dto.descricao !== undefined
-          ? { descricao: dto.descricao?.trim() || null }
-          : {}),
-        ...(dto.descricaoCurta !== undefined
-          ? {
-              descricaoCurta: this.gerarDescricaoCurta(
-                dto.descricaoCurta,
-                dto.descricao ?? existente.descricao,
-                dto.proximaAcao ?? existente.proximaAcao,
-                dto.observacao ?? existente.observacao,
-              ),
-            }
-          : {}),
-        tipo: novoTipo,
-        status: novoStatus,
-        dataHora: novaDataHora,
-        duracaoMinutos: novaDuracao,
-        ...(dto.observacao !== undefined
-          ? { observacao: dto.observacao?.trim() || null }
-          : {}),
-        ...(dto.canalContato !== undefined
-          ? { canalContato: dto.canalContato }
-          : {}),
-        ...(dto.proximaAcao !== undefined
-          ? { proximaAcao: dto.proximaAcao?.trim() || null }
-          : {}),
-        dataRetorno: novaDataRetorno,
-        ...(dto.sincronizarGoogleCalendar !== undefined
-          ? { sincronizarGoogleCalendar: dto.sincronizarGoogleCalendar }
-          : {}),
-        ...(dto.clienteId !== undefined ? { clienteId: dto.clienteId } : {}),
-        imovelId: novoImovelId,
-        corretorId: novoCorretorId,
-      },
-      include: {
-        cliente: true,
-        imovel: true,
-      },
+    const novoSincronizar =
+      dto.sincronizarGoogleCalendar !== undefined
+        ? dto.sincronizarGoogleCalendar
+        : existente.sincronizarGoogleCalendar;
+
+    const camposEventoAlterados =
+      dto.data !== undefined ||
+      dto.hora !== undefined ||
+      dto.dataHora !== undefined ||
+      dto.duracaoMinutos !== undefined ||
+      dto.duracao !== undefined ||
+      dto.titulo !== undefined ||
+      dto.descricao !== undefined ||
+      dto.observacao !== undefined ||
+      dto.proximaAcao !== undefined ||
+      dto.canalContato !== undefined ||
+      dto.imovelId !== undefined ||
+      dto.clienteId !== undefined ||
+      dto.sincronizarGoogleCalendar !== undefined;
+
+    const limparCamposGoogle =
+      dto.sincronizarGoogleCalendar === false || !novaDataHora;
+
+    return this.prisma.$transaction(async (tx) => {
+      const atualizado = await tx.agendamento.update({
+        where: { id },
+        data: {
+          ...(dto.titulo !== undefined ? { titulo: dto.titulo.trim() } : {}),
+          ...(dto.descricao !== undefined
+            ? { descricao: dto.descricao?.trim() || null }
+            : {}),
+          ...(dto.descricaoCurta !== undefined
+            ? {
+                descricaoCurta: this.gerarDescricaoCurta(
+                  dto.descricaoCurta,
+                  dto.descricao ?? existente.descricao,
+                  dto.proximaAcao ?? existente.proximaAcao,
+                  dto.observacao ?? existente.observacao,
+                ),
+              }
+            : {}),
+          tipo: novoTipo,
+          status: novoStatus,
+          dataHora: novaDataHora,
+          duracaoMinutos: novaDuracao,
+          ...(dto.observacao !== undefined
+            ? { observacao: dto.observacao?.trim() || null }
+            : {}),
+          ...(dto.canalContato !== undefined
+            ? { canalContato: dto.canalContato }
+            : {}),
+          ...(dto.proximaAcao !== undefined
+            ? { proximaAcao: dto.proximaAcao?.trim() || null }
+            : {}),
+          dataRetorno: novaDataRetorno,
+          ...(dto.sincronizarGoogleCalendar !== undefined
+            ? { sincronizarGoogleCalendar: dto.sincronizarGoogleCalendar }
+            : {}),
+          ...(limparCamposGoogle
+            ? { googleCalendarEventId: null, googleCalendarUrl: null }
+            : {}),
+          ...(dto.clienteId !== undefined ? { clienteId: dto.clienteId } : {}),
+          imovelId: novoImovelId,
+          corretorId: novoCorretorId,
+        },
+        include: {
+          cliente: true,
+          imovel: true,
+        },
+      });
+
+      if (
+        novoSincronizar &&
+        atualizado.dataHora &&
+        (camposEventoAlterados || !atualizado.googleCalendarUrl)
+      ) {
+        const googleDados = this.construirDadosGoogleCalendar({
+          id: atualizado.id,
+          titulo: atualizado.titulo,
+          descricao: atualizado.descricao,
+          observacao: atualizado.observacao,
+          proximaAcao: atualizado.proximaAcao,
+          canalContato: atualizado.canalContato,
+          dataHora: atualizado.dataHora,
+          duracaoMinutos: atualizado.duracaoMinutos,
+          cliente: atualizado.cliente,
+          imovel: atualizado.imovel,
+        });
+
+        return tx.agendamento.update({
+          where: { id: atualizado.id },
+          data: {
+            googleCalendarEventId: googleDados.googleCalendarEventId,
+            googleCalendarUrl: googleDados.googleCalendarUrl,
+          },
+          include: {
+            cliente: true,
+            imovel: true,
+          },
+        });
+      }
+
+      return atualizado;
     });
   }
 

@@ -123,8 +123,9 @@ describe('DOMUS Backend — Fluxo Completo E2E (.docx Seções 1 a 6 + OWASP A01
     expect(clienteRes.body.imoveisInteresse[0].id).toBe(imovelId);
 
     // 5. Agendar uma visita a um imóvel já cadastrado, vinculando-o ao cliente (Seção 4.3, item 2 + Tela Agendar Compromisso)
-    const dataAmanha = new Date(Date.now() + 20 * 3600_000);
-    const dataFormatada = dataAmanha.toISOString().slice(0, 10); // YYYY-MM-DD
+    const visitaAlvoLocal = new Date(Date.now() + 12 * 3600_000 - 3 * 3600_000);
+    const dataFormatada = visitaAlvoLocal.toISOString().slice(0, 10);
+    const horaVisitaFormatada = visitaAlvoLocal.toISOString().slice(11, 16);
 
     const visitaRes = await request(app.getHttpServer())
       .post('/api/agendamentos')
@@ -134,7 +135,7 @@ describe('DOMUS Backend — Fluxo Completo E2E (.docx Seções 1 a 6 + OWASP A01
         descricao: 'Apresentar apartamento e vista da varanda',
         tipo: 'VISITA',
         data: dataFormatada,
-        hora: '14:00',
+        hora: horaVisitaFormatada,
         duracao: '60 min',
         observacao: 'Confirmar portaria 30 min antes',
         clienteId,
@@ -148,9 +149,9 @@ describe('DOMUS Backend — Fluxo Completo E2E (.docx Seções 1 a 6 + OWASP A01
     expect(visitaRes.body.canalContato).toBe('WHATSAPP');
 
     // 6. Programar um retorno associado a essa visita (Seção 4.3, item 3)
-    const dataDepoisAmanha = new Date(Date.now() + 40 * 3600_000)
-      .toISOString()
-      .slice(0, 10);
+    const retornoAlvoLocal = new Date(Date.now() + 30 * 3600_000 - 3 * 3600_000);
+    const dataDepoisAmanha = retornoAlvoLocal.toISOString().slice(0, 10);
+    const horaRetornoFormatada = retornoAlvoLocal.toISOString().slice(11, 16);
 
     const retornoRes = await request(app.getHttpServer())
       .post(`/api/agendamentos/${visitaId}/programar-retorno`)
@@ -159,7 +160,7 @@ describe('DOMUS Backend — Fluxo Completo E2E (.docx Seções 1 a 6 + OWASP A01
         titulo: 'Retorno pós-visita: enviar proposta formal',
         descricao: 'Entrar em contato via WhatsApp com condições de pagamento',
         data: dataDepoisAmanha,
-        hora: '10:30',
+        hora: horaRetornoFormatada,
         duracaoMinutos: 30,
         observacao: 'Cliente pediu retorno pela manhã',
         proximaAcao: 'Enviar planilha de parcelamento',
