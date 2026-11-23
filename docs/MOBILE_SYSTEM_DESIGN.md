@@ -1,9 +1,9 @@
 # Arquitetura e System Design do Módulo Mobile — DOMUS
 
 > [!NOTE]
-> **TL;DR:** Especificacao de engenharia e system design do modulo `mobile/` (React Native 0.78 / Expo SDK 58). Cobre ergonomia Apple HIG (touch targets >= 44pt), Two-Runtime Rule (60/120 FPS), arquitetura hibrida offline-first, superficies limpas anti-slop e paridade com os requisitos tecnicos obrigatorios de componentes nativos (`View`, `Text`, `Image`, `ScrollView`, `Pressable`).
+> **TL;DR:** Especificacao de engenharia e system design do modulo `mobile/` (React Native 0.88 / Expo SDK 58). Cobre ergonomia Apple HIG (touch targets >= 44pt), Two-Runtime Rule (60/120 FPS), comunicacao online-first autenticada via JWT com `LoginScreen`, superficies limpas anti-slop e paridade com os componentes nativos (`View`, `Text`, `Image`, `ScrollView`, `Pressable`).
 
-Este documento consolida a arquitetura completa do módulo móvel (`mobile/`) do projeto DOMUS, detalhando todas as decisões técnicas tomadas no system design móvel, a substituição de padrões genéricos por componentes nativos de alta fidelidade, as primitivas de feedback não-bloqueante, o gerenciamento de gestos a 60/120 FPS e o funcionamento da camada híbrida de conectividade.
+Este documento consolida a arquitetura completa do módulo móvel (`mobile/`) do projeto DOMUS, detalhando todas as decisões técnicas tomadas no system design móvel, a substituição de padrões genéricos por componentes nativos de alta fidelidade, as primitivas de feedback não-bloqueante, o gerenciamento de gestos a 60/120 FPS e o funcionamento da camada de conectividade REST autenticada.
 
 ---
 
@@ -11,7 +11,7 @@ Este documento consolida a arquitetura completa do módulo móvel (`mobile/`) do
 
 O módulo móvel (`mobile/`) foi construído para atender aos requisitos de campo da Persona Junior (corretor autônomo), operando sob restrições técnicas específicas:
 
-- **Disponibilidade e Resiliência (Offline-First):** Operação contínua sob ausência total ou intermitência de conectividade de rede, utilizando armazenamento local (`AsyncStorage` com fallback in-memory) e sincronização bidirecional idempotente com a API NestJS.
+- **Comunicação Online-First e Tratamento Explícito de Falhas (Fail-Loud):** Integração direta via REST com o backend NestJS e persistência SQLite. Perdas de conectividade na sincronização inicial são sinalizadas por um banner inline não-bloqueante com tentativa imediata de reconexão (`Tentar novamente`), enquanto falhas em formulários exibem erros inline e `DomusToast` (o antigo modo demonstrativo offline encontra-se preservado na branch `feat/modo-demo-local`).
 - **Ergonomia e Acessibilidade (Apple HIG):** Áreas mínimas de toque de 44x44pt para manipulação monomanual em movimento, contraste tipográfico estrito (Slate sobre fundo claro), e posicionamento de elementos de navegação primária na base inferior da interface.
 - **Taxa de Quadros Determinística (Two-Runtime Rule):** Separação estrita entre a thread de renderização da UI (60/120 FPS via worklets do `react-native-reanimated`) e a thread do JavaScript, eliminando engasgos (jank) e bloqueios de frame durante gestos de arraste e transições.
 - **Segurança Fail-Closed:** Comunicação autenticada via JWT RFC 7519, rejeição estrita de tokens malformados ou simulados no backend (`JwtAuthGuard`), e auto-recuperação transparente de sessão.
@@ -24,11 +24,11 @@ O módulo móvel (`mobile/`) foi construído para atender aos requisitos de camp
 flowchart TD
     subgraph UI_LAYER["Camada de Interface (Apple HIG & Safe Areas)"]
         APP["App.tsx (SafeAreaProvider + Root Gesture Handler)"]
-        HEADER["DomusHeader (Status Badge, Reset Demo, Logout)"]
+        HEADER["DomusHeader (Marca DOMUS, Usuario Autenticado e Logout)"]
         NAV["DomusNavBar (Bottom Tab Bar Fixa na Base)"]
-        SCREENS["Telas Ativas (Clientes, Imoveis, Agendar, Atendimentos, Login)"]
+        SCREENS["Telas Ativas (Login, Clientes, Imoveis, Agendar, Atendimentos)"]
         TOAST["DomusToast (Feedback Flutuante na UI Thread)"]
-        SHEET["ConnectionModal & Detalhes (Bottom Sheets Deslizantes)"]
+        SHEET["Detalhes de Atendimento (Bottom Sheet Deslizante)"]
     end
 
     subgraph RUNTIME_LAYER["Camada de Execução Nativa (Two-Runtime Rule)"]
@@ -37,9 +37,9 @@ flowchart TD
     end
 
     subgraph STATE_LAYER["Camada de Estado e Conectividade"]
-        CTX["DomusContext (Estado Global, Toasts, Abas, Sincronização)"]
-        API["DomusApiService (domusApi.ts - Camada Híbrida)"]
-        STORAGE["domusStorage (AsyncStorage / Memória Local)"]
+        CTX["DomusContext (Estado Global, Sessao JWT, Toasts, Abas)"]
+        API["DomusApiService (domusApi.ts - Cliente REST JWT)"]
+        STORAGE["domusStorage (AsyncStorage: JWT Token e URL da API)"]
     end
 
     subgraph BACKEND_LAYER["Serviços Externos"]
@@ -53,14 +53,14 @@ flowchart TD
     APP --> TOAST
     APP --> SHEET
 
-    SHEET -.->|Worklets de Arrasto| UI_THREAD
-    TOAST -.->|Worklets de Transição| UI_THREAD
-    SCREENS -->|Eventos de Toque| JS_THREAD
+    SHEET -.->|"Worklets de Arrasto"| UI_THREAD
+    TOAST -.->|"Worklets de Transição"| UI_THREAD
+    SCREENS -->|"Eventos de Toque"| JS_THREAD
 
     SCREENS --> CTX
     CTX --> API
-    API -->|"Se Offline / Sem Rede"| STORAGE
-    API -->|"Se Conectado (JWT)"| NEST
+    API -->|"Persiste JWT e URL"| STORAGE
+    API -->|"REST + Bearer JWT"| NEST
     NEST --> SQLITE
 ```
 
@@ -75,7 +75,7 @@ Antes da intervenção, a interface apresentava componentes genéricos desprovid
 - **Solução Implementada:**
   1. **Feedback Flutuante Não-Bloqueante ([`DomusToast.tsx`](../mobile/src/components/DomusToast.tsx)):** Notificações contextuais leves que surgem no topo da tela com auto-dismiss (3 segundos via `.unref?.()`) e gesto de arrastar para cima para dispensar.
   2. **Botões com 3 Estados Integrados ([`DomusButton.tsx`](../mobile/src/components/DomusButton.tsx)):** Em vez de abrir um spinner de tela cheia, o próprio botão transiciona entre `idle` -> `loading` (spinner embutido + label "Salvando...") -> `success` (ícone de checkmark inline) com escala tátil `0.98`.
-  3. **Confirmações Inline em Dois Toques ([`InlineConfirmButton.tsx`](../mobile/src/components/InlineConfirmButton.tsx)):** Exclusões e ações destrutivas (como o reset de demonstração) exigem dois toques consecutivos no próprio botão (com timer de 3.5 segundos para reversão), eliminando janelas modais invasivas.
+  3. **Confirmações Inline em Dois Toques ([`InlineConfirmButton.tsx`](../mobile/src/components/InlineConfirmButton.tsx)):** Exclusões e ações sensíveis exigem dois toques consecutivos no próprio botão (com timer de 3.5 segundos para reversão), eliminando janelas modais invasivas.
 
 ### Decisão 2: Anatomia Apple HIG e Ergonomia Tátil
 - **Problema Anterior:** Cabeçalho mostarda denso (`#FFE099`), fundo cinza cimento escuro (`#A6A6A6`), botões minúsculos (< 30pt) e barra de navegação no topo colidindo com status bars.
@@ -87,7 +87,7 @@ Antes da intervenção, a interface apresentava componentes genéricos desprovid
 ### Decisão 3: Transições Físicas na UI Thread (Two-Runtime Rule)
 - **Problema Anterior:** Modais estáticos com abertura em corte seco ou animações travadas rodando na thread do JavaScript.
 - **Solução Implementada:**
-  - Aplicação estrita da **Two-Runtime Rule** em [`ConnectionModal.tsx`](../mobile/src/components/ConnectionModal.tsx) e na folha de detalhes de [`AtendimentosScreen.tsx`](../mobile/src/screens/AtendimentosScreen.tsx).
+  - Aplicação estrita da **Two-Runtime Rule** na folha deslizante de detalhes de [`AtendimentosScreen.tsx`](../mobile/src/screens/AtendimentosScreen.tsx) e no [`DomusToast.tsx`](../mobile/src/components/DomusToast.tsx).
   - Utilização de `Gesture.Pan()` memoizado com `useMemo`.
   - Execução de worklets explícitos (`'worklet'`) nos manipuladores de gesto, controlando valores compartilhados (`useSharedValue`) e estilos animados (`useAnimatedStyle`).
   - Efeito elástico superior via `rubberband()` e desaceleração inercial via `projectVelocity()`, finalizando com molas amortecidas (`withSpring(..., { overshootClamping: true })`) e respeito às preferências de acessibilidade (`useReducedMotion`).
@@ -101,7 +101,7 @@ Antes da intervenção, a interface apresentava componentes genéricos desprovid
   - Extração de componentes de linha (`ClienteCardItem`, `ImovelCardItem`, `AtendimentoCardItem`) para fora do escopo funcional das telas, envelopados com `React.memo` para evitar reconciliações desnecessárias durante a digitação de filtros.
 
 ### Decisão 5: Anti-AI Slop e Superfícies Limpas
-- **Problema Anterior:** Uso de bordas laterais assimétricas e espessas (`borderLeftWidth: 3` e `borderLeftWidth: 4`) em cards de dicas e caixas de feedback no [`ConnectionModal.tsx`](../mobile/src/components/ConnectionModal.tsx).
+- **Problema Anterior:** Uso de bordas laterais assimétricas e espessas (`borderLeftWidth: 3` e `borderLeftWidth: 4`) em cards de dicas, banners e caixas de feedback.
 - **Solução Implementada:**
   - Substituição integral de barras laterais decorativas por **bordas perimetrais uniformes e completas de 1px** (`borderWidth: 1`, `borderColor: DOMUS_THEME.border`).
   - Utilização de fundos suaves e discretos (`DOMUS_THEME.surfaceElevated`, `DOMUS_THEME.successSoft`, `DOMUS_THEME.dangerSoft`, `DOMUS_THEME.infoSoft`) com contrastes harmoniosos, garantindo acabamento de produto real de acordo com a política de superfícies limpas.
@@ -114,44 +114,41 @@ Antes da intervenção, a interface apresentava componentes genéricos desprovid
 
 ---
 
-## 4. Camada de Dados e Arquitetura Híbrida (Offline-First)
+## 4. Camada de Dados e Autenticação REST (Online-First)
 
-O coração da persistência do DOMUS reside no serviço [`domusApi.ts`](../mobile/src/services/domusApi.ts) e no provedor [`DomusContext.tsx`](../mobile/src/context/DomusContext.tsx).
+O coração da comunicação do DOMUS reside no serviço [`domusApi.ts`](../mobile/src/services/domusApi.ts) e no provedor [`DomusContext.tsx`](../mobile/src/context/DomusContext.tsx).
 
-### Como funciona o chaveamento híbrido (`executarHibrido`):
+### Fluxo de Sessão e Requisições (`DomusApiService`):
 ```text
-Requisição Disparada (ex: listarClientes)
+Inicialização do App (DomusProvider)
                │
-      Está forçado offline?
-         ├─── SIM ───────────► Carrega estado local (AsyncStorage / Seed)
-         └─── NÃO
+      Limpa @domus:local_state e descarta domus-mock-token-*
                │
-        Tenta chamar API NestJS (HTTP timeout: 2500ms)
+      Existe JWT real em @domus:access_token?
+         ├─── NÃO ───────────► Exibe LoginScreen imediatamente (zero requisições automáticas no mount)
+         └─── SIM
+               │
+        Valida sessão em GET /api/auth/me (HTTP timeout: 8000ms)
                │
        Teve sucesso (200)?
-         ├─── SIM ───────────► Retorna dados reais da API e marca: apiOnlineReal = true
-         └─── NÃO (401 / Erro de Rede)
-               │
-     Auto-recuperação de Token JWT:
-       - O token era mock (domus-mock-token-...)?
-       - Chama /api/auth/login com credenciais Persona Junior
-       - Se restabelecido: retenta chamada na API
-       - Se servidor desligado / sem rede: fallback seguro para dados locais (apiOnlineReal = false)
+         ├─── SIM ───────────► Carrega dados reais, marca apiOnline = true e libera as 4 abas
+         └─── NÃO
+               ├── 401 Unauthorized ─► Remove JWT, dispara onUnauthorized e retorna para LoginScreen
+               └── Erro de Rede ─────► Marca apiOnline = false e exibe banner inline de reconexão
 ```
 
-### A Badge de Status no Cabeçalho
-No [`DomusHeader.tsx`](../mobile/src/components/DomusHeader.tsx), a badge exibe visualmente o estado da conexão:
-- **Pílula Âmbar (`Modo Demo Local`):** Ativada quando o app opera em memória local com dados simulados da Persona Junior ([`seedData.ts`](../mobile/src/services/seedData.ts)).
-- **Pílula Verde (`API Online`):** Ativada quando há comunicação ativa com a API NestJS na porta `3000`, gravando diretamente no banco SQLite (`dev.db`).
-- **Interatividade:** Tocar na badge abre imediatamente o Bottom Sheet [`ConnectionModal.tsx`](../mobile/src/components/ConnectionModal.tsx), permitindo testar a conectividade em tempo real, alternar a URL base da rede ou comutar manualmente para o modo offline.
+### Cabeçalho Institucional Unificado e Resolução Automática de Host
+No [`DomusHeader.tsx`](../mobile/src/components/DomusHeader.tsx), o cabeçalho opera em uma linha única e limpa de produto:
+- **Identidade e Sessão:** Exibe à esquerda o logotipo oficial, a marca `DOMUS` e o identificador do corretor autenticado (`usuarioNome`), e à direita o botão `Sair` (`minHeight: 44`, `minWidth: 44`).
+- **Resolução Automática da URL da API:** O serviço [`domusApi.ts`](../mobile/src/services/domusApi.ts) resolve automaticamente a URL base da API NestJS via `EXPO_PUBLIC_API_URL`, detecção de host em tempo de execução no navegador (`window.location.hostname`) ou IP da máquina servidora no Expo Go (`Constants.expoConfig?.hostUri`), sem expor modais ou badges de configuração de servidor ao usuário final.
 
 ---
 
 ## 5. Anatomia das Telas do DOMUS
 
 ### 1. `LoginScreen.tsx` (RN01, RN02, RN03)
-- **Objetivo:** Autenticação e cadastro de novos operadores com separação de papéis.
-- **Recursos:** Alternância entre Login e Cadastro; seletores em pílula de perfil (`CORRETOR` ou `CADASTRADOR`); card de acesso rápido com 1 toque para a Persona Junior (`junior.corretor` / `Domus@2026`); gaveta retrátil para configuração manual de IP/porta da API.
+- **Objetivo:** Autenticação real via JWT e cadastro público de novos corretores.
+- **Recursos:** Alternância segmentada entre **Entrar** (`POST /api/auth/login`) e **Criar Conta** (`POST /api/usuarios` restrito a `perfis: ['CORRETOR']` com auto-login em seguida); exibição/ocultação de senha; exibição de erros inline sem credenciais embutidas e sem requisições de rede desnecessárias antes da submissão.
 
 ### 2. `ClientesScreen.tsx` (RN04, RN05, RN06)
 - **Objetivo:** Gestão de clientes e captação de interesses imobiliários.
@@ -178,8 +175,8 @@ No [`DomusHeader.tsx`](../mobile/src/components/DomusHeader.tsx), a badge exibe 
 - **Recursos:** Componente [`AvisoBanner.tsx`](../mobile/src/components/AvisoBanner.tsx) no topo com a mensagem oficial da problemática acadêmica (`"Você tem agendamentos próximo do dias marcados"`); métricas rápidas em cartões; filtros segmentados em pílulas (`Todos`, `Por Cliente`, `Por Imóvel`, `Sem Data`); Bottom Sheet deslizante por gestos para **Programar Retorno (RN09)**, **Concluir Atendimento (RN12)** com baixa de avisos e **Sincronizar com Google Agenda (RN16)**.
 
 ### 6. Shell Principal (`App.tsx`)
-- **Objetivo:** Orquestrador visual de layout, provedor de contexto e áreas seguras.
-- **Recursos:** Envolve a aplicação com `GestureHandlerRootView` e `SafeAreaProvider`; posiciona o `DomusHeader` no topo e o `DomusNavBar` na base; gerencia a troca fluida entre as abas; hospeda os componentes flutuantes globais (`DomusToast` e `ConnectionModal`).
+- **Objetivo:** Orquestrador visual de layout, portão de autenticação (`inicializando` -> `LoginScreen` -> shell autenticado), provedor de contexto e áreas seguras.
+- **Recursos:** Envolve a aplicação com `GestureHandlerRootView` e `SafeAreaProvider`; exige sessão JWT validada para exibir o `DomusHeader`, o `DomusNavBar` e as 4 abas; exibe banner inline não-bloqueante de erro de rede com botão `Tentar novamente`; hospeda o componente flutuante global `DomusToast`.
 
 ---
 
@@ -192,7 +189,7 @@ Durante o desenvolvimento da arquitetura móvel, foram superados desafios técni
 | **`Invalid hook call` em `components.spec.tsx`** | A suíte de testes legada chamava componentes diretamente como função (`DomusInput({...})`) fora de `renderer.create()`. Hooks nativos do React 19 lançam exceção sem um dispatcher ativo. | Criação dos hooks seguros [`safeHooks.ts`](../mobile/src/utils/safeHooks.ts) (`useSafeState`, `useSafeRef`, `useSafeEffect`), que utilizam `try/catch` interno para retornar valores padrão caso o dispatcher esteja ausente. |
 | **Erro de compilação TS no `FlashListProps`** | A versão `@shopify/flash-list@^2.3.3` removeu temporariamente a declaração de tipo da propriedade `estimatedItemSize`. | Criação do arquivo de aumento de módulo [`mobile/src/types/flash-list.d.ts`](../mobile/src/types/flash-list.d.ts) estendendo `FlashListProps` para aceitar `estimatedItemSize?: number`. |
 | **Erro Metro: `Unable to resolve react-native-worklets`** | O `react-native-reanimated` v4 depende do pacote de baixo nível `react-native-worklets` para empacotamento web e mobile. | Instalação explícita de `react-native-worklets` no `package.json`, destravando o bundle web (`npx expo export -p web` com 1154 módulos compilados). |
-| **Badge não atualizava para "API Online"** | O aplicativo inicializava com um token mock (`domus-mock-token-...`). Ao conectar na API NestJS, o `JwtAuthGuard` rejeitava o token malformado com 401, acionando o fallback offline. | Implementação de auto-autenticação transparente em `domusApi.ts`: se o token for mock, ele faz login na rota `/api/auth/login` com as credenciais da Persona Junior (`junior.corretor` / `Domus@2026`), adquire o JWT real e atualiza a badge imediatamente. |
+| **Remoção do modo demo e login real** | O aplicativo inicializava com token mock (`domus-mock-token-...`) e fallback local com dados de demonstração, mascarando falhas de autenticação. | Remoção de `seedData.ts`, descarte automático de tokens mock legados e implementação da `LoginScreen.tsx` exigindo JWT real validado em `GET /api/auth/me` e limpeza de sessão em `401 Unauthorized` (mantendo o modo demo preservado na branch `feat/modo-demo-local`). |
 | **Reentrância e disparos concorrentes em formulários móveis** | Toques rápidos (double-tap) na tela do celular disparavam múltiplos envios assíncronos antes que o estado React (`setSalvando(true)`) concluísse a re-renderização. | Implementação de guardas síncronas com referências mutáveis (`useRef`), bloqueando execuções concorrentes imediatamente no início do evento (`if (submetendoRef.current) return; submetendoRef.current = true;`) com liberação no bloco `finally`. |
 | **Colapso de Flexbox em telas estreitas no React Native Web** | No React Native Web, o elemento `<input>` HTML é estilizado por padrão com `min-width: auto`. Em layouts de duas colunas (50% de largura em telas compactas como simulador de iPhone), o campo de texto esticava e expulsava o ícone do `rightElement` da área visível. | Configuração explícita de `minWidth: 0` e `flexShrink: 1` no input de texto e `flexShrink: 0` no container do ícone, neutralizando o contorno nativo com `outlineStyle: 'none'`. |
 | **Seletores visuais e multiplataforma de data e hora** | A digitação manual de datas em dispositivos móveis aumentava a fricção do corretor e suscetibilidade a erros sintáticos. | Integração de `@react-native-community/datetimepicker` acoplado ao `DomusInput` via `rightElement` com ícones dedicados. No Android e iOS nativos, aciona os diálogos oficiais do sistema operacional; no ambiente web, dispara a API nativa HTML5 `.showPicker()`, mantendo fechamento mútuo e máscaras dinâmicas de digitação. |
@@ -217,16 +214,16 @@ adb reverse tcp:3000 tcp:3000
 cd mobile
 npx expo start
 ```
-Abra o **Expo Go** no celular e aponte a câmera para o QR Code. No modal de conexão do app, utilize `http://localhost:3000/api`.
+Abra o **Expo Go** no celular e aponte a câmera para o QR Code.
 
 ### No Celular Físico via Wi-Fi:
-Certifique-se de que o computador e o celular estão na mesma rede Wi-Fi. Abra o modal de conexão do app e insira o IP da sua máquina (ex: `http://192.168.1.100:3000/api`).
+Certifique-se de que o computador e o celular estão na mesma rede Wi-Fi. O aplicativo no Expo Go detecta automaticamente o IP local da máquina via `expo-constants` (ou utilize `EXPO_PUBLIC_API_URL=http://192.168.1.100:3000/api` em `mobile/.env`).
 
 ### Execução de Testes e Tipagem Estrita:
 ```powershell
 cd mobile
 
-# Executa as 4 suítes de testes unitários (39 testes)
+# Executa as 10 suítes de testes unitários (92 testes)
 npm test
 
 # Validação de tipagem TypeScript
@@ -269,7 +266,7 @@ O ecossistema de dependências configurado em [`mobile/package.json`](../mobile/
 #### 6. `@react-native-async-storage/async-storage` (`^3.1.1`)
 - **Papel Arquitetural:** Camada de persistência chave-valor assíncrona não volátil.
 - **Funcionamento Técnico:** Fornece uma API Promise-based que grava dados estruturados no armazenamento local do dispositivo: utiliza SQLite no Android, RocksDB/UserDefaults no iOS e `window.localStorage` no ambiente web.
-- **Justificativa da Inclusão:** Armazenamento do token de autenticação JWT (`@domus:access_token`), da URL base configurada para a API NestJS (`@domus:api_base_url`) e do snapshot completo dos dados locais offline (`@domus:local_state`), permitindo operação autônoma sem conexão com a internet.
+- **Justificativa da Inclusão:** Armazenamento exclusivo do token de autenticação JWT real (`@domus:access_token`) e da URL base configurada para a API NestJS (`@domus:api_base_url`), com descarte automático da chave legada `@domus:local_state`.
 
 #### 7. `@expo/vector-icons` (`^15.1.1`)
 - **Papel Arquitetural:** Renderização de glifos vetoriais escaláveis.
@@ -311,7 +308,7 @@ O ecossistema de dependências configurado em [`mobile/package.json`](../mobile/
 
 ## 9. Física de Gestos e Matemática de Worklets (`motion.ts` e `haptics.ts`)
 
-Para garantir que os componentes deslizantes (`ConnectionModal.tsx` e o painel de ações em `AtendimentosScreen.tsx`) respondam à inércia do toque com precisão nativa na UI Thread, o módulo [`mobile/src/utils/motion.ts`](../mobile/src/utils/motion.ts) implementa duas funções matemáticas compiladas como worklets (`'worklet'`):
+Para garantir que os componentes deslizantes (`DomusToast.tsx` e o painel de ações em `AtendimentosScreen.tsx`) respondam à inércia do toque com precisão nativa na UI Thread, o módulo [`mobile/src/utils/motion.ts`](../mobile/src/utils/motion.ts) implementa duas funções matemáticas compiladas como worklets (`'worklet'`):
 
 ### 1. Projeção Inercial de Velocidade (`projectVelocity`)
 Calcula a posição final estimada de um painel quando o usuário solta o dedo após um gesto rápido (swipe/fling), utilizando a taxa de desaceleração padrão do `UIScrollView` do iOS ($\text{decelerationRate} = 0.998$):

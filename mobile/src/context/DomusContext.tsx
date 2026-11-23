@@ -36,13 +36,13 @@ export interface DomusContextData {
   avisos: ResumoAvisosProximos | null;
   bannerVisivel: boolean;
   fecharBanner: () => void;
-  modoOffline: boolean;
+  apiOnline: boolean;
+  inicializando: boolean;
   carregando: boolean;
   erro: string | null;
   login: (input: LoginInput) => Promise<LoginResponse>;
   logout: () => Promise<void>;
   recarregarDados: () => Promise<void>;
-  resetarDemo: () => Promise<void>;
   criarCliente: (input: CreateClienteInput) => Promise<Cliente>;
   criarImovel: (input: CreateImovelInput) => Promise<Imovel>;
   criarAgendamento: (input: CreateAgendamentoInput) => Promise<Agendamento>;
@@ -50,7 +50,7 @@ export interface DomusContextData {
   concluirAgendamento: (id: number, input: ConcluirAgendamentoInput) => Promise<Agendamento>;
   sincronizarGoogleCalendar: (id: number) => Promise<{ googleCalendarUrl: string }>;
   cadastrarUsuario: (input: CreateUsuarioInput) => Promise<Usuario>;
-  configurarModo: (opcoes: { baseUrl?: string; forcarOffline?: boolean }) => Promise<void>;
+  configurarApiUrl: (baseUrl: string) => Promise<void>;
   toast?: { texto: string; tipo: 'sucesso' | 'erro' | 'info' } | null;
   mostrarToast?: (texto: string, tipo?: 'sucesso' | 'erro' | 'info') => void;
   fecharToast?: () => void;
@@ -60,12 +60,12 @@ const DomusContext = createContext<DomusContextData | undefined>(undefined);
 
 export interface DomusProviderProps {
   children: ReactNode;
-  autoLoginDemo?: boolean;
+  verificarSessaoInicial?: boolean;
 }
 
 export const DomusProvider: React.FC<DomusProviderProps> = ({
   children,
-  autoLoginDemo = true,
+  verificarSessaoInicial = true,
 }) => {
   const montadoRef = React.useRef<boolean>(true);
   const [usuario, setUsuario] = useState<Usuario | null>(null);
@@ -76,7 +76,8 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
   const [visaoGeral, setVisaoGeral] = useState<VisaoGeralAtendimentos | null>(null);
   const [avisos, setAvisos] = useState<ResumoAvisosProximos | null>(null);
   const [bannerVisivel, setBannerVisivel] = useState<boolean>(true);
-  const [modoOffline, setModoOffline] = useState<boolean>(true);
+  const [apiOnline, setApiOnline] = useState<boolean>(false);
+  const [inicializando, setInicializando] = useState<boolean>(verificarSessaoInicial);
   const [carregando, setCarregando] = useState<boolean>(false);
   const [erro, setErro] = useState<string | null>(null);
   const [toast, setToast] = useState<{ texto: string; tipo: 'sucesso' | 'erro' | 'info' } | null>(null);
@@ -101,7 +102,7 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
         setAgendamentos(listaAgendamentos);
         setVisaoGeral(visao);
         setAvisos(resumoAvisos);
-        setModoOffline(domusApi.obterModoOffline());
+        setApiOnline(true);
 
         if (resumoAvisos.possuiAvisos) {
           setBannerVisivel(true);
@@ -109,7 +110,8 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
       }
     } catch (err: any) {
       if (montadoRef.current) {
-        setErro(err.message || 'Erro ao sincronizar dados');
+        setApiOnline(domusApi.estaOnline);
+        setErro(err.message || 'Erro ao sincronizar dados com a API');
       }
     } finally {
       if (montadoRef.current) {
@@ -124,15 +126,25 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
       setErro(null);
       try {
         const res = await domusApi.login(input);
-        setUsuario(res.usuario);
-        setModoOffline(res.modoOffline);
+        if (montadoRef.current) {
+          setUsuario(res.usuario);
+          setApiOnline(true);
+        }
         await recarregarDados();
+        if (montadoRef.current) {
+          setToast({ texto: 'Login realizado com sucesso', tipo: 'sucesso' });
+        }
         return res;
       } catch (err: any) {
-        setErro(err.message || 'Falha na autenticação');
+        if (montadoRef.current) {
+          setApiOnline(domusApi.estaOnline);
+          setErro(err.message || 'Falha na autenticação');
+        }
         throw err;
       } finally {
-        setCarregando(false);
+        if (montadoRef.current) {
+          setCarregando(false);
+        }
       }
     },
     [recarregarDados]
@@ -142,29 +154,27 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
     setCarregando(true);
     try {
       await domusApi.logout();
-      setUsuario(null);
-      setAbaAtiva('Clientes');
+      if (montadoRef.current) {
+        setUsuario(null);
+        setClientes([]);
+        setImoveis([]);
+        setAgendamentos([]);
+        setVisaoGeral(null);
+        setAvisos(null);
+        setErro(null);
+        setAbaAtiva('Clientes');
+        setToast({ texto: 'Sessão encerrada', tipo: 'info' });
+      }
     } catch (err: any) {
-      setErro(err.message || 'Falha ao deslogar');
+      if (montadoRef.current) {
+        setErro(err.message || 'Falha ao deslogar');
+      }
     } finally {
-      setCarregando(false);
+      if (montadoRef.current) {
+        setCarregando(false);
+      }
     }
   }, []);
-
-  const resetarDemo = useCallback(async () => {
-    setCarregando(true);
-    try {
-      await domusApi.resetarDadosDemo();
-      await recarregarDados();
-      const userLogado = await domusApi.obterUsuarioLogado();
-      setUsuario(userLogado);
-      setBannerVisivel(true);
-    } catch (err: any) {
-      setErro(err.message || 'Erro ao resetar demonstração');
-    } finally {
-      setCarregando(false);
-    }
-  }, [recarregarDados]);
 
   const mostrarToast = useCallback((texto: string, tipo: 'sucesso' | 'erro' | 'info' = 'info') => {
     setToast({ texto, tipo });
@@ -240,61 +250,113 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
         const novo = await domusApi.cadastrarUsuario(input);
         return novo;
       } catch (err: any) {
-        setErro(err.message || 'Erro ao cadastrar usuário');
+        if (montadoRef.current) {
+          setApiOnline(domusApi.estaOnline);
+          setErro(err.message || 'Erro ao cadastrar usuário');
+        }
         throw err;
       } finally {
-        setCarregando(false);
+        if (montadoRef.current) {
+          setCarregando(false);
+        }
       }
     },
     []
   );
 
-  const configurarModo = useCallback(
-    async (opcoes: { baseUrl?: string; forcarOffline?: boolean }) => {
+  const configurarApiUrl = useCallback(
+    async (baseUrl: string) => {
       setCarregando(true);
       setErro(null);
       try {
-        await domusApi.configurarModo(opcoes);
-        setModoOffline(domusApi.obterModoOffline());
-        await recarregarDados();
+        const res = await domusApi.testarConexao(baseUrl);
+        if (!res.ok) {
+          if (montadoRef.current) {
+            setApiOnline(domusApi.estaOnline);
+          }
+          throw new Error(res.mensagem);
+        }
+        await domusApi.configurarApiUrl(baseUrl);
+        if (montadoRef.current) {
+          setApiOnline(true);
+        }
+        if (usuario) {
+          await recarregarDados();
+          if (!domusApi.estaOnline) {
+            throw new Error('Conectado ao servidor, mas falhou ao sincronizar os dados.');
+          }
+        }
       } catch (err: any) {
-        setErro(err.message || 'Erro ao configurar modo de conexão');
+        if (montadoRef.current) {
+          setApiOnline(domusApi.estaOnline);
+          setErro(err.message || 'Erro ao configurar URL da API');
+        }
         throw err;
       } finally {
-        setCarregando(false);
+        if (montadoRef.current) {
+          setCarregando(false);
+        }
       }
     },
-    [recarregarDados]
+    [recarregarDados, usuario]
   );
 
   useEffect(() => {
     montadoRef.current = true;
 
-    async function inicializar() {
-      try {
-        let user = await domusApi.obterUsuarioLogado();
-        if (!user && autoLoginDemo) {
-          const res = await domusApi.login({
-            loginOuEmail: 'junior.corretor',
-            senha: 'Domus@2026',
-          });
-          user = res.usuario;
+    domusApi.registrarOnUnauthorized(() => {
+      if (!montadoRef.current) return;
+      setUsuario(null);
+      setClientes([]);
+      setImoveis([]);
+      setAgendamentos([]);
+      setVisaoGeral(null);
+      setAvisos(null);
+      setAbaAtiva('Clientes');
+      setToast({ texto: 'Sessão expirada. Faça login novamente.', tipo: 'erro' });
+    });
+
+    async function inicializarSessao() {
+      if (!verificarSessaoInicial) {
+        if (montadoRef.current) {
+          setInicializando(false);
         }
-        if (montadoRef.current && (user || autoLoginDemo)) {
+        return;
+      }
+
+      try {
+        await domusApi.inicializar();
+        const user = await domusApi.obterUsuarioLogado();
+
+        if (!montadoRef.current) return;
+
+        if (user) {
           setUsuario(user);
+          setApiOnline(true);
           await recarregarDados();
         }
-      } catch {
-        // Fallback para estado limpo
+      } catch (err: any) {
+        if (montadoRef.current) {
+          setUsuario(null);
+          setApiOnline(domusApi.estaOnline);
+          if (!domusApi.estaOnline) {
+            setErro(err.message || 'Não foi possível conectar à API');
+          }
+        }
+      } finally {
+        if (montadoRef.current) {
+          setInicializando(false);
+        }
       }
     }
 
-    inicializar();
+    inicializarSessao();
 
     return () => {
       montadoRef.current = false;
+      domusApi.registrarOnUnauthorized(undefined);
     };
-  }, [autoLoginDemo, recarregarDados]);
+  }, [verificarSessaoInicial, recarregarDados]);
 
   const value: DomusContextData = {
     usuario,
@@ -307,13 +369,13 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
     avisos,
     bannerVisivel,
     fecharBanner,
-    modoOffline,
+    apiOnline,
+    inicializando,
     carregando,
     erro,
     login,
     logout,
     recarregarDados,
-    resetarDemo,
     criarCliente,
     criarImovel,
     criarAgendamento,
@@ -321,7 +383,7 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
     concluirAgendamento,
     sincronizarGoogleCalendar,
     cadastrarUsuario,
-    configurarModo,
+    configurarApiUrl,
     toast,
     mostrarToast,
     fecharToast,

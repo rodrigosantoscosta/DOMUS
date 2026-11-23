@@ -46,13 +46,13 @@ const DEFAULT_CONTEXT_FALLBACK: DomusContextData = {
   avisos: null,
   bannerVisivel: false,
   fecharBanner: () => {},
-  modoOffline: true,
+  apiOnline: false,
+  inicializando: false,
   carregando: false,
   erro: null,
   login: async () => ({} as any),
   logout: async () => {},
   recarregarDados: async () => {},
-  resetarDemo: async () => {},
   criarCliente: async () => ({} as any),
   criarImovel: async () => ({} as any),
   criarAgendamento: async () => ({} as any),
@@ -60,7 +60,7 @@ const DEFAULT_CONTEXT_FALLBACK: DomusContextData = {
   concluirAgendamento: async () => ({} as any),
   sincronizarGoogleCalendar: async () => ({} as any),
   cadastrarUsuario: async () => ({} as any),
-  configurarModo: async () => {},
+  configurarApiUrl: async () => {},
 };
 
 export interface AgendarScreenProps {

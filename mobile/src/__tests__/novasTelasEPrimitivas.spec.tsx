@@ -7,8 +7,8 @@ import { ImoveisScreen } from '../screens/ImoveisScreen';
 import { AgendarScreen } from '../screens/AgendarScreen';
 import { AtendimentosScreen } from '../screens/AtendimentosScreen';
 import { DomusAppContent } from '../../App';
-import { DomusProvider, DomusContextData } from '../context/DomusContext';
-import { Cliente, Imovel, Agendamento, Usuario } from '../types/domus';
+import DomusContext, { DomusProvider, DomusContextData } from '../context/DomusContext';
+import { AbaDomus, Cliente, Imovel, Agendamento, Usuario } from '../types/domus';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -112,13 +112,13 @@ function criarMockContextCompleto(overrides: Partial<DomusContextData> = {}): Do
     },
     bannerVisivel: true,
     fecharBanner: jest.fn(),
-    modoOffline: true,
+    apiOnline: true,
+    inicializando: false,
     carregando: false,
     erro: null,
     login: jest.fn(),
     logout: jest.fn(),
     recarregarDados: jest.fn().mockResolvedValue(undefined),
-    resetarDemo: jest.fn().mockResolvedValue(undefined),
     criarCliente: jest.fn().mockResolvedValue(clienteMock),
     criarImovel: jest.fn().mockResolvedValue(imovelMock),
     criarAgendamento: jest.fn().mockResolvedValue(agendamentoMock),
@@ -126,7 +126,7 @@ function criarMockContextCompleto(overrides: Partial<DomusContextData> = {}): Do
     concluirAgendamento: jest.fn().mockResolvedValue(agendamentoMock),
     sincronizarGoogleCalendar: jest.fn().mockResolvedValue({ googleCalendarUrl: 'https://calendar.google.com' }),
     cadastrarUsuario: jest.fn(),
-    configurarModo: jest.fn(),
+    configurarApiUrl: jest.fn(),
     mostrarToast: jest.fn(),
     fecharToast: jest.fn(),
     ...overrides,
@@ -189,7 +189,7 @@ describe('ImoveisScreen (Aba Imoveis)', () => {
 
     act(() => {
       root = renderer.create(
-        <DomusProvider autoLoginDemo={false}>
+        <DomusProvider verificarSessaoInicial={false}>
           <ImoveisScreen />
         </DomusProvider>
       );
@@ -229,7 +229,7 @@ describe('AtendimentosScreen (Aba Atendimentos)', () => {
 
     act(() => {
       root = renderer.create(
-        <DomusProvider autoLoginDemo={false}>
+        <DomusProvider verificarSessaoInicial={false}>
           <AtendimentosScreen />
         </DomusProvider>
       );
@@ -248,15 +248,43 @@ describe('AtendimentosScreen (Aba Atendimentos)', () => {
 });
 
 describe('DomusAppContent Layout Principal', () => {
-  it('renderiza DomusHeader no topo, conteudo dinâmico no centro e DomusNavBar na base', () => {
+  it('renderiza LoginScreen quando nao ha usuario autenticado', () => {
     let root: any;
 
     act(() => {
       root = renderer.create(
-        <DomusProvider autoLoginDemo={false}>
+        <DomusProvider verificarSessaoInicial={false}>
           <DomusAppContent />
         </DomusProvider>
       );
+    });
+
+    const authContainer = root.root.findByProps({ testID: 'app-auth-container' });
+    const loginScreen = root.root.findByProps({ testID: 'login-screen' });
+    expect(authContainer).toBeDefined();
+    expect(loginScreen).toBeDefined();
+    expect(root.root.findAllByProps({ testID: 'app-main-container' })).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('quando autenticado, renderiza DomusHeader no topo, conteudo dinâmico no centro e DomusNavBar na base', () => {
+    const WrapperAutenticado: React.FC = () => {
+      const [abaAtiva, setAbaAtiva] = React.useState<AbaDomus>('Clientes');
+      const ctx = criarMockContextCompleto({ abaAtiva, setAbaAtiva });
+      return (
+        <DomusContext.Provider value={ctx}>
+          <DomusAppContent />
+        </DomusContext.Provider>
+      );
+    };
+
+    let root: any;
+
+    act(() => {
+      root = renderer.create(<WrapperAutenticado />);
     });
 
     expect(root).toBeDefined();
@@ -275,6 +303,7 @@ describe('DomusAppContent Layout Principal', () => {
     act(() => {
       tabImoveis.props.onPress();
     });
+    expect(root.root.findByProps({ testID: 'imoveis-screen' })).toBeDefined();
 
     // Permite navegar para a aba Agendar
     const tabAgendar = root.root.findByProps({ testID: 'tab-btn-Agendar' });
@@ -283,6 +312,7 @@ describe('DomusAppContent Layout Principal', () => {
     act(() => {
       tabAgendar.props.onPress();
     });
+    expect(root.root.findByProps({ testID: 'agendar-screen' })).toBeDefined();
 
     // Permite navegar para a aba Atendimentos
     const tabAtendimentos = root.root.findByProps({ testID: 'tab-btn-Atendimentos' });
@@ -291,6 +321,7 @@ describe('DomusAppContent Layout Principal', () => {
     act(() => {
       tabAtendimentos.props.onPress();
     });
+    expect(root.root.findByProps({ testID: 'atendimentos-screen' })).toBeDefined();
 
     act(() => {
       root.unmount();

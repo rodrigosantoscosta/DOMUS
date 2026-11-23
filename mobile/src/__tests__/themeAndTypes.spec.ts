@@ -21,7 +21,8 @@ import {
   VisaoGeralAtendimentos,
   AvisoItem,
   ResumoAvisosProximos,
-  DomusLocalState,
+  LoginResponse,
+  CreateUsuarioInput,
 } from '../types/domus';
 
 describe('DOMUS Theme Tokens', () => {
@@ -163,15 +164,18 @@ describe('DOMUS TypeScript Contracts', () => {
       alertas: [aviso],
     };
 
-    const estadoLocal: DomusLocalState = {
-      usuarios: [usuario],
-      clientes: [cliente],
-      imoveis: [imovel],
-      agendamentos: [agendamento],
-      avisos: [aviso],
-      usuarioLogadoId: usuario.id,
-      modoOfflineForcado: true,
-      apiBaseUrl: 'http://localhost:3000/api',
+    const loginResponse: LoginResponse = {
+      accessToken: 'jwt-real-assinado',
+      usuario,
+    };
+
+    const cadastroUsuario: CreateUsuarioInput = {
+      nome: 'Maria Corretora',
+      login: 'maria.corretora',
+      email: 'maria@domus.com.br',
+      senha: 'Senha@123',
+      confirmarSenha: 'Senha@123',
+      perfis: ['CORRETOR'],
     };
 
     expect(usuario.login).toBe('junior');
@@ -181,7 +185,8 @@ describe('DOMUS TypeScript Contracts', () => {
     expect(aviso.tipoAviso).toBe('COMPROMISSO_PROXIMO');
     expect(visaoGeral.totalPendentes).toBe(1);
     expect(resumoAvisos.possuiAvisos).toBe(true);
-    expect(estadoLocal.modoOfflineForcado).toBe(true);
+    expect(loginResponse.accessToken).toBe('jwt-real-assinado');
+    expect(cadastroUsuario.perfis).toEqual(['CORRETOR']);
     expect(aba).toBe('Atendimentos');
   });
 });

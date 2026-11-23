@@ -1,6 +1,6 @@
 # DOMUS Mobile — Protótipo de Cadastro de Clientes (Expo Go)
 
-Protótipo mobile do sistema **DOMUS**, desenvolvido em **React Native** com **Expo SDK 58** e **TypeScript**, entregando a tela de **Cadastro de Clientes** validada no documento acadêmico institucional [MODELO DIAGNÓSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO.docx](file:///d:/code/DOMUS/docs/MODELO%20DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.docx) e fiel ao wireframe [01-cadastro-cliente.png](file:///d:/code/DOMUS/docs/prototipos/01-cadastro-cliente.png).
+Protótipo mobile do sistema **DOMUS**, desenvolvido em **React Native** com **Expo SDK 58** e **TypeScript**, entregando a tela de **Cadastro de Clientes** validada no documento acadêmico institucional [DIAGNÓSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO.docx](../docs/DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.docx) e fiel ao wireframe [01-cadastro-cliente.png](../docs/prototipos/01-cadastro-cliente.png).
 
 ---
 
@@ -11,7 +11,7 @@ Protótipo mobile do sistema **DOMUS**, desenvolvido em **React Native** com **E
 </p>
 
 Conforme o direcionamento da primeira entrega na **Seção 4.1 do Diagnóstico**, a aplicação apresenta:
-- **Cabeçalho Institucional (`DomusHeader`):** Topo âmbar (`#FFE099`), ícone de casa, marca `DOMUS` e indicador de modo.
+- **Cabeçalho Institucional (`DomusHeader`):** Linha única compacta com logotipo oficial, marca `DOMUS`, identificação do corretor autenticado e botão `Sair`.
 - **Barra de Navegação (`DomusNavBar`):** Barra grafite (`#262626`) com as abas e destaque ativo laranja (`#FFA347`) em "Clientes".
 - **Formulário Fiel ao Wireframe (`01-cadastro-cliente.png`):**
   - `nome Completo`
@@ -68,9 +68,8 @@ npm run typecheck --prefix mobile
 
 ## 4. Conexao com o Backend e Banco de Dados Real (Sem Mockup)
 
-O aplicativo conta com integracao direta com a API RESTful e o banco SQLite:
-- **Badge de Status Interativa:** Toque na badge no topo do cabecalho ("Modo Demo Local" ou "API Online") para abrir o painel de conexao.
-- **Deteccao Automatica de Host:** Quando executado no smartphone via Expo Go, o app detecta o IP do seu computador na rede local automaticamente.
-- **Teste e Validacao em Tempo Real:** Permite testar o endpoint da API diretamente da tela do celular com feedback visual imediato.
-- **Projecao em Sala de Aula:** Consulte o roteiro detalhado em `../docs/guia-apresentacao-academica.md` para demonstrar o salvamento em tempo real no banco projetado no telao.
+O aplicativo opera exclusivamente conectado a API RESTful e ao banco SQLite (o antigo modo demonstrativo offline encontra-se preservado na branch `feat/modo-demo-local`):
+- **Autenticacao JWT Real (`LoginScreen`):** Exige login com usuario/e-mail e senha validados via `POST /api/auth/login` (com opcao de cadastro de conta `CORRETOR` em `POST /api/usuarios`) antes de liberar o acesso as 4 abas.
+- **Deteccao Automatica de Host e Ambiente:** Quando executado no smartphone via Expo Go, o app detecta o IP do seu computador na rede local automaticamente via `expo-constants` (ou utiliza a variavel `EXPO_PUBLIC_API_URL` configurada em `mobile/.env`).
+- **Cabecalho Institucional Unificado (`DomusHeader`):** Exibe em linha unica a marca `DOMUS`, o nome do usuario autenticado e o botao `Sair`.
 
