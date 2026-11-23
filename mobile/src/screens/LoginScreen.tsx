@@ -10,7 +10,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { DomusInput } from '../components/DomusInput';
 import { DomusButton } from '../components/DomusButton';
-import DomusContext, { DomusContextData } from '../context/DomusContext';
+import DomusContext, {
+  DomusContextData,
+  criarDomusContextFallback,
+} from '../context/DomusContext';
 import {
   DOMUS_THEME,
   DOMUS_SPACING,
@@ -27,33 +30,18 @@ import {
 
 const domusLogo = require('../../assets/logo.png');
 
-const DEFAULT_LOGIN_CONTEXT_FALLBACK: DomusContextData = {
-  usuario: null,
-  abaAtiva: 'Clientes',
-  setAbaAtiva: () => {},
-  clientes: [],
-  imoveis: [],
-  agendamentos: [],
-  visaoGeral: null,
-  avisos: null,
-  bannerVisivel: false,
-  fecharBanner: () => {},
-  apiOnline: false,
-  inicializando: false,
-  carregando: false,
-  erro: null,
-  login: async () => ({} as any),
-  logout: async () => {},
-  recarregarDados: async () => {},
-  criarCliente: async () => ({} as any),
-  criarImovel: async () => ({} as any),
-  criarAgendamento: async () => ({} as any),
-  programarRetorno: async () => ({} as any),
-  concluirAgendamento: async () => ({} as any),
-  sincronizarGoogleCalendar: async () => ({} as any),
-  cadastrarUsuario: async () => ({} as any),
-  configurarApiUrl: async () => {},
-};
+const DEFAULT_LOGIN_CONTEXT_FALLBACK: DomusContextData = criarDomusContextFallback('Clientes');
+
+function isEmailValido(valor: string): boolean {
+  const partes = valor.split('@');
+  if (partes.length !== 2) return false;
+  const [local, dominio] = partes;
+  if (!local || !dominio || /\s/.test(local) || /\s/.test(dominio)) {
+    return false;
+  }
+  const pontoIdx = dominio.indexOf('.');
+  return pontoIdx > 0 && !dominio.endsWith('.') && !dominio.includes('..');
+}
 
 export interface LoginScreenProps {
   context?: DomusContextData;
@@ -87,15 +75,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
   const submetendoRef = useRef<boolean>(false);
 
+  const reportarErro = (mensagem: string) => {
+    void triggerErrorHaptic();
+    setErroLocal(mensagem);
+  };
+
   const alternarModo = (novoModo: ModoAuth) => {
     if (novoModo === modo) return;
-    triggerSelectionHaptic();
+    void triggerSelectionHaptic();
     setModo(novoModo);
     setErroLocal(null);
   };
 
   const handleToggleSenha = () => {
-    triggerLightImpact();
+    void triggerLightImpact();
     setMostrarSenha((prev) => !prev);
   };
 
@@ -105,14 +98,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
     const idLimpo = identificador.trim();
     if (!idLimpo) {
-      triggerErrorHaptic();
-      setErroLocal('Informe seu usuário ou e-mail para entrar.');
+      reportarErro('Informe seu usuário ou e-mail para entrar.');
       return;
     }
 
     if (!senhaLogin) {
-      triggerErrorHaptic();
-      setErroLocal('Informe sua senha.');
+      reportarErro('Informe sua senha.');
       return;
     }
 
@@ -123,10 +114,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         loginOuEmail: idLimpo,
         senha: senhaLogin,
       });
-      triggerSuccessHaptic();
+      void triggerSuccessHaptic();
     } catch (err: any) {
-      triggerErrorHaptic();
-      setErroLocal(err?.message || 'Não foi possível realizar o login.');
+      reportarErro(err?.message || 'Não foi possível realizar o login.');
     } finally {
       setEnviando(false);
       submetendoRef.current = false;
@@ -143,38 +133,32 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     const cpfLimpo = cpf.replace(/\D/g, '');
 
     if (!nomeLimpo) {
-      triggerErrorHaptic();
-      setErroLocal('Informe seu nome completo.');
+      reportarErro('Informe seu nome completo.');
       return;
     }
 
     if (!loginLimpo) {
-      triggerErrorHaptic();
-      setErroLocal('Informe um nome de usuário (login).');
+      reportarErro('Informe um nome de usuário (login).');
       return;
     }
 
-    if (!emailLimpo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)) {
-      triggerErrorHaptic();
-      setErroLocal('Informe um e-mail válido.');
+    if (!emailLimpo || !isEmailValido(emailLimpo)) {
+      reportarErro('Informe um e-mail válido.');
       return;
     }
 
     if (cpfLimpo && cpfLimpo.length !== 11) {
-      triggerErrorHaptic();
-      setErroLocal('Se informado, o CPF deve conter 11 dígitos numéricos.');
+      reportarErro('Se informado, o CPF deve conter 11 dígitos numéricos.');
       return;
     }
 
     if (!senhaCadastro || senhaCadastro.length < 6) {
-      triggerErrorHaptic();
-      setErroLocal('A senha deve ter pelo menos 6 caracteres.');
+      reportarErro('A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
     if (senhaCadastro !== confirmarSenha) {
-      triggerErrorHaptic();
-      setErroLocal('A confirmação da senha não confere com a senha informada.');
+      reportarErro('A confirmação da senha não confere com a senha informada.');
       return;
     }
 
@@ -196,20 +180,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           loginOuEmail: loginLimpo,
           senha: senhaCadastro,
         });
-        triggerSuccessHaptic();
+        void triggerSuccessHaptic();
       } catch (loginErr: any) {
-        triggerErrorHaptic();
         setModo('entrar');
         setIdentificador(loginLimpo);
         setSenhaLogin('');
-        setErroLocal(
+        reportarErro(
           loginErr?.message ||
             'Conta criada, mas não foi possível autenticar automaticamente. Tente entrar novamente.'
         );
       }
     } catch (err: any) {
-      triggerErrorHaptic();
-      setErroLocal(err?.message || 'Não foi possível criar sua conta.');
+      reportarErro(err?.message || 'Não foi possível criar sua conta.');
     } finally {
       setEnviando(false);
       submetendoRef.current = false;

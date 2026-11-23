@@ -26,71 +26,64 @@ const MOCK_TOKEN_PREFIX = 'domus-mock-token-';
 const HTTP_TIMEOUT_MS = 8000;
 const PING_TIMEOUT_MS = 5000;
 
+function parseDataBruta(dataBruta: string): { ano: number; mes: number; dia: number } | Date {
+  const limpa = dataBruta.trim();
+  const matchIso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(limpa);
+  if (matchIso) {
+    return { ano: Number(matchIso[1]), mes: Number(matchIso[2]), dia: Number(matchIso[3]) };
+  }
+  const matchBr = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(limpa);
+  if (matchBr) {
+    return { dia: Number(matchBr[1]), mes: Number(matchBr[2]), ano: Number(matchBr[3]) };
+  }
+  const fallback = new Date(limpa);
+  if (Number.isNaN(fallback.getTime())) {
+    throw new Error(`Formato de data inválido: ${dataBruta}. Use YYYY-MM-DD ou DD/MM/YYYY`);
+  }
+  return fallback;
+}
+
 export function interpretarDataHora(
   data?: string | null,
   hora?: string | null,
   dataHoraIso?: string | null
 ): Date | null {
-  if (dataHoraIso && dataHoraIso.trim()) {
-    const d = new Date(dataHoraIso.trim());
-    if (isNaN(d.getTime())) {
+  if (dataHoraIso?.trim()) {
+    const parsedIso = new Date(dataHoraIso.trim());
+    if (Number.isNaN(parsedIso.getTime())) {
       throw new Error(`Formato de dataHora inválido: ${dataHoraIso}`);
     }
-    return d;
+    return parsedIso;
   }
 
-  if (!data || !data.trim()) {
+  if (!data?.trim()) {
     return null;
   }
 
-  const dataLimpa = data.trim();
-  const horaLimpa = hora && hora.trim() ? hora.trim() : '09:00';
-
-  let ano: number;
-  let mes: number;
-  let dia: number;
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dataLimpa)) {
-    const partes = dataLimpa.split('-').map(Number);
-    [ano, mes, dia] = partes;
-  } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dataLimpa)) {
-    const partes = dataLimpa.split('/').map(Number);
-    [dia, mes, ano] = partes;
-  } else {
-    const tentativa = new Date(dataLimpa);
-    if (isNaN(tentativa.getTime())) {
-      throw new Error(`Formato de data inválido: ${data}. Use YYYY-MM-DD ou DD/MM/YYYY`);
-    }
-    return tentativa;
+  const parsedData = parseDataBruta(data);
+  if (parsedData instanceof Date) {
+    return parsedData;
   }
 
-  const matchHora = /^(\d{1,2}):(\d{2})$/.exec(horaLimpa);
+  const horaNormalizada = hora?.trim() ? hora.trim() : '09:00';
+  const matchHora = /^(\d{1,2}):(\d{2})$/.exec(horaNormalizada);
   if (!matchHora) {
     throw new Error(`Formato de hora inválido: ${hora}. Use HH:mm`);
   }
 
+  const { ano, mes, dia } = parsedData;
   const horas = Number(matchHora[1]);
   const minutos = Number(matchHora[2]);
+  const foraDoIntervalo =
+    mes < 1 || mes > 12 || dia < 1 || dia > 31 || horas < 0 || horas > 23 || minutos < 0 || minutos > 59;
 
-  if (
-    mes < 1 ||
-    mes > 12 ||
-    dia < 1 ||
-    dia > 31 ||
-    horas < 0 ||
-    horas > 23 ||
-    minutos < 0 ||
-    minutos > 59
-  ) {
+  if (foraDoIntervalo) {
     throw new Error('Data ou hora fora do intervalo válido');
   }
 
-  const isoString = `${String(ano).padStart(4, '0')}-${String(mes).padStart(2, '0')}-${String(
-    dia
-  ).padStart(2, '0')}T${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:00.000Z`;
-
-  const resultado = new Date(isoString);
-  if (isNaN(resultado.getTime())) {
+  const pad = (n: number, len = 2) => String(n).padStart(len, '0');
+  const resultado = new Date(`${pad(ano, 4)}-${pad(mes)}-${pad(dia)}T${pad(horas)}:${pad(minutos)}:00.000Z`);
+  if (Number.isNaN(resultado.getTime())) {
     throw new Error('Data ou hora inválida');
   }
   return resultado;

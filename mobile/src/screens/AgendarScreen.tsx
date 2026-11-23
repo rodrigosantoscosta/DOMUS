@@ -14,7 +14,10 @@ import { DomusInput } from '../components/DomusInput';
 import { DomusDateTimePresets } from '../components/DomusDateTimePresets';
 import { DomusWebPickerModal } from '../components/DomusWebPickerModal';
 import { DomusToast } from '../components/DomusToast';
-import DomusContext, { DomusContextData } from '../context/DomusContext';
+import DomusContext, {
+  DomusContextData,
+  criarDomusContextFallback,
+} from '../context/DomusContext';
 import {
   DOMUS_THEME,
   DOMUS_SPACING,
@@ -35,33 +38,7 @@ import {
   triggerLightImpact,
 } from '../utils/haptics';
 
-const DEFAULT_CONTEXT_FALLBACK: DomusContextData = {
-  usuario: null,
-  abaAtiva: 'Agendar',
-  setAbaAtiva: () => {},
-  clientes: [],
-  imoveis: [],
-  agendamentos: [],
-  visaoGeral: null,
-  avisos: null,
-  bannerVisivel: false,
-  fecharBanner: () => {},
-  apiOnline: false,
-  inicializando: false,
-  carregando: false,
-  erro: null,
-  login: async () => ({} as any),
-  logout: async () => {},
-  recarregarDados: async () => {},
-  criarCliente: async () => ({} as any),
-  criarImovel: async () => ({} as any),
-  criarAgendamento: async () => ({} as any),
-  programarRetorno: async () => ({} as any),
-  concluirAgendamento: async () => ({} as any),
-  sincronizarGoogleCalendar: async () => ({} as any),
-  cadastrarUsuario: async () => ({} as any),
-  configurarApiUrl: async () => {},
-};
+const DEFAULT_CONTEXT_FALLBACK: DomusContextData = criarDomusContextFallback('Agendar');
 
 export interface AgendarScreenProps {
   context?: DomusContextData;

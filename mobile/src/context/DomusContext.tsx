@@ -58,6 +58,38 @@ export interface DomusContextData {
 
 const DomusContext = createContext<DomusContextData | undefined>(undefined);
 
+const noopAsync = async (): Promise<any> => ({});
+
+export function criarDomusContextFallback(abaAtiva: AbaDomus = 'Clientes'): DomusContextData {
+  return {
+    usuario: null,
+    abaAtiva,
+    setAbaAtiva: () => {},
+    clientes: [],
+    imoveis: [],
+    agendamentos: [],
+    visaoGeral: null,
+    avisos: null,
+    bannerVisivel: false,
+    fecharBanner: () => {},
+    apiOnline: false,
+    inicializando: false,
+    carregando: false,
+    erro: null,
+    login: noopAsync,
+    logout: async () => {},
+    recarregarDados: async () => {},
+    criarCliente: noopAsync,
+    criarImovel: noopAsync,
+    criarAgendamento: noopAsync,
+    programarRetorno: noopAsync,
+    concluirAgendamento: noopAsync,
+    sincronizarGoogleCalendar: noopAsync,
+    cadastrarUsuario: noopAsync,
+    configurarApiUrl: async () => {},
+  };
+}
+
 export interface DomusProviderProps {
   children: ReactNode;
   verificarSessaoInicial?: boolean;
@@ -350,7 +382,7 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
       }
     }
 
-    inicializarSessao();
+    void inicializarSessao();
 
     return () => {
       montadoRef.current = false;

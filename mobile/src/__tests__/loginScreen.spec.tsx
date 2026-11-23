@@ -6,37 +6,63 @@ import { DomusContextData } from '../context/DomusContext';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-const originalConsoleError = console.error;
-beforeAll(() => {
-  console.error = (...args: any[]) => {
-    if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('react-test-renderer is deprecated') ||
-        args[0].includes('not configured to support act') ||
-        args[0].includes('was not wrapped in act'))
-    ) {
+const SILENCED_ACT_WARNINGS = [
+  'react-test-renderer is deprecated',
+  'not configured to support act',
+  'was not wrapped in act',
+];
+
+let consoleErrorSpy: jest.SpyInstance;
+
+beforeEach(() => {
+  const nativeError = console.error.bind(console);
+  consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation((...args: any[]) => {
+    const firstArg = args[0];
+    if (typeof firstArg === 'string' && SILENCED_ACT_WARNINGS.some((w) => firstArg.includes(w))) {
       return;
     }
-    originalConsoleError(...args);
+    nativeError(...args);
+  });
+});
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore();
+});
+
+function coletarTextos(elemento: any): string[] {
+  const lista: string[] = [];
+  const visitar = (atual: any) => {
+    if (atual === null || atual === undefined) return;
+    if (typeof atual === 'string' || typeof atual === 'number') {
+      lista.push(String(atual).trim());
+      return;
+    }
+    const itens = Array.isArray(atual) ? atual : atual.children;
+    if (Array.isArray(itens)) {
+      itens.forEach(visitar);
+    }
   };
-});
+  visitar(elemento);
+  return lista;
+}
 
-afterAll(() => {
-  console.error = originalConsoleError;
-});
+async function preencherESubmeterLogin(
+  root: any,
+  identificador: string,
+  senha: string
+): Promise<void> {
+  const campoId = root.root.findByProps({ testID: 'input-login-identificador' });
+  const campoSenha = root.root.findByProps({ testID: 'input-login-senha' });
+  const botaoEntrar = root.root.findByProps({ testID: 'btn-fazer-login' });
 
-function coletarTextos(node: any): string[] {
-  if (!node) return [];
-  if (typeof node === 'string' || typeof node === 'number') {
-    return [String(node).trim()];
-  }
-  if (Array.isArray(node)) {
-    return node.flatMap(coletarTextos);
-  }
-  if (node.children) {
-    return node.children.flatMap(coletarTextos);
-  }
-  return [];
+  act(() => {
+    campoId.props.onChangeText(identificador);
+    campoSenha.props.onChangeText(senha);
+  });
+
+  await act(async () => {
+    await botaoEntrar.props.onPress();
+  });
 }
 
 function criarContextoAuthMock(
@@ -158,18 +184,7 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
       root = renderer.create(<LoginScreen context={mockCtx} />);
     });
 
-    const inputId = root.root.findByProps({ testID: 'input-login-identificador' });
-    const inputSenha = root.root.findByProps({ testID: 'input-login-senha' });
-    const btnLogin = root.root.findByProps({ testID: 'btn-fazer-login' });
-
-    act(() => {
-      inputId.props.onChangeText('  corretor.real  ');
-      inputSenha.props.onChangeText('Senha@123');
-    });
-
-    await act(async () => {
-      await btnLogin.props.onPress();
-    });
+    await preencherESubmeterLogin(root, '  corretor.real  ', 'Senha@123');
 
     expect(mockCtx.login).toHaveBeenCalledWith({
       loginOuEmail: 'corretor.real',
@@ -192,18 +207,7 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
       root = renderer.create(<LoginScreen context={mockCtx} />);
     });
 
-    const inputId = root.root.findByProps({ testID: 'input-login-identificador' });
-    const inputSenha = root.root.findByProps({ testID: 'input-login-senha' });
-    const btnLogin = root.root.findByProps({ testID: 'btn-fazer-login' });
-
-    act(() => {
-      inputId.props.onChangeText('corretor.real');
-      inputSenha.props.onChangeText('Senha@123');
-    });
-
-    await act(async () => {
-      await btnLogin.props.onPress();
-    });
+    await preencherESubmeterLogin(root, 'corretor.real', 'Senha@123');
 
     const errorBox = root.root.findByProps({ testID: 'login-error-box' });
     expect(coletarTextos(errorBox).join(' ')).toContain('Servidor indisponível');
