@@ -1,6 +1,6 @@
 # DOMUS Mobile — Protótipo de Cadastro de Clientes (Expo Go)
 
-Protótipo mobile do sistema **DOMUS**, desenvolvido em **React Native** com **Expo SDK 58** e **TypeScript**, entregando a tela de **Cadastro de Clientes** validada no documento acadêmico institucional [MODELO DIAGNÓSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO.docx](../docs/MODELO%20DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.docx) e fiel ao wireframe [01-cadastro-cliente.png](../docs/prototipos/01-cadastro-cliente.png).
+Protótipo mobile do sistema **DOMUS**, desenvolvido em **React Native** com **Expo SDK 58** e **TypeScript**, entregando a tela de **Cadastro de Clientes** validada no documento acadêmico institucional [DIAGNÓSTICO DA PROBLEMÁTICA E PLANO DE INTERVENÇÃO.docx](../docs/DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.docx) e fiel ao wireframe [01-cadastro-cliente.png](../docs/prototipos/01-cadastro-cliente.png).
 
 ---
 
@@ -72,5 +72,4 @@ O aplicativo opera exclusivamente conectado a API RESTful e ao banco SQLite (o a
 - **Autenticacao JWT Real (`LoginScreen`):** Exige login com usuario/e-mail e senha validados via `POST /api/auth/login` (com opcao de cadastro de conta `CORRETOR` em `POST /api/usuarios`) antes de liberar o acesso as 4 abas.
 - **Deteccao Automatica de Host e Ambiente:** Quando executado no smartphone via Expo Go, o app detecta o IP do seu computador na rede local automaticamente via `expo-constants` (ou utiliza a variavel `EXPO_PUBLIC_API_URL` configurada em `mobile/.env`).
 - **Cabecalho Institucional Unificado (`DomusHeader`):** Exibe em linha unica a marca `DOMUS`, o nome do usuario autenticado e o botao `Sair`.
-- **Projecao em Sala de Aula:** Consulte o roteiro detalhado em [guia-apresentacao-academica.md](../docs/guia-apresentacao-academica.md) para demonstrar o salvamento em tempo real no banco projetado no telao.
 
