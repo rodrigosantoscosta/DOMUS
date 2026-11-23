@@ -57,14 +57,12 @@ const DEFAULT_LOGIN_CONTEXT_FALLBACK: DomusContextData = {
 
 export interface LoginScreenProps {
   context?: DomusContextData;
-  onPressConfigurarConexao?: () => void;
 }
 
 type ModoAuth = 'entrar' | 'cadastro';
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
   context,
-  onPressConfigurarConexao,
 }) => {
   const contextFromHook = React.useContext(DomusContext);
   const domus = context || contextFromHook || DEFAULT_LOGIN_CONTEXT_FALLBACK;
@@ -272,49 +270,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <Text style={styles.brandSubtitle}>
             Gestão de Clientes, Imóveis e Atendimentos
           </Text>
-
-          <Pressable
-            onPress={() => {
-              triggerLightImpact();
-              onPressConfigurarConexao?.();
-            }}
-            disabled={!onPressConfigurarConexao}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            style={({ pressed }) => [
-              styles.statusBadge,
-              domus.apiOnline ? styles.statusBadgeOnline : styles.statusBadgeOffline,
-              pressed && onPressConfigurarConexao && styles.pressedFeedback,
-            ]}
-            testID="login-status-badge"
-            accessibilityRole="button"
-            accessibilityLabel={`Status: ${domus.apiOnline ? 'API Online' : 'API Offline'}`}
-          >
-            <View
-              style={[
-                styles.statusDot,
-                {
-                  backgroundColor: domus.apiOnline
-                    ? DOMUS_THEME.success
-                    : DOMUS_THEME.danger,
-                },
-              ]}
-            />
-            <Text
-              style={[
-                styles.statusText,
-                {
-                  color: domus.apiOnline ? DOMUS_THEME.success : DOMUS_THEME.danger,
-                },
-              ]}
-            >
-              {domus.apiOnline ? 'API Online' : 'API Offline'}
-            </Text>
-            <Ionicons
-              name="settings-outline"
-              size={14}
-              color={domus.apiOnline ? DOMUS_THEME.success : DOMUS_THEME.danger}
-            />
-          </Pressable>
         </View>
 
         {/* Cartao Principal de Login / Cadastro */}
@@ -379,31 +334,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 />
                 <Text style={styles.errorText}>{erroLocal}</Text>
               </View>
-              {!domus.apiOnline && onPressConfigurarConexao ? (
-                <Pressable
-                  onPress={() => {
-                    triggerLightImpact();
-                    onPressConfigurarConexao();
-                  }}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                  style={({ pressed }) => [
-                    styles.errorConfigLink,
-                    pressed && styles.pressedFeedback,
-                  ]}
-                  testID="btn-login-configurar-api"
-                  accessibilityRole="button"
-                  accessibilityLabel="Configurar URL da API"
-                >
-                  <Ionicons
-                    name="server-outline"
-                    size={15}
-                    color={DOMUS_THEME.primary}
-                  />
-                  <Text style={styles.errorConfigLinkText}>
-                    Configurar URL da API
-                  </Text>
-                </Pressable>
-              ) : null}
             </View>
           ) : null}
 
@@ -599,35 +529,6 @@ const styles = StyleSheet.create({
     color: DOMUS_THEME.textSecondary,
     textAlign: 'center',
     marginTop: DOMUS_SPACING.xs,
-    marginBottom: DOMUS_SPACING.md,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: DOMUS_SPACING.md,
-    paddingVertical: DOMUS_SPACING.xs,
-    borderRadius: DOMUS_RADIUS.pill,
-    borderWidth: 1,
-    gap: 6,
-  },
-  statusBadgeOnline: {
-    backgroundColor: DOMUS_THEME.successSoft,
-    borderColor: DOMUS_THEME.successBorder,
-  },
-  statusBadgeOffline: {
-    backgroundColor: DOMUS_THEME.dangerSoft,
-    borderColor: DOMUS_THEME.dangerBorder,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '700',
   },
   card: {
     backgroundColor: DOMUS_THEME.surface,
@@ -690,23 +591,6 @@ const styles = StyleSheet.create({
     color: DOMUS_THEME.danger,
     lineHeight: 18,
   },
-  errorConfigLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    paddingHorizontal: DOMUS_SPACING.sm,
-    borderRadius: DOMUS_RADIUS.md,
-    backgroundColor: DOMUS_THEME.surface,
-    borderWidth: 1,
-    borderColor: DOMUS_THEME.border,
-    gap: 6,
-  },
-  errorConfigLinkText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: DOMUS_THEME.primary,
-  },
   eyeButton: {
     minHeight: 44,
     minWidth: 44,
@@ -723,7 +607,7 @@ const styles = StyleSheet.create({
   },
   pressedFeedback: {
     opacity: 0.72,
-    transform: [{ scale: 0.98 }],
+    transform: [{ scale: 0.97 }],
   },
 });
 

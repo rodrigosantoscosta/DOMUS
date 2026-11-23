@@ -11,7 +11,7 @@ Este documento consolida a arquitetura completa do módulo móvel (`mobile/`) do
 
 O módulo móvel (`mobile/`) foi construído para atender aos requisitos de campo da Persona Junior (corretor autônomo), operando sob restrições técnicas específicas:
 
-- **Comunicação Online-First e Tratamento Explícito de Falhas (Fail-Loud):** Integração direta via REST com o backend NestJS e persistência SQLite. Perdas de conectividade são sinalizadas de forma transparente pelo indicador de status (`API Online` / `API Offline`) e banners não-bloqueantes com tentativa de reconexão e configuração de URL (o antigo modo demonstrativo offline encontra-se preservado na branch `feat/modo-demo-local`).
+- **Comunicação Online-First e Tratamento Explícito de Falhas (Fail-Loud):** Integração direta via REST com o backend NestJS e persistência SQLite. Perdas de conectividade na sincronização inicial são sinalizadas por um banner inline não-bloqueante com tentativa imediata de reconexão (`Tentar novamente`), enquanto falhas em formulários exibem erros inline e `DomusToast` (o antigo modo demonstrativo offline encontra-se preservado na branch `feat/modo-demo-local`).
 - **Ergonomia e Acessibilidade (Apple HIG):** Áreas mínimas de toque de 44x44pt para manipulação monomanual em movimento, contraste tipográfico estrito (Slate sobre fundo claro), e posicionamento de elementos de navegação primária na base inferior da interface.
 - **Taxa de Quadros Determinística (Two-Runtime Rule):** Separação estrita entre a thread de renderização da UI (60/120 FPS via worklets do `react-native-reanimated`) e a thread do JavaScript, eliminando engasgos (jank) e bloqueios de frame durante gestos de arraste e transições.
 - **Segurança Fail-Closed:** Comunicação autenticada via JWT RFC 7519, rejeição estrita de tokens malformados ou simulados no backend (`JwtAuthGuard`), e auto-recuperação transparente de sessão.
@@ -24,11 +24,11 @@ O módulo móvel (`mobile/`) foi construído para atender aos requisitos de camp
 flowchart TD
     subgraph UI_LAYER["Camada de Interface (Apple HIG & Safe Areas)"]
         APP["App.tsx (SafeAreaProvider + Root Gesture Handler)"]
-        HEADER["DomusHeader (Status Badge API Online/Offline, Logout)"]
+        HEADER["DomusHeader (Marca DOMUS, Usuario Autenticado e Logout)"]
         NAV["DomusNavBar (Bottom Tab Bar Fixa na Base)"]
         SCREENS["Telas Ativas (Login, Clientes, Imoveis, Agendar, Atendimentos)"]
         TOAST["DomusToast (Feedback Flutuante na UI Thread)"]
-        SHEET["ConnectionModal & Detalhes (Bottom Sheets Deslizantes)"]
+        SHEET["Detalhes de Atendimento (Bottom Sheet Deslizante)"]
     end
 
     subgraph RUNTIME_LAYER["Camada de Execução Nativa (Two-Runtime Rule)"]
@@ -87,7 +87,7 @@ Antes da intervenção, a interface apresentava componentes genéricos desprovid
 ### Decisão 3: Transições Físicas na UI Thread (Two-Runtime Rule)
 - **Problema Anterior:** Modais estáticos com abertura em corte seco ou animações travadas rodando na thread do JavaScript.
 - **Solução Implementada:**
-  - Aplicação estrita da **Two-Runtime Rule** em [`ConnectionModal.tsx`](../mobile/src/components/ConnectionModal.tsx) e na folha de detalhes de [`AtendimentosScreen.tsx`](../mobile/src/screens/AtendimentosScreen.tsx).
+  - Aplicação estrita da **Two-Runtime Rule** na folha deslizante de detalhes de [`AtendimentosScreen.tsx`](../mobile/src/screens/AtendimentosScreen.tsx) e no [`DomusToast.tsx`](../mobile/src/components/DomusToast.tsx).
   - Utilização de `Gesture.Pan()` memoizado com `useMemo`.
   - Execução de worklets explícitos (`'worklet'`) nos manipuladores de gesto, controlando valores compartilhados (`useSharedValue`) e estilos animados (`useAnimatedStyle`).
   - Efeito elástico superior via `rubberband()` e desaceleração inercial via `projectVelocity()`, finalizando com molas amortecidas (`withSpring(..., { overshootClamping: true })`) e respeito às preferências de acessibilidade (`useReducedMotion`).
@@ -101,7 +101,7 @@ Antes da intervenção, a interface apresentava componentes genéricos desprovid
   - Extração de componentes de linha (`ClienteCardItem`, `ImovelCardItem`, `AtendimentoCardItem`) para fora do escopo funcional das telas, envelopados com `React.memo` para evitar reconciliações desnecessárias durante a digitação de filtros.
 
 ### Decisão 5: Anti-AI Slop e Superfícies Limpas
-- **Problema Anterior:** Uso de bordas laterais assimétricas e espessas (`borderLeftWidth: 3` e `borderLeftWidth: 4`) em cards de dicas e caixas de feedback no [`ConnectionModal.tsx`](../mobile/src/components/ConnectionModal.tsx).
+- **Problema Anterior:** Uso de bordas laterais assimétricas e espessas (`borderLeftWidth: 3` e `borderLeftWidth: 4`) em cards de dicas, banners e caixas de feedback.
 - **Solução Implementada:**
   - Substituição integral de barras laterais decorativas por **bordas perimetrais uniformes e completas de 1px** (`borderWidth: 1`, `borderColor: DOMUS_THEME.border`).
   - Utilização de fundos suaves e discretos (`DOMUS_THEME.surfaceElevated`, `DOMUS_THEME.successSoft`, `DOMUS_THEME.dangerSoft`, `DOMUS_THEME.infoSoft`) com contrastes harmoniosos, garantindo acabamento de produto real de acordo com a política de superfícies limpas.
@@ -125,7 +125,7 @@ Inicialização do App (DomusProvider)
       Limpa @domus:local_state e descarta domus-mock-token-*
                │
       Existe JWT real em @domus:access_token?
-         ├─── NÃO ───────────► Verifica API (testarConexao) e exibe LoginScreen
+         ├─── NÃO ───────────► Exibe LoginScreen imediatamente (zero requisições automáticas no mount)
          └─── SIM
                │
         Valida sessão em GET /api/auth/me (HTTP timeout: 8000ms)
@@ -134,14 +134,13 @@ Inicialização do App (DomusProvider)
          ├─── SIM ───────────► Carrega dados reais, marca apiOnline = true e libera as 4 abas
          └─── NÃO
                ├── 401 Unauthorized ─► Remove JWT, dispara onUnauthorized e retorna para LoginScreen
-               └── Erro de Rede ─────► Marca apiOnline = false e exibe feedback explícito de reconexão
+               └── Erro de Rede ─────► Marca apiOnline = false e exibe banner inline de reconexão
 ```
 
-### A Badge de Status no Cabeçalho e na Tela de Login
-No [`DomusHeader.tsx`](../mobile/src/components/DomusHeader.tsx) e na [`LoginScreen.tsx`](../mobile/src/screens/LoginScreen.tsx), a badge exibe visualmente o estado da conexão:
-- **Pílula Vermelha (`API Offline`):** Ativada quando o servidor backend está inacessível ou respondeu falha de conectividade.
-- **Pílula Verde (`API Online`):** Ativada quando há comunicação ativa com a API NestJS na porta `3000`, persistindo diretamente no banco SQLite (`dev.db`).
-- **Interatividade:** Tocar na badge abre imediatamente o Bottom Sheet [`ConnectionModal.tsx`](../mobile/src/components/ConnectionModal.tsx), permitindo testar a conectividade em tempo real e configurar a URL base da rede.
+### Cabeçalho Institucional Unificado e Resolução Automática de Host
+No [`DomusHeader.tsx`](../mobile/src/components/DomusHeader.tsx), o cabeçalho opera em uma linha única e limpa de produto:
+- **Identidade e Sessão:** Exibe à esquerda o logotipo oficial, a marca `DOMUS` e o identificador do corretor autenticado (`usuarioNome`), e à direita o botão `Sair` (`minHeight: 44`, `minWidth: 44`).
+- **Resolução Automática da URL da API:** O serviço [`domusApi.ts`](../mobile/src/services/domusApi.ts) resolve automaticamente a URL base da API NestJS via `EXPO_PUBLIC_API_URL`, detecção de host em tempo de execução no navegador (`window.location.hostname`) ou IP da máquina servidora no Expo Go (`Constants.expoConfig?.hostUri`), sem expor modais ou badges de configuração de servidor ao usuário final.
 
 ---
 
@@ -149,7 +148,7 @@ No [`DomusHeader.tsx`](../mobile/src/components/DomusHeader.tsx) e na [`LoginScr
 
 ### 1. `LoginScreen.tsx` (RN01, RN02, RN03)
 - **Objetivo:** Autenticação real via JWT e cadastro público de novos corretores.
-- **Recursos:** Alternância segmentada entre **Entrar** (`POST /api/auth/login`) e **Criar Conta** (`POST /api/usuarios` restrito a `perfis: ['CORRETOR']` com auto-login em seguida); exibição/ocultação de senha; badge interativa de status da API com atalho para o `ConnectionModal`; exibição de erros inline sem credenciais embutidas.
+- **Recursos:** Alternância segmentada entre **Entrar** (`POST /api/auth/login`) e **Criar Conta** (`POST /api/usuarios` restrito a `perfis: ['CORRETOR']` com auto-login em seguida); exibição/ocultação de senha; exibição de erros inline sem credenciais embutidas e sem requisições de rede desnecessárias antes da submissão.
 
 ### 2. `ClientesScreen.tsx` (RN04, RN05, RN06)
 - **Objetivo:** Gestão de clientes e captação de interesses imobiliários.
@@ -177,7 +176,7 @@ No [`DomusHeader.tsx`](../mobile/src/components/DomusHeader.tsx) e na [`LoginScr
 
 ### 6. Shell Principal (`App.tsx`)
 - **Objetivo:** Orquestrador visual de layout, portão de autenticação (`inicializando` -> `LoginScreen` -> shell autenticado), provedor de contexto e áreas seguras.
-- **Recursos:** Envolve a aplicação com `GestureHandlerRootView` e `SafeAreaProvider`; exige sessão JWT validada para exibir o `DomusHeader`, o `DomusNavBar` e as 4 abas; exibe banner não-bloqueante de erro de rede com ações de reconexão; hospeda os componentes flutuantes globais (`DomusToast` e `ConnectionModal`).
+- **Recursos:** Envolve a aplicação com `GestureHandlerRootView` e `SafeAreaProvider`; exige sessão JWT validada para exibir o `DomusHeader`, o `DomusNavBar` e as 4 abas; exibe banner inline não-bloqueante de erro de rede com botão `Tentar novamente`; hospeda o componente flutuante global `DomusToast`.
 
 ---
 
@@ -215,16 +214,16 @@ adb reverse tcp:3000 tcp:3000
 cd mobile
 npx expo start
 ```
-Abra o **Expo Go** no celular e aponte a câmera para o QR Code. No modal de conexão do app, utilize `http://localhost:3000/api`.
+Abra o **Expo Go** no celular e aponte a câmera para o QR Code.
 
 ### No Celular Físico via Wi-Fi:
-Certifique-se de que o computador e o celular estão na mesma rede Wi-Fi. Abra o modal de conexão do app e insira o IP da sua máquina (ex: `http://192.168.1.100:3000/api`).
+Certifique-se de que o computador e o celular estão na mesma rede Wi-Fi. O aplicativo no Expo Go detecta automaticamente o IP local da máquina via `expo-constants` (ou utilize `EXPO_PUBLIC_API_URL=http://192.168.1.100:3000/api` em `mobile/.env`).
 
 ### Execução de Testes e Tipagem Estrita:
 ```powershell
 cd mobile
 
-# Executa as 4 suítes de testes unitários (39 testes)
+# Executa as 10 suítes de testes unitários (92 testes)
 npm test
 
 # Validação de tipagem TypeScript
@@ -309,7 +308,7 @@ O ecossistema de dependências configurado em [`mobile/package.json`](../mobile/
 
 ## 9. Física de Gestos e Matemática de Worklets (`motion.ts` e `haptics.ts`)
 
-Para garantir que os componentes deslizantes (`ConnectionModal.tsx` e o painel de ações em `AtendimentosScreen.tsx`) respondam à inércia do toque com precisão nativa na UI Thread, o módulo [`mobile/src/utils/motion.ts`](../mobile/src/utils/motion.ts) implementa duas funções matemáticas compiladas como worklets (`'worklet'`):
+Para garantir que os componentes deslizantes (`DomusToast.tsx` e o painel de ações em `AtendimentosScreen.tsx`) respondam à inércia do toque com precisão nativa na UI Thread, o módulo [`mobile/src/utils/motion.ts`](../mobile/src/utils/motion.ts) implementa duas funções matemáticas compiladas como worklets (`'worklet'`):
 
 ### 1. Projeção Inercial de Velocidade (`projectVelocity`)
 Calcula a posição final estimada de um painel quando o usuário solta o dedo após um gesto rápido (swipe/fling), utilizando a taxa de desaceleração padrão do `UIScrollView` do iOS ($\text{decelerationRate} = 0.998$):

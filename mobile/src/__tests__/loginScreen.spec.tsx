@@ -93,7 +93,7 @@ function criarContextoAuthMock(
 }
 
 describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
-  it('renderiza marca DOMUS, badge de status e nenhum botao de acesso rapido demo', () => {
+  it('renderiza marca DOMUS e formulario limpo sem badges de status de API ou botoes de modo demo', () => {
     const mockCtx = criarContextoAuthMock({ apiOnline: false });
     let root: any;
 
@@ -103,11 +103,12 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
 
     const textos = coletarTextos(root.toJSON()).join(' ');
     expect(textos).toContain('DOMUS');
-    expect(textos).toContain('API Offline');
+    expect(textos).not.toContain('API Offline');
+    expect(textos).not.toContain('API Online');
     expect(textos).not.toContain('Modo Demo');
     expect(textos).not.toContain('Demo');
     expect(root.root.findByProps({ testID: 'login-logo' })).toBeDefined();
-    expect(root.root.findByProps({ testID: 'login-status-badge' })).toBeDefined();
+    expect(root.root.findAllByProps({ testID: 'login-status-badge' })).toHaveLength(0);
 
     act(() => {
       root.unmount();
@@ -180,8 +181,7 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
     });
   });
 
-  it('exibe erro inline na falha de login e atalho para configurar URL quando API estiver offline', async () => {
-    const onConfig = jest.fn();
+  it('exibe erro inline na falha de login sem expor botoes de configuracao de servidor', async () => {
     const mockCtx = criarContextoAuthMock({
       apiOnline: false,
       login: jest.fn().mockRejectedValue(new Error('Servidor indisponível')),
@@ -189,9 +189,7 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
     let root: any;
 
     act(() => {
-      root = renderer.create(
-        <LoginScreen context={mockCtx} onPressConfigurarConexao={onConfig} />
-      );
+      root = renderer.create(<LoginScreen context={mockCtx} />);
     });
 
     const inputId = root.root.findByProps({ testID: 'input-login-identificador' });
@@ -209,27 +207,19 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
 
     const errorBox = root.root.findByProps({ testID: 'login-error-box' });
     expect(coletarTextos(errorBox).join(' ')).toContain('Servidor indisponível');
-
-    const btnConfigApi = root.root.findByProps({ testID: 'btn-login-configurar-api' });
-    act(() => {
-      btnConfigApi.props.onPress();
-    });
-    expect(onConfig).toHaveBeenCalledTimes(1);
+    expect(root.root.findAllByProps({ testID: 'btn-login-configurar-api' })).toHaveLength(0);
 
     act(() => {
       root.unmount();
     });
   });
 
-  it('alterna visibilidade da senha e abre configuracao pela badge de status', () => {
-    const onConfig = jest.fn();
+  it('alterna visibilidade da senha no campo de login', () => {
     const mockCtx = criarContextoAuthMock({ apiOnline: true });
     let root: any;
 
     act(() => {
-      root = renderer.create(
-        <LoginScreen context={mockCtx} onPressConfigurarConexao={onConfig} />
-      );
+      root = renderer.create(<LoginScreen context={mockCtx} />);
     });
 
     let inputSenha = root.root.findByProps({ testID: 'input-login-senha' });
@@ -242,12 +232,6 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
 
     inputSenha = root.root.findByProps({ testID: 'input-login-senha' });
     expect(inputSenha.props.secureTextEntry).toBe(false);
-
-    const badgeStatus = root.root.findByProps({ testID: 'login-status-badge' });
-    act(() => {
-      badgeStatus.props.onPress();
-    });
-    expect(onConfig).toHaveBeenCalledTimes(1);
 
     act(() => {
       root.unmount();
@@ -366,19 +350,15 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
     let root: any;
 
     act(() => {
-      root = renderer.create(
-        <LoginScreen context={mockCtx} onPressConfigurarConexao={jest.fn()} />
-      );
+      root = renderer.create(<LoginScreen context={mockCtx} />);
     });
 
-    const badge = root.root.findByProps({ testID: 'login-status-badge' });
     const tabEntrar = root.root.findByProps({ testID: 'login-tab-entrar' });
     const tabCadastro = root.root.findByProps({ testID: 'login-tab-cadastro' });
     const btnToggle = root.root.findByProps({ testID: 'btn-toggle-senha' });
     const btnLogin = root.root.findByProps({ testID: 'btn-fazer-login' });
     const btnLoginPressable = btnLogin.findByType('Pressable');
 
-    expect(StyleSheet.flatten(badge.props.style).minHeight).toBeGreaterThanOrEqual(44);
     expect(StyleSheet.flatten(tabEntrar.props.style).minHeight).toBeGreaterThanOrEqual(44);
     expect(StyleSheet.flatten(tabCadastro.props.style).minHeight).toBeGreaterThanOrEqual(44);
     expect(StyleSheet.flatten(btnToggle.props.style).minHeight).toBeGreaterThanOrEqual(44);

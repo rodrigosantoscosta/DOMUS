@@ -17,7 +17,7 @@ Este guia documenta o passo a passo completo para executar a aplicacao **DOMUS**
       v
 
 [Smartphone do Apresentador (Expo Go)]
-  - Badge no Cabecalho: "API Online" (ponto verde)
+  - LoginScreen com Autenticacao JWT Real e Cabecalho Unificado (DOMUS + Corretor + Sair)
   - Cadastro de Cliente no app movel
   - Gravacao imediata no banco de dados SQLite (dev.db)
 ```
@@ -70,7 +70,7 @@ npm run prisma:studio
 
 ## 4. Passo 3: Conectar o Celular (Expo Go) ao Backend
 
-Ao abrir o app no celular, toque na **badge de status** ("API Online" ou "API Offline", na tela de login ou no cabecalho) para abrir o **Modal de Conexao**. Escolha uma das tres formas de conectar:
+O aplicativo mobile detecta automaticamente o IP da maquina servidora no Expo Go via `expo-constants` (ou utiliza a variavel `EXPO_PUBLIC_API_URL` definida em `mobile/.env`). Escolha uma das tres formas de conectar:
 
 ### Cenario 1: Conexao via Cabo USB com ADB (A mais rapida e imune a quedas de Wi-Fi)
 1. Conecte o celular ao computador via cabo USB (com Depuracao USB ativada no celular).
@@ -78,18 +78,14 @@ Ao abrir o app no celular, toque na **badge de status** ("API Online" ou "API Of
    ```bash
    adb reverse tcp:3000 tcp:3000
    ```
-3. No app mobile, abra o modal tocando na badge e utilize a URL:
-   `http://localhost:3000/api`
-4. Clique em **Testar Conexao** e depois em **Conectar a API e Sincronizar**.
-5. A badge mudara imediatamente para **"API Online"** com ponto verde!
+3. Caso utilize `mobile/.env`, aponte para `EXPO_PUBLIC_API_URL=http://localhost:3000/api`.
+4. Abra o app no celular e autentique-se na `LoginScreen` (ex.: seed `junior.corretor` / `Domus@2026`).
 
 ### Cenario 2: Conexao via Wi-Fi ou Roteador de Dados Moveis (Hotspot do Celular)
 1. Conecte o computador ao Wi-Fi compartilhado pelo celular (ponto de acesso 4G/5G) ou ambos na mesma rede Wi-Fi.
-2. Descubra o IP local do computador (no terminal: `ipconfig`, procure por Endereco IPv4, ex: `192.168.43.50`).
-3. No app mobile, abra o modal de conexao e digite:
-   `http://192.168.43.50:3000/api`
-4. Clique em **Testar Conexao** e depois em **Conectar a API e Sincronizar**.
-5. A badge mudara para **"API Online"** com ponto verde!
+2. Inicie o servidor na rede local (`npm run dev:lan`) e o Metro Bundler (`npm run dev:mobile`).
+3. Pelo Expo Go, o IP local da maquina (ex.: `http://192.168.43.50:3000/api`) e detectado automaticamente via `expo-constants`.
+4. Na `LoginScreen`, autentique-se com seu usuario ou crie uma nova conta de corretor na aba **Criar Conta**.
 
 ### Cenario 3: Conexao via Expo Tunnel
 1. Se a rede bloquear portas locais, inicie o Expo com a flag de tunel:
@@ -106,9 +102,9 @@ Ao abrir o app no celular, toque na **badge de status** ("API Online" ou "API Of
 1. **Apresentar a Arquitetura:**
    - Explicar a separacao cliente-servidor (Mobile React Native com Expo SDK 58 e Backend NestJS 11 com Prisma ORM e SQLite).
    - Mostrar no terminal as migrations versionadas em `backend/prisma/migrations/`.
-2. **Mostrar a Conexao Viva no Celular:**
-   - Mostrar a badge **"API Online"** (ponto verde) no topo do aplicativo DOMUS.
-   - Toque na badge para exibir o modal de conexao, demonstrando a transparencia de rede e a URL ativa.
+2. **Mostrar a Autenticacao JWT Viva no Celular:**
+   - Exibir a `LoginScreen` no aplicativo DOMUS e realizar login real (`POST /api/auth/login`) ou criar uma nova conta de corretor (`POST /api/usuarios`).
+   - Mostrar o cabecalho institucional unificado com o nome do corretor autenticado e o botao **Sair**.
 3. **Executar o Cadastro em Tempo Real:**
    - Preencher o formulario de **Cadastro de Cliente** com dados de teste (ex: "Cliente Avaliacao UNIESP", CPF, telefone WhatsApp).
    - Tocar em **Cadastrar**.
@@ -117,4 +113,4 @@ Ao abrir o app no celular, toque na **badge de status** ("API Online" ou "API Of
    - Alternar para a aba do **Prisma Studio** no computador (`http://localhost:5555`) ou Swagger (`http://localhost:3000/api/docs`).
    - Mostrar para a banca o registro persistido na tabela `Cliente` do banco SQLite.
 5. **Demonstrar a Resiliencia e Preservacao de Branch:**
-   - Em caso de perda de conexao com a API, o aplicativo exibe status `API Offline` e banner nao-bloqueante com acoes de tentativa de reconexao e ajuste da URL sem travar a interface; caso seja necessario demonstrar sem servidor backend disponivel, a versao com Modo Demo Local offline encontra-se preservada na branch `feat/modo-demo-local`.
+   - Em caso de perda de conexao com a API durante a sincronizacao, o aplicativo exibe um banner inline nao-bloqueante com o botao **Tentar novamente** sem travar a interface; caso seja necessario demonstrar sem servidor backend disponivel, a versao com Modo Demo Local offline encontra-se preservada na branch `feat/modo-demo-local`.

@@ -16,9 +16,8 @@ Documentacao da interface grafica do aplicativo movel **DOMUS** em execucao no *
 ## 2. Elementos e Regras Entregues na Interface
 
 1. **Cabecalho Institucional (`DomusHeader`):**
-   - Identidade visual com a marca `DOMUS`.
-   - Badge interativa de status de rede (`API Online` com ponto verde ou `API Offline` com ponto vermelho), que abre o `ConnectionModal` para testar ping e configurar a URL da API NestJS em tempo real.
-   - Botao de acao `Sair`, encerrando a sessao JWT e retornando a tela de login (`LoginScreen`).
+   - Linha unica compacta com logotipo oficial, marca `DOMUS` e identificacao do corretor autenticado.
+   - Botao de acao `Sair` posicionado a direita, encerrando a sessao JWT e retornando a tela de login (`LoginScreen`).
 
 2. **Formulario de Cadastro (`ClientesScreen`):**
    - `nome Completo`: validacao obrigatoria de preenchimento (RN04/RN05).

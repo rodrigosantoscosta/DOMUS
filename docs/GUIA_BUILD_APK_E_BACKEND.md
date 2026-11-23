@@ -74,9 +74,8 @@ Para testar a integracao com o backend em tempo real:
    ```
 3. O terminal informara o IP da sua maquina, por exemplo: `http://192.168.1.15:3000/api`.
 4. No aplicativo DOMUS no celular:
-   - Toque no indicador de status na tela de login ou no cabecalho.
-   - Confirme ou digite o endereco informado pelo terminal e toque em **Conectar a API e Sincronizar**.
-   - O indicador alternara para `API Online` e voce podera autenticar com um usuario cadastrado (ex.: seed `junior.corretor` ou novo cadastro de corretor).
+   - Pelo **Expo Go**, o aplicativo detecta automaticamente o IP da maquina via `expo-constants` (ou utiliza `EXPO_PUBLIC_API_URL` definido em `mobile/.env`).
+   - Na tela de login (`LoginScreen`), autentique-se com um usuario cadastrado (ex.: seed `junior.corretor` ou novo cadastro de corretor na aba **Criar Conta**).
 
 ---
 

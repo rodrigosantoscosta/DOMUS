@@ -111,7 +111,7 @@ O modulo de backend (`backend/`) foi estruturado seguindo principios SOLID, Clea
 #### Pilares Tecnicos da Interface Mobile:
 - **Componentes Basicos Nativos:** Uso comprovado de `View`, `Text`, `Image` (logotipo oficial em [mobile/assets/logo.png](mobile/assets/logo.png)), `ScrollView` e `Pressable` (com feedback tatil e microescala).
 - **Feedback Nao-Bloqueante:** Notificacoes flutuantes no topo (`DomusToast`), botoes integrados com 3 estados (`idle` -> `loading` -> `success`) e confirmacoes inline em dois toques.
-- **Arquitetura Online-First Autenticada:** Deteccao automatica do IP da maquina via `expo-constants`, autenticacao JWT real na `LoginScreen` (`POST /api/auth/login` e `POST /api/usuarios`) e feedback explicito de conectividade via `ConnectionModal` (o modo demo offline legado permanece preservado na branch `feat/modo-demo-local`).
+- **Arquitetura Online-First Autenticada:** Deteccao automatica do IP da maquina via `expo-constants` (ou configuracao via `EXPO_PUBLIC_API_URL`), autenticacao JWT real na `LoginScreen` (`POST /api/auth/login` e `POST /api/usuarios`) e cabecalho unificado com encerramento de sessao (o modo demo offline legado permanece preservado na branch `feat/modo-demo-local`).
 
 ---
 
@@ -356,13 +356,13 @@ npm start
 ### 3. Conexao do Celular com o Backend na Rede Local (LAN / Wi-Fi)
 
 > [!NOTE]
-> **TL;DR:** Conecte o computador e o smartphone no mesmo Wi-Fi, execute `npm run dev:lan` na raiz para iniciar o backend e identificar seu IP local, abra o DOMUS no celular (via Expo Go ou APK instalado) e confirme a URL no Modal de Conexao.
+> **TL;DR:** Conecte o computador e o smartphone no mesmo Wi-Fi, execute `npm run dev:lan` na raiz para iniciar o backend e identificar seu IP local, abra o DOMUS no celular (via Expo Go com deteccao automatica de IP ou APK configurado via `EXPO_PUBLIC_API_URL`) e autentique-se na `LoginScreen`.
 
 ```mermaid
 flowchart LR
     A["Computador (Host LAN)<br/>npm run dev:lan"] -->|0.0.0.0:3000| B["Roteador Wi-Fi (LAN)"]
     B -->|http://192.168.x.x:3000/api| C["Celular Fisico<br/>(Expo Go ou APK Instalado)"]
-    C -->|Toque no Cabecalho ou Login| D["Modal de Conexao<br/>(Testar Ping e Salvar URL)"]
+    C -->|Expo Constants / EXPO_PUBLIC_API_URL| D["LoginScreen<br/>(Autenticacao JWT Real)"]
     D -->|Sucesso| E["Sincronizacao em Tempo Real<br/>com o Banco SQLite"]
 ```
 
@@ -381,13 +381,11 @@ flowchart LR
    [OK] Swagger Docs: http://192.168.1.15:3000/api/docs
    ```
 3. **Abrir o Aplicativo no Celular:**
-   - **Pelo Expo Go:** Em outro terminal, execute `npm run dev:mobile` e aponte a camera do celular para o QR Code.
-   - **Pelo APK Instalado:** Abra o aplicativo **DOMUS** diretamente no seu celular Android.
-4. **Validar e Ativar a Conexao no App:**
-   - Toque no indicador de status na tela de login ou no cabecalho para abrir o **Modal de Conexao**.
-   - O aplicativo tenta detectar o IP automaticamente via `expo-constants`. Caso necessario, confirme ou digite o endereco informado pelo terminal (ex.: `http://192.168.1.15:3000/api`).
-   - Toque em **Testar Conexao** e depois em **Conectar a API e Sincronizar**.
-   - O indicador mudara para **API Online** (verde), permitindo fazer login com sua conta (ou criar conta de corretor) e sincronizar todos os dados com o banco SQLite real.
+   - **Pelo Expo Go:** Em outro terminal, execute `npm run dev:mobile` e aponte a camera do celular para o QR Code. O aplicativo detecta automaticamente o IP da maquina servidora via `expo-constants`.
+   - **Pelo APK Instalado:** Defina `EXPO_PUBLIC_API_URL=http://192.168.1.15:3000/api` em `mobile/.env` antes do build (ou utilize `adb reverse tcp:3000 tcp:3000` via cabo USB) e abra o aplicativo **DOMUS** no celular Android.
+4. **Autenticar e Sincronizar no App:**
+   - Na tela de login (`LoginScreen`), entre com suas credenciais cadastradas no backend (ou utilize a aba **Criar Conta** para registrar um novo corretor).
+   - Apos o login, o cabecalho institucional exibe o usuario autenticado e o botao **Sair**, sincronizando todos os dados com o banco SQLite real.
 
 #### Diagnostico e Casos Especiais:
 - **Bloqueio de Firewall:** Se o celular nao conseguir alcancar o backend, verifique se o Firewall do Windows liberou permissoes de rede privada para o executavel do Node.js.

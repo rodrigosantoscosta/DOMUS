@@ -334,11 +334,6 @@ export const DomusProvider: React.FC<DomusProviderProps> = ({
           setUsuario(user);
           setApiOnline(true);
           await recarregarDados();
-        } else {
-          const ping = await domusApi.testarConexao();
-          if (montadoRef.current) {
-            setApiOnline(ping.ok);
-          }
         }
       } catch (err: any) {
         if (montadoRef.current) {
