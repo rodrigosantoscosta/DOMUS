@@ -27,6 +27,8 @@ import { domusStorage } from './storage';
 const STORAGE_KEY_STATE = '@domus:local_state';
 const STORAGE_KEY_TOKEN = '@domus:access_token';
 const HTTP_TIMEOUT_MS = 2500;
+const DEFAULT_TIMEZONE_OFFSET = '-03:00';
+const DEFAULT_GOOGLE_TIMEZONE = 'America/Recife';
 
 export function interpretarDataHora(
   data?: string | null,
@@ -34,7 +36,11 @@ export function interpretarDataHora(
   dataHoraIso?: string | null
 ): Date | null {
   if (dataHoraIso && dataHoraIso.trim()) {
-    const d = new Date(dataHoraIso.trim());
+    const valor = dataHoraIso.trim();
+    const normalizado = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(valor)
+      ? `${valor}${DEFAULT_TIMEZONE_OFFSET}`
+      : valor;
+    const d = new Date(normalizado);
     if (isNaN(d.getTime())) {
       throw new Error(`Formato de dataHora inválido: ${dataHoraIso}`);
     }
@@ -59,7 +65,10 @@ export function interpretarDataHora(
     const partes = dataLimpa.split('/').map(Number);
     [dia, mes, ano] = partes;
   } else {
-    const tentativa = new Date(dataLimpa);
+    const normalizado = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(dataLimpa)
+      ? `${dataLimpa}${DEFAULT_TIMEZONE_OFFSET}`
+      : dataLimpa;
+    const tentativa = new Date(normalizado);
     if (isNaN(tentativa.getTime())) {
       throw new Error(`Formato de data inválido: ${data}. Use YYYY-MM-DD ou DD/MM/YYYY`);
     }
@@ -87,9 +96,21 @@ export function interpretarDataHora(
     throw new Error('Data ou hora fora do intervalo válido');
   }
 
+  const verificacaoCalendario = new Date(Date.UTC(ano, mes - 1, dia));
+  if (
+    verificacaoCalendario.getUTCFullYear() !== ano ||
+    verificacaoCalendario.getUTCMonth() + 1 !== mes ||
+    verificacaoCalendario.getUTCDate() !== dia
+  ) {
+    throw new Error('Data ou hora fora do intervalo válido');
+  }
+
   const isoString = `${String(ano).padStart(4, '0')}-${String(mes).padStart(2, '0')}-${String(
     dia
-  ).padStart(2, '0')}T${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:00.000Z`;
+  ).padStart(2, '0')}T${String(horas).padStart(2, '0')}:${String(minutos).padStart(
+    2,
+    '0'
+  )}:00${DEFAULT_TIMEZONE_OFFSET}`;
 
   const resultado = new Date(isoString);
   if (isNaN(resultado.getTime())) {
@@ -905,6 +926,7 @@ export class DomusApiService {
       action: 'TEMPLATE',
       text: `[DOMUS] ${params.titulo}`,
       dates: `${formatarDataGoogle(inicio)}/${formatarDataGoogle(fim)}`,
+      ctz: DEFAULT_GOOGLE_TIMEZONE,
       details: detalhes,
       ...(params.imovelEndereco ? { location: params.imovelEndereco } : {}),
     });

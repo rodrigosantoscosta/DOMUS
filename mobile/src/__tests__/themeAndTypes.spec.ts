@@ -1,3 +1,4 @@
+import { DomusApiService, interpretarDataHora } from '../services/domusApi';
 import {
   DOMUS_COLORS,
   DOMUS_SPACING,
@@ -183,5 +184,26 @@ describe('DOMUS TypeScript Contracts', () => {
     expect(resumoAvisos.possuiAvisos).toBe(true);
     expect(estadoLocal.modoOfflineForcado).toBe(true);
     expect(aba).toBe('Atendimentos');
+  });
+
+  it('deve interpretar data/hora local (-03:00) e incluir ctz=America/Recife na URL do Google Calendar', async () => {
+    const interpretado = interpretarDataHora('20/10/2026', '14:00');
+    expect(interpretado?.toISOString()).toBe('2026-10-20T17:00:00.000Z');
+
+    const api = new DomusApiService({ forcarOffline: true });
+    await api.resetarDadosDemo();
+    const criado = await api.criarAgendamento({
+      titulo: 'Visita Fuso Recife',
+      tipo: 'ATENDIMENTO',
+      clienteId: 1,
+      data: '20/10/2026',
+      hora: '14:00',
+      duracaoMinutos: 60,
+      sincronizarGoogleCalendar: true,
+    });
+
+    expect(criado.dataHora).toBe('2026-10-20T17:00:00.000Z');
+    expect(criado.googleCalendarUrl).toContain('dates=20261020T170000Z%2F20261020T180000Z');
+    expect(criado.googleCalendarUrl).toContain('ctz=America%2FRecife');
   });
 });

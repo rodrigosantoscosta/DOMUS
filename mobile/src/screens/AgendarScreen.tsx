@@ -28,6 +28,7 @@ import {
   TipoAgendamento,
 } from '../types/domus';
 import { formatarMoedaBrl, formatarTelefone, formatarDataBr, formatarHora, validarDataBr, validarHora, dataParaStringBr, horaParaString, stringBrParaData } from '../utils/formatters';
+import { abrirUrlGoogleCalendar, validarUrlGoogleCalendarHttps } from '../utils/googleCalendarLink';
 import {
   triggerSelectionHaptic,
   triggerSuccessHaptic,
@@ -140,6 +141,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
   const [salvando, setSalvando] = useState<boolean>(false);
   const [erroLocal, setErroLocal] = useState<string | null>(null);
   const [sucessoLocal, setSucessoLocal] = useState<string | null>(null);
+  const [linkGoogleFallback, setLinkGoogleFallback] = useState<string | null>(null);
   const [toastLocal, setToastLocal] = useState<{
     visivel: boolean;
     mensagem: string | null;
@@ -376,6 +378,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     if (submetendoRef.current || salvando) return;
     setErroLocal(null);
     setSucessoLocal(null);
+    setLinkGoogleFallback(null);
 
     const tituloLimpo = titulo.trim();
 
@@ -453,17 +456,14 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
       sincronizarGoogleCalendar,
     };
 
+    const deveSincronizarGoogle = sincronizarGoogleCalendar;
+
     try {
       submetendoRef.current = true;
       setSalvando(true);
       const novo = await domus.criarAgendamento(inputAgendamento);
 
-      const msgSucesso = 'Agendamento criado com sucesso!';
-      setSucessoLocal(msgSucesso);
-      exibirToast(msgSucesso, 'sucesso');
-      triggerSuccessHaptic();
-
-      // Limpeza do formulario
+      // Limpeza garantida do formulario antes de abrir links externos
       setTitulo('');
       setDescricao('');
       setData('');
@@ -483,6 +483,24 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
       }
 
       onAgendamentoCriado?.(novo);
+
+      let msgSucesso = 'Agendamento criado com sucesso!';
+      let tipoToastSucesso: 'sucesso' | 'info' = 'sucesso';
+
+      const urlGoogleSegura = validarUrlGoogleCalendarHttps(novo?.googleCalendarUrl);
+      if (deveSincronizarGoogle && urlGoogleSegura) {
+        const aberto = await abrirUrlGoogleCalendar(urlGoogleSegura);
+        if (!aberto) {
+          setLinkGoogleFallback(urlGoogleSegura);
+          msgSucesso =
+            'Agendamento criado! Não foi possível abrir o Google Calendar automaticamente; use o link abaixo.';
+          tipoToastSucesso = 'info';
+        }
+      }
+
+      setSucessoLocal(msgSucesso);
+      exibirToast(msgSucesso, tipoToastSucesso);
+      triggerSuccessHaptic();
     } catch (err: any) {
       const msgFalha = err.message || 'Erro ao criar agendamento';
       setErroLocal(msgFalha);
@@ -550,7 +568,35 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
         {sucessoLocal ? (
           <View style={styles.bannerSucesso} testID="banner-sucesso-agendamento">
             <Ionicons name="checkmark-circle-outline" size={18} color={DOMUS_THEME.success} />
-            <Text style={styles.bannerSucessoTexto}>{sucessoLocal}</Text>
+            <View style={styles.bannerSucessoConteudo}>
+              <Text style={styles.bannerSucessoTexto}>{sucessoLocal}</Text>
+              {linkGoogleFallback ? (
+                <Pressable
+                  testID="btn-agendar-abrir-google-fallback"
+                  accessibilityRole="button"
+                  accessibilityLabel="Abrir evento no Google Calendar"
+                  onPress={async () => {
+                    const aberto = await abrirUrlGoogleCalendar(linkGoogleFallback, { ignorarCanOpenUrl: true });
+                    if (aberto) {
+                      setLinkGoogleFallback(null);
+                      setSucessoLocal('Agendamento criado e aberto no Google Calendar!');
+                    } else {
+                      exibirToast('Não foi possível abrir o link no navegador/dispositivo.', 'erro');
+                    }
+                  }}
+                  style={({ pressed }) => [
+                    styles.btnFallbackGoogle,
+                    pressed && styles.pressedScale,
+                  ]}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Ionicons name="open-outline" size={14} color={DOMUS_THEME.success} />
+                  <Text style={styles.btnFallbackGoogleText}>
+                    Abrir evento no Google Calendar
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
         ) : null}
 
@@ -1493,10 +1539,31 @@ const styles = StyleSheet.create({
     borderRadius: DOMUS_RADIUS.sm,
     marginBottom: DOMUS_SPACING.md,
   },
-  bannerSucessoTexto: {
+  bannerSucessoConteudo: {
     flex: 1,
+    gap: 8,
+  },
+  bannerSucessoTexto: {
     fontSize: 12,
     fontWeight: '600',
+    color: DOMUS_THEME.success,
+  },
+  btnFallbackGoogle: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: DOMUS_RADIUS.sm,
+    borderWidth: 1,
+    borderColor: DOMUS_THEME.successBorder,
+    backgroundColor: '#FFFFFF',
+  },
+  btnFallbackGoogleText: {
+    fontSize: 12,
+    fontWeight: '700',
     color: DOMUS_THEME.success,
   },
 });

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Linking } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 import { ImoveisScreen } from '../screens/ImoveisScreen';
 import { AtendimentosScreen } from '../screens/AtendimentosScreen';
@@ -368,6 +369,80 @@ describe('AtendimentosScreen - Integracao e Fluxos Funcionais', () => {
     });
 
     expect(mockCtx.sincronizarGoogleCalendar).toHaveBeenCalledWith(101);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('abre googleCalendarUrl via Linking.openURL apos validar canOpenURL em handleSincronizarGoogle', async () => {
+    const urlGoogle =
+      'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Visita+Manaira&ctz=America%2FRecife';
+    (Linking.canOpenURL as jest.Mock).mockResolvedValueOnce(true);
+    (Linking.openURL as jest.Mock).mockClear();
+
+    const mockCtx = criarContextoMock({
+      sincronizarGoogleCalendar: jest.fn().mockResolvedValue({ googleCalendarUrl: urlGoogle }),
+    });
+
+    let root: any;
+    act(() => {
+      root = renderer.create(<AtendimentosScreen context={mockCtx} />);
+    });
+
+    act(() => {
+      root.root.findByProps({ testID: 'btn-visualizar-atendimento-101' }).props.onPress();
+    });
+
+    await act(async () => {
+      await root.root.findByProps({ testID: 'btn-sync-google' }).props.onPress();
+    });
+
+    expect(mockCtx.sincronizarGoogleCalendar).toHaveBeenCalledWith(101);
+    expect(Linking.canOpenURL).toHaveBeenCalledWith(urlGoogle);
+    expect(Linking.openURL).toHaveBeenCalledWith(urlGoogle);
+    expect(mockCtx.mostrarToast).toHaveBeenCalledWith('[OK] Abrindo Google Calendar!', 'sucesso');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('exibe feedback nao bloqueante e botao fallback quando dispositivo nao consegue abrir googleCalendarUrl', async () => {
+    const urlGoogle = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Bloqueado';
+    (Linking.canOpenURL as jest.Mock).mockResolvedValueOnce(false);
+    (Linking.openURL as jest.Mock).mockClear();
+
+    const mockCtx = criarContextoMock({
+      sincronizarGoogleCalendar: jest.fn().mockResolvedValue({ googleCalendarUrl: urlGoogle }),
+    });
+
+    let root: any;
+    act(() => {
+      root = renderer.create(<AtendimentosScreen context={mockCtx} />);
+    });
+
+    act(() => {
+      root.root.findByProps({ testID: 'btn-visualizar-atendimento-101' }).props.onPress();
+    });
+
+    await act(async () => {
+      await root.root.findByProps({ testID: 'btn-sync-google' }).props.onPress();
+    });
+
+    expect(Linking.openURL).not.toHaveBeenCalled();
+    expect(mockCtx.mostrarToast).toHaveBeenCalledWith(
+      'Não foi possível abrir o Google Calendar automaticamente.',
+      'erro'
+    );
+    const btnFallback = root.root.findByProps({ testID: 'btn-abrir-link-google-fallback' });
+    expect(btnFallback).toBeDefined();
+
+    (Linking.openURL as jest.Mock).mockResolvedValueOnce(true);
+    await act(async () => {
+      await btnFallback.props.onPress();
+    });
+    expect(Linking.openURL).toHaveBeenCalledWith(urlGoogle);
 
     act(() => {
       root.unmount();

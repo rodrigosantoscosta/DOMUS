@@ -34,6 +34,7 @@ import {
   DOMUS_RADIUS,
 } from '../theme/tokens';
 import { Agendamento } from '../types/domus';
+import { abrirUrlGoogleCalendar, validarUrlGoogleCalendarHttps } from '../utils/googleCalendarLink';
 import { formatarDataBr, formatarHora, validarDataBr, validarHora, dataParaStringBr, horaParaString, stringBrParaData } from '../utils/formatters';
 import { projectVelocity, rubberband } from '../utils/motion';
 import {
@@ -241,6 +242,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
     };
   }, []);
   const [feedbackSheet, setFeedbackSheet] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
+  const [linkGoogleFallback, setLinkGoogleFallback] = useState<string | null>(null);
 
   const handleDataRetornoChange = useCallback((texto: string) => {
     if (/^\d{4}/.test(texto)) {
@@ -323,6 +325,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
     setAtendimentoSelecionado(null);
     setModoAcaoSheet('visualizar');
     setFeedbackSheet(null);
+    setLinkGoogleFallback(null);
   }, []);
 
   const panGesture = useMemo(
@@ -394,6 +397,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
       setAtendimentoSelecionado(item);
       setModoAcaoSheet('visualizar');
       setFeedbackSheet(null);
+      setLinkGoogleFallback(null);
       translateY.set(0);
       dragContext.set(0);
     },
@@ -518,10 +522,51 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
   const handleSincronizarGoogle = async () => {
     if (!atendimentoSelecionado) return;
     setFeedbackSheet(null);
+    setLinkGoogleFallback(null);
 
     try {
       setExecutandoAcao(true);
       const res = await domus.sincronizarGoogleCalendar(atendimentoSelecionado.id);
+      const url = validarUrlGoogleCalendarHttps(res?.googleCalendarUrl);
+
+      if (url) {
+        setAtendimentoSelecionado((prev) =>
+          prev
+            ? {
+                ...prev,
+                sincronizarGoogleCalendar: true,
+                googleCalendarUrl: url,
+                ...(res && 'googleCalendarEventId' in res && res.googleCalendarEventId
+                  ? { googleCalendarEventId: String(res.googleCalendarEventId) }
+                  : {}),
+              }
+            : prev
+        );
+
+        const aberto = await abrirUrlGoogleCalendar(url);
+        if (aberto) {
+          triggerSuccessHaptic();
+          setFeedbackSheet({
+            tipo: 'sucesso',
+            texto: '[OK] Google Calendar aberto para confirmar o evento!',
+          });
+          domus.mostrarToast?.('[OK] Abrindo Google Calendar!', 'sucesso');
+        } else {
+          setLinkGoogleFallback(url);
+          triggerErrorHaptic();
+          setFeedbackSheet({
+            tipo: 'erro',
+            texto:
+              '[AVISO] Link gerado, mas o dispositivo não conseguiu abrir o Google Calendar automaticamente.',
+          });
+          domus.mostrarToast?.(
+            'Não foi possível abrir o Google Calendar automaticamente.',
+            'erro'
+          );
+        }
+        return;
+      }
+
       triggerSuccessHaptic();
       setFeedbackSheet({
         tipo: 'sucesso',
@@ -536,6 +581,23 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
       });
     } finally {
       setExecutandoAcao(false);
+    }
+  };
+
+  const handleAbrirLinkGoogleFallback = async () => {
+    if (!linkGoogleFallback) return;
+    const aberto = await abrirUrlGoogleCalendar(linkGoogleFallback, { ignorarCanOpenUrl: true });
+    if (aberto) {
+      setLinkGoogleFallback(null);
+      triggerSuccessHaptic();
+      setFeedbackSheet({
+        tipo: 'sucesso',
+        texto: '[OK] Google Calendar aberto no dispositivo!',
+      });
+      domus.mostrarToast?.('[OK] Abrindo Google Calendar!', 'sucesso');
+    } else {
+      triggerErrorHaptic();
+      domus.mostrarToast?.('Não foi possível abrir o link no dispositivo.', 'erro');
     }
   };
 
@@ -906,6 +968,15 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
                     loading={executandoAcao}
                     testID="btn-sync-google"
                   />
+
+                  {linkGoogleFallback ? (
+                    <DomusButton
+                      label="Abrir link no Google Calendar"
+                      variant="secondary"
+                      onPress={handleAbrirLinkGoogleFallback}
+                      testID="btn-abrir-link-google-fallback"
+                    />
+                  ) : null}
                 </View>
               )}
 
