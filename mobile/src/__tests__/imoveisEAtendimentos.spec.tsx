@@ -120,6 +120,27 @@ function criarContextoMock(overrides: Partial<DomusContextData> = {}): DomusCont
   };
 }
 
+async function sincronizarGoogleNoDetalhe(urlGoogle: string) {
+  const mockCtx = criarContextoMock({
+    sincronizarGoogleCalendar: jest.fn().mockResolvedValue({ googleCalendarUrl: urlGoogle }),
+  });
+
+  let root: any;
+  act(() => {
+    root = renderer.create(<AtendimentosScreen context={mockCtx} />);
+  });
+
+  act(() => {
+    root.root.findByProps({ testID: 'btn-visualizar-atendimento-101' }).props.onPress();
+  });
+
+  await act(async () => {
+    await root.root.findByProps({ testID: 'btn-sync-google' }).props.onPress();
+  });
+
+  return { root, mockCtx };
+}
+
 describe('ImoveisScreen - Integracao e Fluxos Funcionais', () => {
   it('renderiza o formulario e a lista de imoveis cadastrados', () => {
     const mockCtx = criarContextoMock();
@@ -381,22 +402,7 @@ describe('AtendimentosScreen - Integracao e Fluxos Funcionais', () => {
     (Linking.canOpenURL as jest.Mock).mockResolvedValueOnce(true);
     (Linking.openURL as jest.Mock).mockClear();
 
-    const mockCtx = criarContextoMock({
-      sincronizarGoogleCalendar: jest.fn().mockResolvedValue({ googleCalendarUrl: urlGoogle }),
-    });
-
-    let root: any;
-    act(() => {
-      root = renderer.create(<AtendimentosScreen context={mockCtx} />);
-    });
-
-    act(() => {
-      root.root.findByProps({ testID: 'btn-visualizar-atendimento-101' }).props.onPress();
-    });
-
-    await act(async () => {
-      await root.root.findByProps({ testID: 'btn-sync-google' }).props.onPress();
-    });
+    const { root, mockCtx } = await sincronizarGoogleNoDetalhe(urlGoogle);
 
     expect(mockCtx.sincronizarGoogleCalendar).toHaveBeenCalledWith(101);
     expect(Linking.canOpenURL).toHaveBeenCalledWith(urlGoogle);
@@ -413,22 +419,7 @@ describe('AtendimentosScreen - Integracao e Fluxos Funcionais', () => {
     (Linking.canOpenURL as jest.Mock).mockResolvedValueOnce(false);
     (Linking.openURL as jest.Mock).mockClear();
 
-    const mockCtx = criarContextoMock({
-      sincronizarGoogleCalendar: jest.fn().mockResolvedValue({ googleCalendarUrl: urlGoogle }),
-    });
-
-    let root: any;
-    act(() => {
-      root = renderer.create(<AtendimentosScreen context={mockCtx} />);
-    });
-
-    act(() => {
-      root.root.findByProps({ testID: 'btn-visualizar-atendimento-101' }).props.onPress();
-    });
-
-    await act(async () => {
-      await root.root.findByProps({ testID: 'btn-sync-google' }).props.onPress();
-    });
+    const { root, mockCtx } = await sincronizarGoogleNoDetalhe(urlGoogle);
 
     expect(Linking.openURL).not.toHaveBeenCalled();
     expect(mockCtx.mostrarToast).toHaveBeenCalledWith(

@@ -146,6 +146,52 @@ function criarContextoMock(overrides: Partial<DomusContextData> = {}): DomusCont
   };
 }
 
+async function submeterAgendamentoComGoogle(params: {
+  id: number;
+  titulo: string;
+  urlGoogle: string;
+}) {
+  const mockContext = criarContextoMock({
+    criarAgendamento: jest.fn().mockResolvedValue({
+      id: params.id,
+      titulo: params.titulo,
+      tipo: 'VISITA',
+      status: 'PENDENTE',
+      dataHora: '2026-10-25T17:00:00.000Z',
+      duracaoMinutos: 60,
+      sincronizarGoogleCalendar: true,
+      googleCalendarEventId: `domus-evt-${params.id}`,
+      googleCalendarUrl: params.urlGoogle,
+      clienteId: 1,
+      imovelId: 10,
+    }),
+  });
+
+  let root: any;
+  act(() => {
+    root = renderer.create(
+      <AgendarScreen
+        context={mockContext}
+        clientePreSelecionadoId={1}
+        imovelPreSelecionadoId={10}
+      />
+    );
+  });
+
+  act(() => {
+    root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.onChangeText(params.titulo);
+    root.root.findByProps({ testID: 'input-agendamento-data' }).props.onChangeText('25/10/2026');
+    root.root.findByProps({ testID: 'input-agendamento-hora' }).props.onChangeText('14:00');
+    root.root.findByProps({ testID: 'toggle-google-calendar' }).props.onPress();
+  });
+
+  await act(async () => {
+    await root.root.findByProps({ testID: 'btn-agendar-submit' }).props.onPress();
+  });
+
+  return { root, mockContext };
+}
+
 describe('AgendarScreen (Fiel ao Wireframe 02 e Regras RN08, RN10, RN16)', () => {
   it('renderiza os componentes basicos (View, Text, Image, ScrollView, Pressable) e o titulo fiel ao wireframe 02', () => {
     const mockContext = criarContextoMock();
@@ -493,42 +539,10 @@ describe('AgendarScreen (Fiel ao Wireframe 02 e Regras RN08, RN10, RN16)', () =>
     (Linking.canOpenURL as jest.Mock).mockResolvedValueOnce(true);
     (Linking.openURL as jest.Mock).mockClear();
 
-    const mockContext = criarContextoMock({
-      criarAgendamento: jest.fn().mockResolvedValue({
-        id: 202,
-        titulo: 'Visita com Google Link',
-        tipo: 'VISITA',
-        status: 'PENDENTE',
-        dataHora: '2026-10-25T17:00:00.000Z',
-        duracaoMinutos: 60,
-        sincronizarGoogleCalendar: true,
-        googleCalendarEventId: 'domus-evt-202',
-        googleCalendarUrl: urlGoogle,
-        clienteId: 1,
-        imovelId: 10,
-      }),
-    });
-
-    let root: any;
-    act(() => {
-      root = renderer.create(
-        <AgendarScreen
-          context={mockContext}
-          clientePreSelecionadoId={1}
-          imovelPreSelecionadoId={10}
-        />
-      );
-    });
-
-    act(() => {
-      root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.onChangeText('Visita com Google Link');
-      root.root.findByProps({ testID: 'input-agendamento-data' }).props.onChangeText('25/10/2026');
-      root.root.findByProps({ testID: 'input-agendamento-hora' }).props.onChangeText('14:00');
-      root.root.findByProps({ testID: 'toggle-google-calendar' }).props.onPress();
-    });
-
-    await act(async () => {
-      await root.root.findByProps({ testID: 'btn-agendar-submit' }).props.onPress();
+    const { root } = await submeterAgendamentoComGoogle({
+      id: 202,
+      titulo: 'Visita com Google Link',
+      urlGoogle,
     });
 
     expect(Linking.canOpenURL).toHaveBeenCalledWith(urlGoogle);
@@ -544,42 +558,10 @@ describe('AgendarScreen (Fiel ao Wireframe 02 e Regras RN08, RN10, RN16)', () =>
     (Linking.canOpenURL as jest.Mock).mockResolvedValueOnce(false);
     (Linking.openURL as jest.Mock).mockClear();
 
-    const mockContext = criarContextoMock({
-      criarAgendamento: jest.fn().mockResolvedValue({
-        id: 203,
-        titulo: 'Visita Fallback',
-        tipo: 'VISITA',
-        status: 'PENDENTE',
-        dataHora: '2026-10-25T17:00:00.000Z',
-        duracaoMinutos: 60,
-        sincronizarGoogleCalendar: true,
-        googleCalendarEventId: 'domus-evt-203',
-        googleCalendarUrl: urlGoogle,
-        clienteId: 1,
-        imovelId: 10,
-      }),
-    });
-
-    let root: any;
-    act(() => {
-      root = renderer.create(
-        <AgendarScreen
-          context={mockContext}
-          clientePreSelecionadoId={1}
-          imovelPreSelecionadoId={10}
-        />
-      );
-    });
-
-    act(() => {
-      root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.onChangeText('Visita Fallback');
-      root.root.findByProps({ testID: 'input-agendamento-data' }).props.onChangeText('25/10/2026');
-      root.root.findByProps({ testID: 'input-agendamento-hora' }).props.onChangeText('14:00');
-      root.root.findByProps({ testID: 'toggle-google-calendar' }).props.onPress();
-    });
-
-    await act(async () => {
-      await root.root.findByProps({ testID: 'btn-agendar-submit' }).props.onPress();
+    const { root, mockContext } = await submeterAgendamentoComGoogle({
+      id: 203,
+      titulo: 'Visita Fallback',
+      urlGoogle,
     });
 
     expect(Linking.openURL).not.toHaveBeenCalled();
@@ -604,42 +586,10 @@ describe('AgendarScreen (Fiel ao Wireframe 02 e Regras RN08, RN10, RN16)', () =>
     (Linking.canOpenURL as jest.Mock).mockResolvedValueOnce(true);
     (Linking.openURL as jest.Mock).mockRejectedValueOnce(new Error('Popup bloqueado'));
 
-    const mockContext = criarContextoMock({
-      criarAgendamento: jest.fn().mockResolvedValue({
-        id: 204,
-        titulo: 'Visita Reject',
-        tipo: 'VISITA',
-        status: 'PENDENTE',
-        dataHora: '2026-10-25T17:00:00.000Z',
-        duracaoMinutos: 60,
-        sincronizarGoogleCalendar: true,
-        googleCalendarEventId: 'domus-evt-204',
-        googleCalendarUrl: urlGoogle,
-        clienteId: 1,
-        imovelId: 10,
-      }),
-    });
-
-    let root: any;
-    act(() => {
-      root = renderer.create(
-        <AgendarScreen
-          context={mockContext}
-          clientePreSelecionadoId={1}
-          imovelPreSelecionadoId={10}
-        />
-      );
-    });
-
-    act(() => {
-      root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.onChangeText('Visita Reject');
-      root.root.findByProps({ testID: 'input-agendamento-data' }).props.onChangeText('25/10/2026');
-      root.root.findByProps({ testID: 'input-agendamento-hora' }).props.onChangeText('14:00');
-      root.root.findByProps({ testID: 'toggle-google-calendar' }).props.onPress();
-    });
-
-    await act(async () => {
-      await root.root.findByProps({ testID: 'btn-agendar-submit' }).props.onPress();
+    const { root } = await submeterAgendamentoComGoogle({
+      id: 204,
+      titulo: 'Visita Reject',
+      urlGoogle,
     });
 
     const btnFallback = root.root.findByProps({ testID: 'btn-agendar-abrir-google-fallback' });
