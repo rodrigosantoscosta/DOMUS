@@ -4,39 +4,45 @@ import renderer, { act } from 'react-test-renderer';
 import { LoginScreen } from '../screens/LoginScreen';
 import { DomusContextData } from '../context/DomusContext';
 
-(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
-const originalConsoleError = console.error;
+const MENSAGENS_ACT_IGNORADAS = [
+  'react-test-renderer is deprecated',
+  'not configured to support act',
+  'was not wrapped in act',
+];
+
+let consoleErrorSpy: jest.SpyInstance;
 beforeAll(() => {
-  console.error = (...args: any[]) => {
-    if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('react-test-renderer is deprecated') ||
-        args[0].includes('not configured to support act') ||
-        args[0].includes('was not wrapped in act'))
-    ) {
+  const errorOriginal = console.error;
+  consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation((...args: any[]) => {
+    const primeira = typeof args[0] === 'string' ? args[0] : '';
+    if (MENSAGENS_ACT_IGNORADAS.some((trecho) => primeira.includes(trecho))) {
       return;
     }
-    originalConsoleError(...args);
-  };
+    errorOriginal(...args);
+  });
 });
 
 afterAll(() => {
-  console.error = originalConsoleError;
+  consoleErrorSpy?.mockRestore();
 });
 
-function coletarTextos(node: any): string[] {
-  if (!node) return [];
-  if (typeof node === 'string' || typeof node === 'number') {
-    return [String(node).trim()];
+function extrairTextos(elemento: any): string {
+  const partes: string[] = [];
+  const pilha: any[] = [elemento];
+  while (pilha.length > 0) {
+    const atual = pilha.pop();
+    if (atual === null || atual === undefined || typeof atual === 'boolean') continue;
+    if (typeof atual === 'string' || typeof atual === 'number') {
+      partes.push(String(atual).trim());
+    } else if (Array.isArray(atual)) {
+      for (let i = atual.length - 1; i >= 0; i -= 1) pilha.push(atual[i]);
+    } else if (atual.children) {
+      for (let i = atual.children.length - 1; i >= 0; i -= 1) pilha.push(atual.children[i]);
+    }
   }
-  if (Array.isArray(node)) {
-    return node.flatMap(coletarTextos);
-  }
-  if (node.children) {
-    return node.children.flatMap(coletarTextos);
-  }
-  return [];
+  return partes.join(' ');
 }
 
 function criarContextoAuthMock(
@@ -92,6 +98,21 @@ function criarContextoAuthMock(
   };
 }
 
+async function submeterCredenciaisLogin(root: any, login: string, senha: string) {
+  const inputId = root.root.findByProps({ testID: 'input-login-identificador' });
+  const inputSenha = root.root.findByProps({ testID: 'input-login-senha' });
+  const btnLogin = root.root.findByProps({ testID: 'btn-fazer-login' });
+
+  act(() => {
+    inputId.props.onChangeText(login);
+    inputSenha.props.onChangeText(senha);
+  });
+
+  await act(async () => {
+    await btnLogin.props.onPress();
+  });
+}
+
 describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
   it('renderiza marca DOMUS e formulario limpo sem badges de status de API ou botoes de modo demo', () => {
     const mockCtx = criarContextoAuthMock({ apiOnline: false });
@@ -101,7 +122,7 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
       root = renderer.create(<LoginScreen context={mockCtx} />);
     });
 
-    const textos = coletarTextos(root.toJSON()).join(' ');
+    const textos = extrairTextos(root.toJSON());
     expect(textos).toContain('DOMUS');
     expect(textos).not.toContain('API Offline');
     expect(textos).not.toContain('API Online');
@@ -130,7 +151,7 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
 
     expect(mockCtx.login).not.toHaveBeenCalled();
     const errorBox = root.root.findByProps({ testID: 'login-error-box' });
-    expect(coletarTextos(errorBox).join(' ')).toContain('Informe seu usuário ou e-mail');
+    expect(extrairTextos(errorBox)).toContain('Informe seu usuário ou e-mail');
 
     const inputId = root.root.findByProps({ testID: 'input-login-identificador' });
     act(() => {
@@ -143,7 +164,7 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
 
     expect(mockCtx.login).not.toHaveBeenCalled();
     const errorBoxSenha = root.root.findByProps({ testID: 'login-error-box' });
-    expect(coletarTextos(errorBoxSenha).join(' ')).toContain('Informe sua senha');
+    expect(extrairTextos(errorBoxSenha)).toContain('Informe sua senha');
 
     act(() => {
       root.unmount();
@@ -158,18 +179,7 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
       root = renderer.create(<LoginScreen context={mockCtx} />);
     });
 
-    const inputId = root.root.findByProps({ testID: 'input-login-identificador' });
-    const inputSenha = root.root.findByProps({ testID: 'input-login-senha' });
-    const btnLogin = root.root.findByProps({ testID: 'btn-fazer-login' });
-
-    act(() => {
-      inputId.props.onChangeText('  corretor.real  ');
-      inputSenha.props.onChangeText('Senha@123');
-    });
-
-    await act(async () => {
-      await btnLogin.props.onPress();
-    });
+    await submeterCredenciaisLogin(root, '  corretor.real  ', 'Senha@123');
 
     expect(mockCtx.login).toHaveBeenCalledWith({
       loginOuEmail: 'corretor.real',
@@ -192,21 +202,10 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
       root = renderer.create(<LoginScreen context={mockCtx} />);
     });
 
-    const inputId = root.root.findByProps({ testID: 'input-login-identificador' });
-    const inputSenha = root.root.findByProps({ testID: 'input-login-senha' });
-    const btnLogin = root.root.findByProps({ testID: 'btn-fazer-login' });
-
-    act(() => {
-      inputId.props.onChangeText('corretor.real');
-      inputSenha.props.onChangeText('Senha@123');
-    });
-
-    await act(async () => {
-      await btnLogin.props.onPress();
-    });
+    await submeterCredenciaisLogin(root, 'corretor.real', 'Senha@123');
 
     const errorBox = root.root.findByProps({ testID: 'login-error-box' });
-    expect(coletarTextos(errorBox).join(' ')).toContain('Servidor indisponível');
+    expect(extrairTextos(errorBox)).toContain('Servidor indisponível');
     expect(root.root.findAllByProps({ testID: 'btn-login-configurar-api' })).toHaveLength(0);
 
     act(() => {
@@ -277,7 +276,7 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
 
     expect(mockCtx.cadastrarUsuario).not.toHaveBeenCalled();
     expect(
-      coletarTextos(root.root.findByProps({ testID: 'login-error-box' })).join(' ')
+      extrairTextos(root.root.findByProps({ testID: 'login-error-box' }))
     ).toContain('confirmação da senha não confere');
 
     // Corrige confirmacao e envia
@@ -338,7 +337,7 @@ describe('LoginScreen (Autenticacao Real sem Modo Demo)', () => {
     const inputLogin = root.root.findByProps({ testID: 'input-login-identificador' });
     expect(inputLogin.props.value).toBe('pedro.corretor');
     const errorBox = root.root.findByProps({ testID: 'login-error-box' });
-    expect(coletarTextos(errorBox).join(' ')).toContain('Oscilação de rede');
+    expect(extrairTextos(errorBox)).toContain('Oscilação de rede');
 
     act(() => {
       root.unmount();

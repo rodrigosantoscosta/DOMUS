@@ -10,7 +10,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { DomusInput } from '../components/DomusInput';
 import { DomusButton } from '../components/DomusButton';
-import DomusContext, { DomusContextData } from '../context/DomusContext';
+import DomusContext, {
+  DomusContextData,
+  criarDomusContextFallback,
+} from '../context/DomusContext';
 import {
   DOMUS_THEME,
   DOMUS_SPACING,
@@ -27,33 +30,16 @@ import {
 
 const domusLogo = require('../../assets/logo.png');
 
-const DEFAULT_LOGIN_CONTEXT_FALLBACK: DomusContextData = {
-  usuario: null,
-  abaAtiva: 'Clientes',
-  setAbaAtiva: () => {},
-  clientes: [],
-  imoveis: [],
-  agendamentos: [],
-  visaoGeral: null,
-  avisos: null,
-  bannerVisivel: false,
-  fecharBanner: () => {},
-  apiOnline: false,
-  inicializando: false,
-  carregando: false,
-  erro: null,
-  login: async () => ({} as any),
-  logout: async () => {},
-  recarregarDados: async () => {},
-  criarCliente: async () => ({} as any),
-  criarImovel: async () => ({} as any),
-  criarAgendamento: async () => ({} as any),
-  programarRetorno: async () => ({} as any),
-  concluirAgendamento: async () => ({} as any),
-  sincronizarGoogleCalendar: async () => ({} as any),
-  cadastrarUsuario: async () => ({} as any),
-  configurarApiUrl: async () => {},
-};
+const DEFAULT_LOGIN_CONTEXT_FALLBACK = criarDomusContextFallback('Clientes');
+
+function validarEmailSimples(valor: string): boolean {
+  if (!valor || /\s/.test(valor)) return false;
+  const arroba = valor.indexOf('@');
+  if (arroba <= 0 || arroba !== valor.lastIndexOf('@')) return false;
+  const dominio = valor.slice(arroba + 1);
+  const ponto = dominio.indexOf('.');
+  return ponto > 0 && ponto < dominio.length - 1;
+}
 
 export interface LoginScreenProps {
   context?: DomusContextData;
@@ -89,13 +75,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
   const alternarModo = (novoModo: ModoAuth) => {
     if (novoModo === modo) return;
-    triggerSelectionHaptic();
+    void triggerSelectionHaptic();
     setModo(novoModo);
     setErroLocal(null);
   };
 
   const handleToggleSenha = () => {
-    triggerLightImpact();
+    void triggerLightImpact();
     setMostrarSenha((prev) => !prev);
   };
 
@@ -105,13 +91,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
     const idLimpo = identificador.trim();
     if (!idLimpo) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setErroLocal('Informe seu usuário ou e-mail para entrar.');
       return;
     }
 
     if (!senhaLogin) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setErroLocal('Informe sua senha.');
       return;
     }
@@ -123,9 +109,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         loginOuEmail: idLimpo,
         senha: senhaLogin,
       });
-      triggerSuccessHaptic();
+      void triggerSuccessHaptic();
     } catch (err: any) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setErroLocal(err?.message || 'Não foi possível realizar o login.');
     } finally {
       setEnviando(false);
@@ -143,37 +129,37 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     const cpfLimpo = cpf.replace(/\D/g, '');
 
     if (!nomeLimpo) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setErroLocal('Informe seu nome completo.');
       return;
     }
 
     if (!loginLimpo) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setErroLocal('Informe um nome de usuário (login).');
       return;
     }
 
-    if (!emailLimpo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)) {
-      triggerErrorHaptic();
+    if (!validarEmailSimples(emailLimpo)) {
+      void triggerErrorHaptic();
       setErroLocal('Informe um e-mail válido.');
       return;
     }
 
     if (cpfLimpo && cpfLimpo.length !== 11) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setErroLocal('Se informado, o CPF deve conter 11 dígitos numéricos.');
       return;
     }
 
     if (!senhaCadastro || senhaCadastro.length < 6) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setErroLocal('A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
     if (senhaCadastro !== confirmarSenha) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setErroLocal('A confirmação da senha não confere com a senha informada.');
       return;
     }
@@ -196,9 +182,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           loginOuEmail: loginLimpo,
           senha: senhaCadastro,
         });
-        triggerSuccessHaptic();
+        void triggerSuccessHaptic();
       } catch (loginErr: any) {
-        triggerErrorHaptic();
+        void triggerErrorHaptic();
         setModo('entrar');
         setIdentificador(loginLimpo);
         setSenhaLogin('');
@@ -208,7 +194,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         );
       }
     } catch (err: any) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setErroLocal(err?.message || 'Não foi possível criar sua conta.');
     } finally {
       setEnviando(false);
