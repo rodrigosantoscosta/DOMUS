@@ -469,7 +469,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
         proximaAcao: proximaAcaoRetorno.trim() || undefined,
       });
 
-      triggerSuccessHaptic();
+      void triggerSuccessHaptic();
       setFeedbackSheet({
         tipo: 'sucesso',
         texto: '[OK] Retorno programado com sucesso !',
@@ -479,7 +479,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
         fecharSheet();
       }, 1000);
     } catch (err: any) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setFeedbackSheet({
         tipo: 'erro',
         texto: `[ERRO] ${err.message || 'Falha ao programar retorno'}`,
@@ -499,7 +499,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
         observacaoConclusao: obsConclusao.trim() || undefined,
       });
 
-      triggerSuccessHaptic();
+      void triggerSuccessHaptic();
       setFeedbackSheet({
         tipo: 'sucesso',
         texto: '[OK] Atendimento concluído com sucesso e avisos baixados !',
@@ -509,7 +509,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
         fecharSheet();
       }, 1000);
     } catch (err: any) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setFeedbackSheet({
         tipo: 'erro',
         texto: `[ERRO] ${err.message || 'Falha ao concluir atendimento'}`,
@@ -545,7 +545,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
 
         const aberto = await abrirUrlGoogleCalendar(url);
         if (aberto) {
-          triggerSuccessHaptic();
+          void triggerSuccessHaptic();
           setFeedbackSheet({
             tipo: 'sucesso',
             texto: '[OK] Google Calendar aberto para confirmar o evento!',
@@ -553,7 +553,7 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
           domus.mostrarToast?.('[OK] Abrindo Google Calendar!', 'sucesso');
         } else {
           setLinkGoogleFallback(url);
-          triggerErrorHaptic();
+          void triggerErrorHaptic();
           setFeedbackSheet({
             tipo: 'erro',
             texto:
@@ -567,14 +567,14 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
         return;
       }
 
-      triggerSuccessHaptic();
+      void triggerSuccessHaptic();
       setFeedbackSheet({
         tipo: 'sucesso',
         texto: `[OK] Google Calendar sincronizado !`,
       });
       domus.mostrarToast?.('[OK] Integrado ao Google Calendar!', 'sucesso');
     } catch (err: any) {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       setFeedbackSheet({
         tipo: 'erro',
         texto: `[ERRO] ${err.message || 'Falha ao sincronizar'}`,
@@ -589,14 +589,14 @@ export const AtendimentosScreen: React.FC<AtendimentosScreenProps> = ({
     const aberto = await abrirUrlGoogleCalendar(linkGoogleFallback, { ignorarCanOpenUrl: true });
     if (aberto) {
       setLinkGoogleFallback(null);
-      triggerSuccessHaptic();
+      void triggerSuccessHaptic();
       setFeedbackSheet({
         tipo: 'sucesso',
         texto: '[OK] Google Calendar aberto no dispositivo!',
       });
       domus.mostrarToast?.('[OK] Abrindo Google Calendar!', 'sucesso');
     } else {
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       domus.mostrarToast?.('Não foi possível abrir o link no dispositivo.', 'erro');
     }
   };

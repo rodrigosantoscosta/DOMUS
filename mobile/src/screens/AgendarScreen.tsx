@@ -387,7 +387,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
       const msg = 'O título do agendamento é obrigatório';
       setErroLocal(msg);
       exibirToast(msg, 'erro');
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       return;
     }
 
@@ -396,7 +396,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
       const msg = 'Cliente é obrigatório para criar o agendamento (RN10)';
       setErroLocal(msg);
       exibirToast(msg, 'erro');
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       return;
     }
 
@@ -406,7 +406,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
         'Para agendar uma visita (tipo VISITA), é obrigatório selecionar um imóvel cadastrado (RN08)';
       setErroLocal(msg);
       exibirToast(msg, 'erro');
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       return;
     }
 
@@ -416,7 +416,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
         'Para agendar uma visita (tipo VISITA), é obrigatório informar a data e hora do compromisso (RN08)';
       setErroLocal(msg);
       exibirToast(msg, 'erro');
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       return;
     }
 
@@ -425,7 +425,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
       const msg = 'Data informada inválida. Utilize o formato DD/MM/AAAA (ex: 25/10/2026)';
       setErroLocal(msg);
       exibirToast(msg, 'erro');
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       return;
     }
 
@@ -434,7 +434,7 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
       const msg = 'Hora informada inválida. Utilize o formato HH:MM (ex: 14:30)';
       setErroLocal(msg);
       exibirToast(msg, 'erro');
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
       return;
     }
 
@@ -500,12 +500,12 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
 
       setSucessoLocal(msgSucesso);
       exibirToast(msgSucesso, tipoToastSucesso);
-      triggerSuccessHaptic();
+      void triggerSuccessHaptic();
     } catch (err: any) {
       const msgFalha = err.message || 'Erro ao criar agendamento';
       setErroLocal(msgFalha);
       exibirToast(msgFalha, 'erro');
-      triggerErrorHaptic();
+      void triggerErrorHaptic();
     } finally {
       submetendoRef.current = false;
       setSalvando(false);
