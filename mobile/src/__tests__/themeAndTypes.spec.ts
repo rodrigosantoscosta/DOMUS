@@ -1,4 +1,9 @@
 import {
+  DomusApiService,
+  formatarDataGoogle,
+  interpretarDataHora,
+} from '../services/domusApi';
+import {
   DOMUS_COLORS,
   DOMUS_SPACING,
   DOMUS_RADIUS,
@@ -188,5 +193,58 @@ describe('DOMUS TypeScript Contracts', () => {
     expect(loginResponse.accessToken).toBe('jwt-real-assinado');
     expect(cadastroUsuario.perfis).toEqual(['CORRETOR']);
     expect(aba).toBe('Atendimentos');
+  });
+
+  it('deve interpretar data/hora local (-03:00), validar calendario UTC e preservar googleCalendarUrl via API REST', async () => {
+    const interpretado = interpretarDataHora('20/10/2026', '14:00');
+    expect(interpretado?.toISOString()).toBe('2026-10-20T17:00:00.000Z');
+    expect(formatarDataGoogle(interpretado!)).toBe('20261020T170000Z');
+
+    const isoSemOffset = interpretarDataHora(undefined, undefined, '2026-10-20T14:00:00');
+    expect(isoSemOffset?.toISOString()).toBe('2026-10-20T17:00:00.000Z');
+
+    expect(() => interpretarDataHora('31/02/2026', '14:00')).toThrow(
+      'Data ou hora fora do intervalo válido'
+    );
+
+    const urlEsperada =
+      'https://calendar.google.com/calendar/render?action=TEMPLATE&text=%5BDOMUS%5D+Visita+Fuso+Recife&dates=20261020T170000Z%2F20261020T180000Z&ctz=America%2FRecife';
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      statusText: 'Created',
+      json: jest.fn().mockResolvedValue({
+        id: 101,
+        titulo: 'Visita Fuso Recife',
+        tipo: 'ATENDIMENTO',
+        status: 'PENDENTE',
+        dataHora: '2026-10-20T17:00:00.000Z',
+        duracaoMinutos: 60,
+        sincronizarGoogleCalendar: true,
+        googleCalendarEventId: 'domus-evt-101',
+        googleCalendarUrl: urlEsperada,
+        clienteId: 1,
+      }),
+    }) as any;
+
+    try {
+      const api = new DomusApiService({ baseUrl: 'http://localhost:3000/api' });
+      const criado = await api.criarAgendamento({
+        titulo: 'Visita Fuso Recife',
+        tipo: 'ATENDIMENTO',
+        clienteId: 1,
+        data: '20/10/2026',
+        hora: '14:00',
+        duracaoMinutos: 60,
+        sincronizarGoogleCalendar: true,
+      });
+
+      expect(criado.dataHora).toBe('2026-10-20T17:00:00.000Z');
+      expect(criado.googleCalendarUrl).toContain('dates=20261020T170000Z%2F20261020T180000Z');
+      expect(criado.googleCalendarUrl).toContain('ctz=America%2FRecife');
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 });

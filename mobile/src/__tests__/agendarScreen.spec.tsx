@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { Linking, StyleSheet } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 import { AgendarScreen } from '../screens/AgendarScreen';
 import { DomusContextData } from '../context/DomusContext';
@@ -485,5 +485,164 @@ describe('AgendarScreen (Fiel ao Wireframe 02 e Regras RN08, RN10, RN16)', () =>
 
     const bannerSucesso = root.root.findByProps({ testID: 'banner-sucesso-agendamento' });
     expect(bannerSucesso).toBeDefined();
+  });
+
+  it('abre googleCalendarUrl via Linking.openURL quando sincronizacao estiver ativa sem quebrar o reset do formulario', async () => {
+    const urlGoogle =
+      'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Visita&ctz=America%2FRecife';
+    (Linking.canOpenURL as jest.Mock).mockResolvedValueOnce(true);
+    (Linking.openURL as jest.Mock).mockClear();
+
+    const mockContext = criarContextoMock({
+      criarAgendamento: jest.fn().mockResolvedValue({
+        id: 202,
+        titulo: 'Visita com Google Link',
+        tipo: 'VISITA',
+        status: 'PENDENTE',
+        dataHora: '2026-10-25T17:00:00.000Z',
+        duracaoMinutos: 60,
+        sincronizarGoogleCalendar: true,
+        googleCalendarEventId: 'domus-evt-202',
+        googleCalendarUrl: urlGoogle,
+        clienteId: 1,
+        imovelId: 10,
+      }),
+    });
+
+    let root: any;
+    act(() => {
+      root = renderer.create(
+        <AgendarScreen
+          context={mockContext}
+          clientePreSelecionadoId={1}
+          imovelPreSelecionadoId={10}
+        />
+      );
+    });
+
+    act(() => {
+      root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.onChangeText('Visita com Google Link');
+      root.root.findByProps({ testID: 'input-agendamento-data' }).props.onChangeText('25/10/2026');
+      root.root.findByProps({ testID: 'input-agendamento-hora' }).props.onChangeText('14:00');
+      root.root.findByProps({ testID: 'toggle-google-calendar' }).props.onPress();
+    });
+
+    await act(async () => {
+      await root.root.findByProps({ testID: 'btn-agendar-submit' }).props.onPress();
+    });
+
+    expect(Linking.canOpenURL).toHaveBeenCalledWith(urlGoogle);
+    expect(Linking.openURL).toHaveBeenCalledWith(urlGoogle);
+    expect(root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.value).toBe('');
+    expect(
+      root.root.findByProps({ testID: 'toggle-google-calendar' }).props.accessibilityState.checked
+    ).toBe(false);
+  });
+
+  it('exibe fallback inline nao bloqueante se Linking.canOpenURL retornar false mantendo o formulario resetado', async () => {
+    const urlGoogle = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Fallback';
+    (Linking.canOpenURL as jest.Mock).mockResolvedValueOnce(false);
+    (Linking.openURL as jest.Mock).mockClear();
+
+    const mockContext = criarContextoMock({
+      criarAgendamento: jest.fn().mockResolvedValue({
+        id: 203,
+        titulo: 'Visita Fallback',
+        tipo: 'VISITA',
+        status: 'PENDENTE',
+        dataHora: '2026-10-25T17:00:00.000Z',
+        duracaoMinutos: 60,
+        sincronizarGoogleCalendar: true,
+        googleCalendarEventId: 'domus-evt-203',
+        googleCalendarUrl: urlGoogle,
+        clienteId: 1,
+        imovelId: 10,
+      }),
+    });
+
+    let root: any;
+    act(() => {
+      root = renderer.create(
+        <AgendarScreen
+          context={mockContext}
+          clientePreSelecionadoId={1}
+          imovelPreSelecionadoId={10}
+        />
+      );
+    });
+
+    act(() => {
+      root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.onChangeText('Visita Fallback');
+      root.root.findByProps({ testID: 'input-agendamento-data' }).props.onChangeText('25/10/2026');
+      root.root.findByProps({ testID: 'input-agendamento-hora' }).props.onChangeText('14:00');
+      root.root.findByProps({ testID: 'toggle-google-calendar' }).props.onPress();
+    });
+
+    await act(async () => {
+      await root.root.findByProps({ testID: 'btn-agendar-submit' }).props.onPress();
+    });
+
+    expect(Linking.openURL).not.toHaveBeenCalled();
+    expect(mockContext.mostrarToast).toHaveBeenCalledWith(
+      expect.stringContaining('Não foi possível abrir o Google Calendar automaticamente'),
+      'info'
+    );
+    expect(root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.value).toBe('');
+    const btnFallback = root.root.findByProps({ testID: 'btn-agendar-abrir-google-fallback' });
+    expect(btnFallback).toBeDefined();
+
+    // Acionamento manual do botao de fallback deve chamar Linking.openURL diretamente
+    (Linking.openURL as jest.Mock).mockResolvedValueOnce(true);
+    await act(async () => {
+      await btnFallback.props.onPress();
+    });
+    expect(Linking.openURL).toHaveBeenCalledWith(urlGoogle);
+  });
+
+  it('aciona fallback seguro quando Linking.openURL rejeita e valida somente URLs https', async () => {
+    const urlGoogle = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Reject';
+    (Linking.canOpenURL as jest.Mock).mockResolvedValueOnce(true);
+    (Linking.openURL as jest.Mock).mockRejectedValueOnce(new Error('Popup bloqueado'));
+
+    const mockContext = criarContextoMock({
+      criarAgendamento: jest.fn().mockResolvedValue({
+        id: 204,
+        titulo: 'Visita Reject',
+        tipo: 'VISITA',
+        status: 'PENDENTE',
+        dataHora: '2026-10-25T17:00:00.000Z',
+        duracaoMinutos: 60,
+        sincronizarGoogleCalendar: true,
+        googleCalendarEventId: 'domus-evt-204',
+        googleCalendarUrl: urlGoogle,
+        clienteId: 1,
+        imovelId: 10,
+      }),
+    });
+
+    let root: any;
+    act(() => {
+      root = renderer.create(
+        <AgendarScreen
+          context={mockContext}
+          clientePreSelecionadoId={1}
+          imovelPreSelecionadoId={10}
+        />
+      );
+    });
+
+    act(() => {
+      root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.onChangeText('Visita Reject');
+      root.root.findByProps({ testID: 'input-agendamento-data' }).props.onChangeText('25/10/2026');
+      root.root.findByProps({ testID: 'input-agendamento-hora' }).props.onChangeText('14:00');
+      root.root.findByProps({ testID: 'toggle-google-calendar' }).props.onPress();
+    });
+
+    await act(async () => {
+      await root.root.findByProps({ testID: 'btn-agendar-submit' }).props.onPress();
+    });
+
+    const btnFallback = root.root.findByProps({ testID: 'btn-agendar-abrir-google-fallback' });
+    expect(btnFallback).toBeDefined();
   });
 });
