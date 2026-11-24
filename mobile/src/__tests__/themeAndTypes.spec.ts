@@ -1,4 +1,8 @@
-import { DomusApiService, interpretarDataHora } from '../services/domusApi';
+import {
+  DomusApiService,
+  formatarDataGoogle,
+  interpretarDataHora,
+} from '../services/domusApi';
 import {
   DOMUS_COLORS,
   DOMUS_SPACING,
@@ -22,7 +26,8 @@ import {
   VisaoGeralAtendimentos,
   AvisoItem,
   ResumoAvisosProximos,
-  DomusLocalState,
+  LoginResponse,
+  CreateUsuarioInput,
 } from '../types/domus';
 
 describe('DOMUS Theme Tokens', () => {
@@ -164,15 +169,18 @@ describe('DOMUS TypeScript Contracts', () => {
       alertas: [aviso],
     };
 
-    const estadoLocal: DomusLocalState = {
-      usuarios: [usuario],
-      clientes: [cliente],
-      imoveis: [imovel],
-      agendamentos: [agendamento],
-      avisos: [aviso],
-      usuarioLogadoId: usuario.id,
-      modoOfflineForcado: true,
-      apiBaseUrl: 'http://localhost:3000/api',
+    const loginResponse: LoginResponse = {
+      accessToken: 'jwt-real-assinado',
+      usuario,
+    };
+
+    const cadastroUsuario: CreateUsuarioInput = {
+      nome: 'Maria Corretora',
+      login: 'maria.corretora',
+      email: 'maria@domus.com.br',
+      senha: 'Senha@123',
+      confirmarSenha: 'Senha@123',
+      perfis: ['CORRETOR'],
     };
 
     expect(usuario.login).toBe('junior');
@@ -182,28 +190,61 @@ describe('DOMUS TypeScript Contracts', () => {
     expect(aviso.tipoAviso).toBe('COMPROMISSO_PROXIMO');
     expect(visaoGeral.totalPendentes).toBe(1);
     expect(resumoAvisos.possuiAvisos).toBe(true);
-    expect(estadoLocal.modoOfflineForcado).toBe(true);
+    expect(loginResponse.accessToken).toBe('jwt-real-assinado');
+    expect(cadastroUsuario.perfis).toEqual(['CORRETOR']);
     expect(aba).toBe('Atendimentos');
   });
 
-  it('deve interpretar data/hora local (-03:00) e incluir ctz=America/Recife na URL do Google Calendar', async () => {
+  it('deve interpretar data/hora local (-03:00), validar calendario UTC e preservar googleCalendarUrl via API REST', async () => {
     const interpretado = interpretarDataHora('20/10/2026', '14:00');
     expect(interpretado?.toISOString()).toBe('2026-10-20T17:00:00.000Z');
+    expect(formatarDataGoogle(interpretado!)).toBe('20261020T170000Z');
 
-    const api = new DomusApiService({ forcarOffline: true });
-    await api.resetarDadosDemo();
-    const criado = await api.criarAgendamento({
-      titulo: 'Visita Fuso Recife',
-      tipo: 'ATENDIMENTO',
-      clienteId: 1,
-      data: '20/10/2026',
-      hora: '14:00',
-      duracaoMinutos: 60,
-      sincronizarGoogleCalendar: true,
-    });
+    const isoSemOffset = interpretarDataHora(undefined, undefined, '2026-10-20T14:00:00');
+    expect(isoSemOffset?.toISOString()).toBe('2026-10-20T17:00:00.000Z');
 
-    expect(criado.dataHora).toBe('2026-10-20T17:00:00.000Z');
-    expect(criado.googleCalendarUrl).toContain('dates=20261020T170000Z%2F20261020T180000Z');
-    expect(criado.googleCalendarUrl).toContain('ctz=America%2FRecife');
+    expect(() => interpretarDataHora('31/02/2026', '14:00')).toThrow(
+      'Data ou hora fora do intervalo válido'
+    );
+
+    const urlEsperada =
+      'https://calendar.google.com/calendar/render?action=TEMPLATE&text=%5BDOMUS%5D+Visita+Fuso+Recife&dates=20261020T170000Z%2F20261020T180000Z&ctz=America%2FRecife';
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      statusText: 'Created',
+      json: jest.fn().mockResolvedValue({
+        id: 101,
+        titulo: 'Visita Fuso Recife',
+        tipo: 'ATENDIMENTO',
+        status: 'PENDENTE',
+        dataHora: '2026-10-20T17:00:00.000Z',
+        duracaoMinutos: 60,
+        sincronizarGoogleCalendar: true,
+        googleCalendarEventId: 'domus-evt-101',
+        googleCalendarUrl: urlEsperada,
+        clienteId: 1,
+      }),
+    }) as any;
+
+    try {
+      const api = new DomusApiService({ baseUrl: 'http://localhost:3000/api' });
+      const criado = await api.criarAgendamento({
+        titulo: 'Visita Fuso Recife',
+        tipo: 'ATENDIMENTO',
+        clienteId: 1,
+        data: '20/10/2026',
+        hora: '14:00',
+        duracaoMinutos: 60,
+        sincronizarGoogleCalendar: true,
+      });
+
+      expect(criado.dataHora).toBe('2026-10-20T17:00:00.000Z');
+      expect(criado.googleCalendarUrl).toContain('dates=20261020T170000Z%2F20261020T180000Z');
+      expect(criado.googleCalendarUrl).toContain('ctz=America%2FRecife');
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 });

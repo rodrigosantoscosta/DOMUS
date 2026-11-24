@@ -31,13 +31,15 @@ console.log(` [OK] IP Local da sua maquina detectado: ${localIp}`);
 console.log(` [OK] Backend API: http://${localIp}:${port}/api`);
 console.log(` [OK] Swagger Docs: http://${localIp}:${port}/api/docs`);
 console.log('-------------------------------------------------------------------');
-console.log(' [COMO CONECTAR O APLICATIVO ANDROID (APK)]');
+console.log(' [COMO CONECTAR O APLICATIVO ANDROID (EXPO GO / APK)]');
 console.log(' 1. Certifique-se de que o celular esta conectado no mesmo Wi-Fi.');
-console.log(' 2. Abra o app DOMUS no celular.');
-console.log(' 3. Toque no status de conexao (topo do app) e confirme a URL:');
-console.log(`    http://${localIp}:${port}/api`);
-console.log(' 4. Caso o celular esteja offline ou fora do Wi-Fi, o app');
-console.log('    continuara funcionando 100% no Modo Offline integrado.');
+console.log(' 2. No Expo Go, o IP local da maquina e detectado automaticamente');
+console.log('    via expo-constants. Caso deseje fixar a URL manualmente em');
+console.log('    mobile/.env, defina:');
+console.log(`    EXPO_PUBLIC_API_URL=http://${localIp}:${port}/api`);
+console.log(' 3. Abra o app DOMUS no celular e autentique-se com um usuario');
+console.log('    cadastrado no backend (ou crie uma nova conta na aba "Criar Conta"');
+console.log('    da tela de Login).');
 console.log('===================================================================\n');
 
 // Inicia o backend NestJS

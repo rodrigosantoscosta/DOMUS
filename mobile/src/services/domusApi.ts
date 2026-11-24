@@ -1,34 +1,31 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { MENSAGEM_BANNER_AVISOS } from '../theme/tokens';
 import {
   Agendamento,
-  AvisoItem,
-  CanalContato,
   Cliente,
   ConcluirAgendamentoInput,
   CreateAgendamentoInput,
   CreateClienteInput,
   CreateImovelInput,
   CreateUsuarioInput,
-  DomusLocalState,
   FiltroAgendamentos,
   FiltroClientes,
   Imovel,
+  LoginResponse,
   ProgramarRetornoInput,
   ResumoAvisosProximos,
-  TipoAviso,
   Usuario,
   VisaoGeralAtendimentos,
 } from '../types/domus';
-import { criarEstadoSeedJunior } from './seedData';
 import { domusStorage } from './storage';
 
-const STORAGE_KEY_STATE = '@domus:local_state';
 const STORAGE_KEY_TOKEN = '@domus:access_token';
-const HTTP_TIMEOUT_MS = 2500;
+const STORAGE_KEY_API_URL = '@domus:api_base_url';
+const LEGACY_STORAGE_KEY_STATE = '@domus:local_state';
+const MOCK_TOKEN_PREFIX = 'domus-mock-token-';
+const HTTP_TIMEOUT_MS = 8000;
+const PING_TIMEOUT_MS = 5000;
 const DEFAULT_TIMEZONE_OFFSET = '-03:00';
-const DEFAULT_GOOGLE_TIMEZONE = 'America/Recife';
 
 export function interpretarDataHora(
   data?: string | null,
@@ -162,41 +159,74 @@ export function obterApiBaseUrlPadrao(): string {
       }
     }
   } catch {
-    // fallback seguro
+    // fallback seguro caso Constants nao esteja disponivel
   }
 
   return 'http://localhost:3000/api';
 }
 
+function extrairMensagemErro(errorBody: any, status: number, statusText: string): string {
+  const raw = errorBody?.message;
+  if (Array.isArray(raw)) {
+    const joined = raw.filter(Boolean).join('; ');
+    if (joined) return joined;
+  }
+  if (typeof raw === 'string' && raw.trim()) {
+    return raw.trim();
+  }
+  return `Erro HTTP ${status}: ${statusText || 'Falha na requisição'}`;
+}
+
 export class DomusApiService {
   private apiBaseUrl: string;
-  private forcarOffline: boolean;
   private apiOnlineReal: boolean = false;
-  private memoriaSenhas = new Map<string, string>();
+  private onUnauthorizedCallback?: () => void;
 
-  constructor(config?: { baseUrl?: string; forcarOffline?: boolean }) {
+  constructor(config?: { baseUrl?: string }) {
     this.apiBaseUrl = normalizarApiUrl(config?.baseUrl || obterApiBaseUrlPadrao());
-    this.forcarOffline = config?.forcarOffline ?? false;
-    this.memoriaSenhas.set('junior.corretor', 'Domus@2026');
-    this.memoriaSenhas.set('junior@domus.com.br', 'Domus@2026');
-  }
-
-  public get isOffline(): boolean {
-    return this.forcarOffline || !this.apiOnlineReal;
   }
 
   public get estaOnline(): boolean {
-    return !this.forcarOffline && this.apiOnlineReal;
+    return this.apiOnlineReal;
   }
 
   public get baseUrl(): string {
     return this.apiBaseUrl;
   }
 
-  async testarConexao(urlTeste?: string): Promise<{ ok: boolean; mensagem: string; status?: number }> {
+  registrarOnUnauthorized(callback?: () => void): void {
+    this.onUnauthorizedCallback = callback;
+  }
+
+  async inicializar(): Promise<void> {
+    const urlSalva = await domusStorage.getItem<string>(STORAGE_KEY_API_URL);
+    if (urlSalva && urlSalva.trim()) {
+      this.apiBaseUrl = normalizarApiUrl(urlSalva);
+    }
+
+    await domusStorage.removeItem(LEGACY_STORAGE_KEY_STATE);
+
+    const token = await domusStorage.getItem<string>(STORAGE_KEY_TOKEN);
+    if (typeof token === 'string' && token.startsWith(MOCK_TOKEN_PREFIX)) {
+      await domusStorage.removeItem(STORAGE_KEY_TOKEN);
+    }
+  }
+
+  async configurarApiUrl(baseUrl: string): Promise<void> {
+    this.apiBaseUrl = normalizarApiUrl(baseUrl);
+    await domusStorage.setItem(STORAGE_KEY_API_URL, this.apiBaseUrl);
+  }
+
+  async testarConexao(
+    urlTeste?: string
+  ): Promise<{ ok: boolean; mensagem: string; status?: number }> {
     const alvo = normalizarApiUrl(urlTeste || this.apiBaseUrl);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3000);
+    const timer = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
+    if (timer && typeof (timer as any).unref === 'function') {
+      (timer as any).unref();
+    }
+    const isCurrentBase = alvo === this.apiBaseUrl;
 
     try {
       const res = await fetch(`${alvo}/avisos/proximos`, {
@@ -206,11 +236,18 @@ export class DomusApiService {
       });
 
       if (res.status === 200 || res.status === 401) {
+        if (isCurrentBase) {
+          this.apiOnlineReal = true;
+        }
         return {
           ok: true,
-          mensagem: `API online na porta 3000 (status ${res.status})`,
+          mensagem: `API online (status ${res.status})`,
           status: res.status,
         };
+      }
+
+      if (isCurrentBase && res.status >= 502) {
+        this.apiOnlineReal = false;
       }
       return {
         ok: false,
@@ -218,90 +255,20 @@ export class DomusApiService {
         status: res.status,
       };
     } catch (err: any) {
+      if (isCurrentBase) {
+        this.apiOnlineReal = false;
+      }
+      const msg =
+        err?.name === 'AbortError'
+          ? 'Tempo limite excedido ao tentar conectar à API'
+          : err?.message || 'Falha ao conectar com o servidor';
       return {
         ok: false,
-        mensagem: err.message || 'Falha ao conectar com o servidor',
+        mensagem: msg,
       };
     } finally {
       clearTimeout(timer);
     }
-  }
-
-  async configurarModo(opcoes: { baseUrl?: string; forcarOffline?: boolean }): Promise<void> {
-    if (opcoes.baseUrl !== undefined) {
-      this.apiBaseUrl = normalizarApiUrl(opcoes.baseUrl);
-    }
-    if (opcoes.forcarOffline !== undefined) {
-      this.forcarOffline = opcoes.forcarOffline;
-    }
-    if (!this.forcarOffline) {
-      const tokenAtual = await domusStorage.getItem<string>(STORAGE_KEY_TOKEN);
-      if (tokenAtual && tokenAtual.startsWith('domus-mock-token-')) {
-        await domusStorage.removeItem(STORAGE_KEY_TOKEN);
-      }
-      await this.obterTokenValido();
-    }
-    const estado = await this.carregarEstado();
-    estado.apiBaseUrl = this.apiBaseUrl;
-    estado.modoOfflineForcado = this.forcarOffline;
-    await this.salvarEstado(estado);
-  }
-
-  private async obterTokenValido(): Promise<string | null> {
-    const token = await domusStorage.getItem<string>(STORAGE_KEY_TOKEN);
-    if (token && !token.startsWith('domus-mock-token-')) {
-      return token;
-    }
-
-    if (!this.forcarOffline) {
-      try {
-        const estado = await this.carregarEstado();
-        const userLogado =
-          estado.usuarios.find((u) => u.id === estado.usuarioLogadoId) ||
-          estado.usuarios[0];
-        const login = userLogado?.login || 'junior.corretor';
-        const senha = this.memoriaSenhas.get(login) || 'Domus@2026';
-
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
-        const url = `${this.apiBaseUrl.replace(/\/$/, '')}/auth/login`;
-
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ login, senha }),
-          signal: controller.signal,
-        });
-        clearTimeout(timer);
-
-        if (res.ok) {
-          const data = (await res.json()) as { accessToken?: string };
-          if (data.accessToken) {
-            await domusStorage.setItem(STORAGE_KEY_TOKEN, data.accessToken);
-            return data.accessToken;
-          }
-        }
-      } catch {
-        // Fallback silencioso para operacao local
-      }
-    }
-    return token;
-  }
-
-  private async carregarEstado(): Promise<DomusLocalState> {
-    const estadoSalvo = await domusStorage.getItem<DomusLocalState>(STORAGE_KEY_STATE);
-    if (!estadoSalvo || !estadoSalvo.usuarios || estadoSalvo.usuarios.length === 0) {
-      const inicial = criarEstadoSeedJunior();
-      inicial.apiBaseUrl = this.apiBaseUrl;
-      inicial.modoOfflineForcado = this.forcarOffline;
-      await domusStorage.setItem(STORAGE_KEY_STATE, inicial);
-      return inicial;
-    }
-    return estadoSalvo;
-  }
-
-  private async salvarEstado(estado: DomusLocalState): Promise<void> {
-    await domusStorage.setItem(STORAGE_KEY_STATE, estado);
   }
 
   private async requisicaoApi<T>(
@@ -310,159 +277,128 @@ export class DomusApiService {
       method?: string;
       body?: any;
       headers?: Record<string, string>;
-      tentativaRetry?: boolean;
     } = {}
   ): Promise<T> {
+    const method = (options.method || 'GET').toUpperCase();
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const pathOnly = normalizedEndpoint.split('?')[0];
+    const isPublic =
+      pathOnly === '/auth/login' || (pathOnly === '/usuarios' && method === 'POST');
+
+    let token: string | null = null;
+    if (!isPublic) {
+      const storedToken = await domusStorage.getItem<string>(STORAGE_KEY_TOKEN);
+      if (typeof storedToken === 'string' && storedToken.startsWith(MOCK_TOKEN_PREFIX)) {
+        await domusStorage.removeItem(STORAGE_KEY_TOKEN);
+      } else {
+        token = storedToken;
+      }
+    }
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
+    if (timer && typeof (timer as any).unref === 'function') {
+      (timer as any).unref();
+    }
 
+    const url = `${this.apiBaseUrl.replace(/\/$/, '')}${normalizedEndpoint}`;
+
+    let res: Response;
     try {
-      let token =
-        endpoint === '/auth/login' || endpoint === '/status'
-          ? null
-          : await this.obterTokenValido();
-
-      const url = `${this.apiBaseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
-
-      const res = await fetch(url, {
-        method: options.method || 'GET',
+      res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...options.headers,
         },
-        body: options.body ? JSON.stringify(options.body) : undefined,
+        body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
         signal: controller.signal,
       });
-
-      if (res.status === 401 && !options.tentativaRetry && endpoint !== '/auth/login') {
-        await domusStorage.removeItem(STORAGE_KEY_TOKEN);
-        token = await this.obterTokenValido();
-        if (token && !token.startsWith('domus-mock-token-')) {
-          clearTimeout(timer);
-          return this.requisicaoApi<T>(endpoint, {
-            ...options,
-            tentativaRetry: true,
-          });
-        }
-      }
-
-      if (!res.ok) {
-        const errorBody = await res.json().catch(() => ({}));
-        throw new Error(errorBody.message || `Erro HTTP ${res.status}: ${res.statusText}`);
-      }
-
-      return (await res.json()) as T;
+    } catch {
+      this.apiOnlineReal = false;
+      throw new Error(
+        'Não foi possível conectar à API DOMUS. Verifique se o backend está em execução e confira a URL de conexão.'
+      );
     } finally {
       clearTimeout(timer);
     }
-  }
 
-  private async executarHibrido<T>(
-    chamadaApi: () => Promise<T>,
-    fallbackLocal: (estado: DomusLocalState) => Promise<T>
-  ): Promise<T> {
-    if (this.forcarOffline) {
-      this.apiOnlineReal = false;
-      const estado = await this.carregarEstado();
-      return fallbackLocal(estado);
-    }
-
-    try {
-      const resultado = await chamadaApi();
+    if (res.status === 401) {
       this.apiOnlineReal = true;
-      return resultado;
-    } catch {
-      this.apiOnlineReal = false;
-      const estado = await this.carregarEstado();
-      return fallbackLocal(estado);
+      if (!isPublic) {
+        await domusStorage.removeItem(STORAGE_KEY_TOKEN);
+        this.onUnauthorizedCallback?.();
+      }
+      const errorBody = await res.json().catch(() => ({}));
+      throw new Error(
+        extrairMensagemErro(errorBody, res.status, res.statusText || 'Sessão inválida ou expirada')
+      );
     }
+
+    if (!res.ok) {
+      this.apiOnlineReal = res.status < 502;
+      const errorBody = await res.json().catch(() => ({}));
+      throw new Error(extrairMensagemErro(errorBody, res.status, res.statusText));
+    }
+
+    this.apiOnlineReal = true;
+    if (res.status === 204) {
+      return undefined as T;
+    }
+
+    return (await res.json().catch(() => undefined)) as T;
   }
 
   async login(credenciais: {
     loginOuEmail: string;
     senha: string;
-  }): Promise<{ accessToken: string; usuario: Usuario; modoOffline: boolean }> {
+  }): Promise<LoginResponse> {
     const identificador = (credenciais.loginOuEmail || '').trim();
     const senha = credenciais.senha || '';
 
     if (!identificador || !senha) {
-      throw new Error('Informe o usuário (login/email) e a senha');
+      throw new Error('Informe o usuário (login/e-mail) e a senha');
     }
 
-    return this.executarHibrido<{ accessToken: string; usuario: Usuario; modoOffline: boolean }>(
-      async () => {
-        const res = await this.requisicaoApi<{
-          accessToken: string;
-          usuario: Usuario;
-        }>('/auth/login', {
-          method: 'POST',
-          body: {
-            login: identificador,
-            senha,
-          },
-        });
-        await domusStorage.setItem(STORAGE_KEY_TOKEN, res.accessToken);
-        return {
-          ...res,
-          modoOffline: false,
-        };
+    const res = await this.requisicaoApi<{
+      accessToken: string;
+      usuario: Usuario;
+    }>('/auth/login', {
+      method: 'POST',
+      body: {
+        login: identificador,
+        senha,
       },
-      async (estado) => {
-        const idLower = identificador.toLowerCase();
-        const usuario = estado.usuarios.find(
-          (u) =>
-            u.login.toLowerCase() === idLower ||
-            u.email.toLowerCase() === idLower ||
-            (u.cpf && u.cpf.replace(/\D/g, '') === identificador.replace(/\D/g, ''))
-        );
+    });
 
-        if (!usuario || !usuario.ativo) {
-          throw new Error('Credenciais inválidas ou usuário inativo');
-        }
+    if (!res?.accessToken || !res?.usuario) {
+      throw new Error('Resposta inválida do servidor de autenticação.');
+    }
 
-        const senhaCadastrada =
-          this.memoriaSenhas.get(usuario.login.toLowerCase()) ||
-          this.memoriaSenhas.get(usuario.email.toLowerCase());
-
-        if (senhaCadastrada && senhaCadastrada !== senha) {
-          throw new Error('Credenciais inválidas ou usuário inativo');
-        }
-
-        usuario.ultimoLogin = new Date().toISOString();
-        estado.usuarioLogadoId = usuario.id;
-        await this.salvarEstado(estado);
-
-        const tokenMock = `domus-mock-token-user-${usuario.id}-${Date.now()}`;
-        await domusStorage.setItem(STORAGE_KEY_TOKEN, tokenMock);
-
-        return {
-          accessToken: tokenMock,
-          usuario,
-          modoOffline: true,
-        };
-      }
-    );
-  }
-
-  obterModoOffline(): boolean {
-    return this.forcarOffline || !this.apiOnlineReal;
+    await domusStorage.setItem(STORAGE_KEY_TOKEN, res.accessToken);
+    return {
+      accessToken: res.accessToken,
+      usuario: res.usuario,
+    };
   }
 
   async logout(): Promise<void> {
     await domusStorage.removeItem(STORAGE_KEY_TOKEN);
-    const estado = await this.carregarEstado();
-    estado.usuarioLogadoId = null;
-    await this.salvarEstado(estado);
+    await domusStorage.removeItem(LEGACY_STORAGE_KEY_STATE);
   }
 
   async obterUsuarioLogado(): Promise<Usuario | null> {
-    const estado = await this.carregarEstado();
-    if (!estado.usuarioLogadoId) {
+    const token = await domusStorage.getItem<string>(STORAGE_KEY_TOKEN);
+    if (!token) {
       return null;
     }
-    const user = estado.usuarios.find((u) => u.id === estado.usuarioLogadoId);
-    return user || null;
+    if (typeof token === 'string' && token.startsWith(MOCK_TOKEN_PREFIX)) {
+      await domusStorage.removeItem(STORAGE_KEY_TOKEN);
+      return null;
+    }
+
+    return this.requisicaoApi<Usuario>('/auth/me');
   }
 
   async cadastrarUsuario(input: CreateUsuarioInput): Promise<Usuario> {
@@ -475,81 +411,45 @@ export class DomusApiService {
       throw new Error('Nome, login, e-mail e senha são obrigatórios');
     }
 
-    return this.executarHibrido(
-      async () => {
-        return this.requisicaoApi<Usuario>('/usuarios', {
-          method: 'POST',
-          body: input,
-        });
-      },
-      async (estado) => {
-        const loginOuEmailExiste = estado.usuarios.some(
-          (u) => u.login.toLowerCase() === login || u.email.toLowerCase() === email
-        );
-        if (loginOuEmailExiste) {
-          throw new Error('Já existe um usuário cadastrado com este login ou e-mail');
-        }
+    if (senha.length < 6) {
+      throw new Error('A senha deve ter pelo menos 6 caracteres');
+    }
 
-        const idNovo =
-          estado.usuarios.length > 0 ? Math.max(...estado.usuarios.map((u) => u.id)) + 1 : 1;
+    if (input.confirmarSenha !== undefined && input.confirmarSenha !== senha) {
+      throw new Error('A confirmação da senha não confere com a senha informada');
+    }
 
-        const perfisArray = Array.isArray(input.perfis)
-          ? input.perfis
-          : typeof input.perfis === 'string'
-          ? input.perfis.split(',').map((p) => p.trim())
-          : ['CORRETOR'];
+    const payload: CreateUsuarioInput = {
+      nome,
+      login,
+      email,
+      senha,
+      perfis: input.perfis && input.perfis.length > 0 ? input.perfis : ['CORRETOR'],
+    };
 
-        const novoUsuario: Usuario = {
-          id: idNovo,
-          nome,
-          login,
-          email,
-          cpf: input.cpf ? input.cpf.replace(/\D/g, '') : null,
-          perfis: perfisArray,
-          ativo: true,
-          ultimoLogin: null,
-          criadoEm: new Date().toISOString(),
-          atualizadoEm: new Date().toISOString(),
-        };
+    if (input.confirmarSenha !== undefined) {
+      payload.confirmarSenha = input.confirmarSenha;
+    }
 
-        this.memoriaSenhas.set(login, senha);
-        this.memoriaSenhas.set(email, senha);
+    const cpfLimpo = input.cpf ? input.cpf.replace(/\D/g, '') : '';
+    if (cpfLimpo) {
+      payload.cpf = cpfLimpo;
+    }
 
-        estado.usuarios.push(novoUsuario);
-        await this.salvarEstado(estado);
-        return novoUsuario;
-      }
-    );
+    return this.requisicaoApi<Usuario>('/usuarios', {
+      method: 'POST',
+      body: payload,
+    });
   }
 
   async listarClientes(filtros?: FiltroClientes): Promise<Cliente[]> {
-    return this.executarHibrido(
-      async () => {
-        const params = new URLSearchParams();
-        if (filtros?.busca) params.append('busca', filtros.busca);
-        if (filtros?.canalPrincipalContato)
-          params.append('canalPrincipalContato', filtros.canalPrincipalContato);
-        const query = params.toString() ? `?${params.toString()}` : '';
-        return this.requisicaoApi<Cliente[]>(`/clientes${query}`);
-      },
-      async (estado) => {
-        let lista = [...estado.clientes];
-        if (filtros?.busca && filtros.busca.trim()) {
-          const termo = filtros.busca.trim().toLowerCase();
-          lista = lista.filter(
-            (c) =>
-              c.nomeCompleto.toLowerCase().includes(termo) ||
-              c.cpfDocumento.includes(termo) ||
-              (c.email && c.email.toLowerCase().includes(termo)) ||
-              c.telefone.includes(termo)
-          );
-        }
-        if (filtros?.canalPrincipalContato) {
-          lista = lista.filter((c) => c.canalPrincipalContato === filtros.canalPrincipalContato);
-        }
-        return lista;
-      }
-    );
+    const params = new URLSearchParams();
+    if (filtros?.busca) params.append('busca', filtros.busca);
+    if (filtros?.canalPrincipalContato) {
+      params.append('canalPrincipalContato', filtros.canalPrincipalContato);
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.requisicaoApi<Cliente[]>(`/clientes${query}`);
   }
 
   async criarCliente(input: CreateClienteInput): Promise<Cliente> {
@@ -563,85 +463,17 @@ export class DomusApiService {
       throw new Error('Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido para o cliente');
     }
 
-    return this.executarHibrido(
-      async () => {
-        return this.requisicaoApi<Cliente>('/clientes', {
-          method: 'POST',
-          body: input,
-        });
-      },
-      async (estado) => {
-        const existente = estado.clientes.find((c) => c.cpfDocumento === docLimpo);
-        if (existente) {
-          throw new Error(`Já existe um cliente cadastrado com o documento ${docLimpo}`);
-        }
-
-        const idsImoveis = input.imoveisInteresseIds || input.imovelInteresseIds || [];
-        const imoveisEncontrados: Imovel[] = [];
-        for (const imovelId of idsImoveis) {
-          const im = estado.imoveis.find((i) => i.id === imovelId);
-          if (!im) {
-            throw new Error(`Imóvel de interesse com ID ${imovelId} não encontrado`);
-          }
-          imoveisEncontrados.push(im);
-        }
-
-        const idNovo =
-          estado.clientes.length > 0 ? Math.max(...estado.clientes.map((c) => c.id)) + 1 : 1;
-
-        const novoCliente: Cliente = {
-          id: idNovo,
-          nomeCompleto: nome,
-          cpfDocumento: docLimpo,
-          tipoDocumento: input.tipoDocumento || (docLimpo.length === 14 ? 'CNPJ' : 'CPF'),
-          telefone: (input.telefone || '').trim(),
-          celular: input.celular ? input.celular.trim() : input.telefone ? input.telefone.trim() : null,
-          email: input.email ? input.email.trim().toLowerCase() : null,
-          canalPrincipalContato: input.canalPrincipalContato || 'WHATSAPP',
-          observacoes: input.observacoes ? input.observacoes.trim() : null,
-          imoveisInteresse: imoveisEncontrados,
-          criadoEm: new Date().toISOString(),
-          atualizadoEm: new Date().toISOString(),
-        };
-
-        estado.clientes.push(novoCliente);
-        await this.salvarEstado(estado);
-        return novoCliente;
-      }
-    );
+    return this.requisicaoApi<Cliente>('/clientes', {
+      method: 'POST',
+      body: input,
+    });
   }
 
   async vincularImoveisInteresse(clienteId: number, imovelIds: number[]): Promise<Cliente> {
-    return this.executarHibrido(
-      async () => {
-        return this.requisicaoApi<Cliente>(`/clientes/${clienteId}/imoveis-interesse`, {
-          method: 'POST',
-          body: { imovelIds },
-        });
-      },
-      async (estado) => {
-        const cliente = estado.clientes.find((c) => c.id === clienteId);
-        if (!cliente) {
-          throw new Error(`Cliente com ID ${clienteId} não encontrado`);
-        }
-
-        const imoveisAtuais = cliente.imoveisInteresse ? [...cliente.imoveisInteresse] : [];
-        for (const id of imovelIds) {
-          const imovel = estado.imoveis.find((i) => i.id === id);
-          if (!imovel) {
-            throw new Error(`Imóvel com ID ${id} não encontrado`);
-          }
-          if (!imoveisAtuais.some((item) => item.id === id)) {
-            imoveisAtuais.push(imovel);
-          }
-        }
-
-        cliente.imoveisInteresse = imoveisAtuais;
-        cliente.atualizadoEm = new Date().toISOString();
-        await this.salvarEstado(estado);
-        return cliente;
-      }
-    );
+    return this.requisicaoApi<Cliente>(`/clientes/${clienteId}/imoveis-interesse`, {
+      method: 'POST',
+      body: { imovelIds },
+    });
   }
 
   async listarImoveis(filtros?: {
@@ -650,34 +482,13 @@ export class DomusApiService {
     statusImovel?: string;
     bairro?: string;
   }): Promise<Imovel[]> {
-    return this.executarHibrido(
-      async () => {
-        const params = new URLSearchParams();
-        if (filtros?.finalidade) params.append('finalidade', filtros.finalidade);
-        if (filtros?.tipoImovel) params.append('tipoImovel', filtros.tipoImovel);
-        if (filtros?.statusImovel) params.append('statusImovel', filtros.statusImovel);
-        if (filtros?.bairro) params.append('bairro', filtros.bairro);
-        const query = params.toString() ? `?${params.toString()}` : '';
-        return this.requisicaoApi<Imovel[]>(`/imoveis${query}`);
-      },
-      async (estado) => {
-        let lista = [...estado.imoveis];
-        if (filtros?.finalidade) {
-          lista = lista.filter((i) => i.finalidade === filtros.finalidade);
-        }
-        if (filtros?.tipoImovel) {
-          lista = lista.filter((i) => i.tipoImovel === filtros.tipoImovel);
-        }
-        if (filtros?.statusImovel) {
-          lista = lista.filter((i) => i.statusImovel === filtros.statusImovel);
-        }
-        if (filtros?.bairro) {
-          const bairroTermo = filtros.bairro.toLowerCase();
-          lista = lista.filter((i) => i.bairro && i.bairro.toLowerCase().includes(bairroTermo));
-        }
-        return lista;
-      }
-    );
+    const params = new URLSearchParams();
+    if (filtros?.finalidade) params.append('finalidade', filtros.finalidade);
+    if (filtros?.tipoImovel) params.append('tipoImovel', filtros.tipoImovel);
+    if (filtros?.statusImovel) params.append('statusImovel', filtros.statusImovel);
+    if (filtros?.bairro) params.append('bairro', filtros.bairro);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.requisicaoApi<Imovel[]>(`/imoveis${query}`);
   }
 
   async criarImovel(input: CreateImovelInput): Promise<Imovel> {
@@ -686,258 +497,31 @@ export class DomusApiService {
       throw new Error('O endereço do imóvel é obrigatório');
     }
 
-    return this.executarHibrido(
-      async () => {
-        return this.requisicaoApi<Imovel>('/imoveis', {
-          method: 'POST',
-          body: input,
-        });
-      },
-      async (estado) => {
-        const inscricao = input.numeroInscricao ? input.numeroInscricao.trim() : null;
-        if (inscricao) {
-          const duplicado = estado.imoveis.find((i) => i.numeroInscricao === inscricao);
-          if (duplicado) {
-            throw new Error(
-              `Já existe um imóvel cadastrado com o número de inscrição ${inscricao}`
-            );
-          }
-        }
-
-        const idNovo =
-          estado.imoveis.length > 0 ? Math.max(...estado.imoveis.map((i) => i.id)) + 1 : 1;
-
-        const posicoesVal = Array.isArray(input.posicoes)
-          ? input.posicoes
-          : typeof input.posicoes === 'string'
-          ? input.posicoes.split(',').map((p) => p.trim())
-          : null;
-
-        const novoImovel: Imovel = {
-          id: idNovo,
-          numeroInscricao: inscricao,
-          tipoImovel: input.tipoImovel || 'APARTAMENTO',
-          finalidade: input.finalidade || 'VENDA',
-          cep: input.cep ? input.cep.trim() : null,
-          endereco,
-          bairro: input.bairro ? input.bairro.trim() : null,
-          numero: input.numero ? input.numero.trim() : null,
-          complemento: input.complemento ? input.complemento.trim() : null,
-          areaTotal: input.areaTotal ?? null,
-          comodos: input.comodos ?? 1,
-          banheiros: input.banheiros ?? 1,
-          valor: input.valor ?? 0,
-          posicoes: posicoesVal,
-          statusImovel: input.statusImovel || 'DISPONIVEL',
-          proprietarioId: input.proprietarioId ?? null,
-          corretorCaptadorId: input.corretorCaptadorId ?? 1,
-          criadoEm: new Date().toISOString(),
-          atualizadoEm: new Date().toISOString(),
-        };
-
-        estado.imoveis.push(novoImovel);
-        await this.salvarEstado(estado);
-        return novoImovel;
-      }
-    );
+    return this.requisicaoApi<Imovel>('/imoveis', {
+      method: 'POST',
+      body: input,
+    });
   }
 
   async listarAgendamentos(filtros?: FiltroAgendamentos): Promise<Agendamento[]> {
-    return this.executarHibrido(
-      async () => {
-        const params = new URLSearchParams();
-        if (filtros?.clienteId) params.append('clienteId', String(filtros.clienteId));
-        if (filtros?.imovelId) params.append('imovelId', String(filtros.imovelId));
-        if (filtros?.corretorId) params.append('corretorId', String(filtros.corretorId));
-        if (filtros?.tipo) params.append('tipo', filtros.tipo);
-        if (filtros?.status) params.append('status', filtros.status);
-        if (filtros?.semData) params.append('semDataRetorno', 'true');
-        const query = params.toString() ? `?${params.toString()}` : '';
-        return this.requisicaoApi<Agendamento[]>(`/agendamentos${query}`);
-      },
-      async (estado) => {
-        let lista = [...estado.agendamentos];
-        if (filtros?.clienteId !== undefined) {
-          lista = lista.filter((a) => a.clienteId === filtros.clienteId);
-        }
-        if (filtros?.imovelId !== undefined) {
-          lista = lista.filter((a) => a.imovelId === filtros.imovelId);
-        }
-        if (filtros?.corretorId !== undefined) {
-          lista = lista.filter((a) => a.corretorId === filtros.corretorId);
-        }
-        if (filtros?.tipo) {
-          lista = lista.filter((a) => a.tipo === filtros.tipo);
-        }
-        if (filtros?.status) {
-          lista = lista.filter((a) => a.status === filtros.status);
-        }
-        if (filtros?.semData) {
-          lista = lista.filter(
-            (a) =>
-              !a.dataHora &&
-              !a.dataRetorno &&
-              (a.status === 'PENDENTE' || a.status === 'CONFIRMADO')
-          );
-        }
-        return lista.sort((a, b) => {
-          if (!a.dataHora && !b.dataHora) return 0;
-          if (!a.dataHora) return 1;
-          if (!b.dataHora) return -1;
-          return new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime();
-        });
-      }
-    );
+    const params = new URLSearchParams();
+    if (filtros?.clienteId) params.append('clienteId', String(filtros.clienteId));
+    if (filtros?.imovelId) params.append('imovelId', String(filtros.imovelId));
+    if (filtros?.corretorId) params.append('corretorId', String(filtros.corretorId));
+    if (filtros?.tipo) params.append('tipo', filtros.tipo);
+    if (filtros?.status) params.append('status', filtros.status);
+    if (filtros?.semData) params.append('semDataRetorno', 'true');
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.requisicaoApi<Agendamento[]>(`/agendamentos${query}`);
   }
 
   async obterVisaoGeral(corretorId?: number): Promise<VisaoGeralAtendimentos> {
-    return this.executarHibrido(
-      async () => {
-        const query = corretorId ? `?corretorId=${corretorId}` : '';
-        return this.requisicaoApi<VisaoGeralAtendimentos>(`/agendamentos/visao-geral${query}`);
-      },
-      async (estado) => {
-        const agendamentosCorretor = estado.agendamentos.filter((a) =>
-          corretorId !== undefined ? a.corretorId === corretorId : true
-        );
-
-        const proximosCompromissos = agendamentosCorretor.filter(
-          (a) =>
-            (a.status === 'PENDENTE' || a.status === 'CONFIRMADO') &&
-            Boolean(a.dataHora || a.dataRetorno)
-        );
-
-        const tarefasSemData = agendamentosCorretor.filter(
-          (a) =>
-            (a.status === 'PENDENTE' || a.status === 'CONFIRMADO') &&
-            !a.dataHora &&
-            !a.dataRetorno
-        );
-
-        const mapaPorCliente = new Map<number, { cliente: Cliente; compromissos: Agendamento[] }>();
-        const mapaPorImovel = new Map<number, { imovel: Imovel; compromissos: Agendamento[] }>();
-
-        for (const item of agendamentosCorretor) {
-          const cliente = estado.clientes.find((c) => c.id === item.clienteId);
-          if (cliente) {
-            const entry = mapaPorCliente.get(cliente.id) || {
-              cliente,
-              compromissos: [],
-            };
-            entry.compromissos.push(item);
-            mapaPorCliente.set(cliente.id, entry);
-          }
-
-          if (item.imovelId) {
-            const imovel = estado.imoveis.find((i) => i.id === item.imovelId);
-            if (imovel) {
-              const entry = mapaPorImovel.get(imovel.id) || {
-                imovel,
-                compromissos: [],
-              };
-              entry.compromissos.push(item);
-              mapaPorImovel.set(imovel.id, entry);
-            }
-          }
-        }
-
-        const porCliente = Array.from(mapaPorCliente.values()).map((entry) => ({
-          cliente: entry.cliente,
-          totalCompromissos: entry.compromissos.length,
-          pendentes: entry.compromissos.filter(
-            (c) => c.status === 'PENDENTE' || c.status === 'CONFIRMADO'
-          ).length,
-          compromissos: entry.compromissos,
-        }));
-
-        const porImovel = Array.from(mapaPorImovel.values()).map((entry) => ({
-          imovel: entry.imovel,
-          totalCompromissos: entry.compromissos.length,
-          pendentes: entry.compromissos.filter(
-            (c) => c.status === 'PENDENTE' || c.status === 'CONFIRMADO'
-          ).length,
-          compromissos: entry.compromissos,
-        }));
-
-        return {
-          totalAtendimentos: agendamentosCorretor.length,
-          totalPendentes: proximosCompromissos.length + tarefasSemData.length,
-          totalSemData: tarefasSemData.length,
-          proximosCompromissos,
-          tarefasSemData,
-          porCliente,
-          porImovel,
-        };
-      }
-    );
-  }
-
-  private validarConflitoHorario(
-    existentes: Agendamento[],
-    novo: {
-      corretorId?: number | null;
-      dataHora: Date;
-      duracaoMinutos: number;
-      ignorarId?: number;
-    }
-  ): void {
-    const inicioNovo = novo.dataHora.getTime();
-    const fimNovo = inicioNovo + novo.duracaoMinutos * 60_000;
-
-    for (const ag of existentes) {
-      if (novo.ignorarId && ag.id === novo.ignorarId) continue;
-      if (ag.corretorId !== novo.corretorId) continue;
-      if (ag.status !== 'PENDENTE' && ag.status !== 'CONFIRMADO') continue;
-      if (!ag.dataHora) continue;
-
-      const inicioAg = new Date(ag.dataHora).getTime();
-      const fimAg = inicioAg + (ag.duracaoMinutos || 60) * 60_000;
-
-      if (inicioNovo < fimAg && fimNovo > inicioAg) {
-        throw new Error(
-          `Conflito de agenda: o corretor já possui o compromisso "${ag.titulo}" agendado neste horário`
-        );
-      }
-    }
-  }
-
-  private gerarDadosGoogleCalendar(params: {
-    id: number;
-    titulo: string;
-    descricao?: string | null;
-    dataHora: Date;
-    duracaoMinutos: number;
-    clienteNome?: string;
-    imovelEndereco?: string;
-  }): { googleCalendarEventId: string; googleCalendarUrl: string } {
-    const inicio = params.dataHora;
-    const fim = new Date(inicio.getTime() + params.duracaoMinutos * 60_000);
-    const eventId = `domus-evt-${params.id}`;
-
-    const detalhes = [
-      params.descricao ? `Descrição: ${params.descricao}` : null,
-      params.clienteNome ? `Cliente: ${params.clienteNome}` : null,
-      params.imovelEndereco ? `Imóvel: ${params.imovelEndereco}` : null,
-    ]
-      .filter(Boolean)
-      .join('\n');
-
-    const searchParams = new URLSearchParams({
-      action: 'TEMPLATE',
-      text: `[DOMUS] ${params.titulo}`,
-      dates: `${formatarDataGoogle(inicio)}/${formatarDataGoogle(fim)}`,
-      ctz: DEFAULT_GOOGLE_TIMEZONE,
-      details: detalhes,
-      ...(params.imovelEndereco ? { location: params.imovelEndereco } : {}),
-    });
-
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?${searchParams.toString()}`;
-    return { googleCalendarEventId: eventId, googleCalendarUrl };
+    const query = corretorId ? `?corretorId=${corretorId}` : '';
+    return this.requisicaoApi<VisaoGeralAtendimentos>(`/agendamentos/visao-geral${query}`);
   }
 
   async criarAgendamento(input: CreateAgendamentoInput): Promise<Agendamento> {
     const tipo = input.tipo || 'ATENDIMENTO';
-    const status = input.status || 'PENDENTE';
     const titulo = (input.titulo || '').trim();
 
     if (!titulo) {
@@ -958,94 +542,10 @@ export class DomusApiService {
       );
     }
 
-    return this.executarHibrido(
-      async () => {
-        return this.requisicaoApi<Agendamento>('/agendamentos', {
-          method: 'POST',
-          body: input,
-        });
-      },
-      async (estado) => {
-        const cliente = estado.clientes.find((c) => c.id === input.clienteId);
-        if (!cliente) {
-          throw new Error(`Cliente com ID ${input.clienteId} não encontrado`);
-        }
-
-        const imovel = input.imovelId
-          ? estado.imoveis.find((i) => i.id === input.imovelId) || null
-          : null;
-
-        const corretorId = input.corretorId || estado.usuarioLogadoId || 1;
-        const duracaoMinutos = input.duracaoMinutos && input.duracaoMinutos > 0 ? input.duracaoMinutos : 60;
-
-        if (dataHoraInterpretada && (status === 'PENDENTE' || status === 'CONFIRMADO')) {
-          this.validarConflitoHorario(estado.agendamentos, {
-            corretorId,
-            dataHora: dataHoraInterpretada,
-            duracaoMinutos,
-          });
-        }
-
-        const idNovo =
-          estado.agendamentos.length > 0
-            ? Math.max(...estado.agendamentos.map((a) => a.id)) + 1
-            : 1;
-
-        const dataHoraIso = dataHoraInterpretada ? dataHoraInterpretada.toISOString() : null;
-        const dataRetornoIso = input.dataRetorno
-          ? interpretarDataHora(null, null, input.dataRetorno)?.toISOString() || null
-          : tipo === 'RETORNO'
-          ? dataHoraIso
-          : null;
-
-        let googleCalendarEventId: string | null = null;
-        let googleCalendarUrl: string | null = null;
-
-        if (input.sincronizarGoogleCalendar && dataHoraInterpretada) {
-          const syncDados = this.gerarDadosGoogleCalendar({
-            id: idNovo,
-            titulo,
-            descricao: input.descricao || input.proximaAcao,
-            dataHora: dataHoraInterpretada,
-            duracaoMinutos,
-            clienteNome: cliente.nomeCompleto,
-            imovelEndereco: imovel?.endereco,
-          });
-          googleCalendarEventId = syncDados.googleCalendarEventId;
-          googleCalendarUrl = syncDados.googleCalendarUrl;
-        }
-
-        const novo: Agendamento = {
-          id: idNovo,
-          titulo,
-          descricao: input.descricao ? input.descricao.trim() : null,
-          descricaoCurta: input.descricaoCurta ? input.descricaoCurta.trim() : titulo.slice(0, 80),
-          tipo,
-          status,
-          dataHora: dataHoraIso,
-          duracaoMinutos,
-          observacao: input.observacao ? input.observacao.trim() : null,
-          canalContato: input.canalContato || cliente.canalPrincipalContato,
-          proximaAcao: input.proximaAcao ? input.proximaAcao.trim() : null,
-          dataRetorno: dataRetornoIso,
-          sincronizarGoogleCalendar: Boolean(input.sincronizarGoogleCalendar),
-          googleCalendarEventId,
-          googleCalendarUrl,
-          clienteId: cliente.id,
-          imovelId: imovel ? imovel.id : null,
-          corretorId,
-          agendamentoOrigemId: input.agendamentoOrigemId ?? null,
-          cliente: { ...cliente, imoveisInteresse: undefined },
-          imovel: imovel ? { ...imovel } : null,
-          criadoEm: new Date().toISOString(),
-          atualizadoEm: new Date().toISOString(),
-        };
-
-        estado.agendamentos.push(novo);
-        await this.salvarEstado(estado);
-        return novo;
-      }
-    );
+    return this.requisicaoApi<Agendamento>('/agendamentos', {
+      method: 'POST',
+      body: input,
+    });
   }
 
   async programarRetorno(
@@ -1057,350 +557,59 @@ export class DomusApiService {
       throw new Error('Para programar um retorno, informe a data e hora do compromisso');
     }
 
-    return this.executarHibrido(
-      async () => {
-        return this.requisicaoApi<Agendamento>(`/agendamentos/${agendamentoId}/programar-retorno`, {
-          method: 'POST',
-          body: input,
-        });
-      },
-      async (estado) => {
-        const origem = estado.agendamentos.find((a) => a.id === agendamentoId);
-        if (!origem) {
-          throw new Error(`Agendamento de origem com ID ${agendamentoId} não encontrado`);
-        }
-
-        const duracaoMinutos = input.duracaoMinutos ?? 30;
-        this.validarConflitoHorario(estado.agendamentos, {
-          corretorId: origem.corretorId,
-          dataHora: dataHoraInterpretada,
-          duracaoMinutos,
-        });
-
-        const idNovo =
-          estado.agendamentos.length > 0
-            ? Math.max(...estado.agendamentos.map((a) => a.id)) + 1
-            : 1;
-
-        const titulo = (input.titulo || `Retorno de ${origem.titulo}`).trim();
-        const dataHoraIso = dataHoraInterpretada.toISOString();
-
-        let googleCalendarEventId: string | null = null;
-        let googleCalendarUrl: string | null = null;
-
-        if (input.sincronizarGoogleCalendar) {
-          const syncDados = this.gerarDadosGoogleCalendar({
-            id: idNovo,
-            titulo,
-            descricao: input.observacao || origem.proximaAcao,
-            dataHora: dataHoraInterpretada,
-            duracaoMinutos,
-            clienteNome: origem.cliente?.nomeCompleto,
-            imovelEndereco: origem.imovel?.endereco,
-          });
-          googleCalendarEventId = syncDados.googleCalendarEventId;
-          googleCalendarUrl = syncDados.googleCalendarUrl;
-        }
-
-        const novoRetorno: Agendamento = {
-          id: idNovo,
-          titulo,
-          descricao: input.observacao || origem.descricao,
-          descricaoCurta: titulo.slice(0, 80),
-          tipo: 'RETORNO',
-          status: 'PENDENTE',
-          dataHora: dataHoraIso,
-          duracaoMinutos,
-          observacao: input.observacao || null,
-          canalContato: input.canalContato || origem.canalContato,
-          proximaAcao: origem.proximaAcao,
-          dataRetorno: dataHoraIso,
-          sincronizarGoogleCalendar: Boolean(input.sincronizarGoogleCalendar),
-          googleCalendarEventId,
-          googleCalendarUrl,
-          clienteId: origem.clienteId,
-          imovelId: origem.imovelId,
-          corretorId: origem.corretorId,
-          agendamentoOrigemId: origem.id,
-          cliente: origem.cliente,
-          imovel: origem.imovel,
-          criadoEm: new Date().toISOString(),
-          atualizadoEm: new Date().toISOString(),
-        };
-
-        estado.agendamentos.push(novoRetorno);
-        await this.salvarEstado(estado);
-        return novoRetorno;
-      }
-    );
+    return this.requisicaoApi<Agendamento>(`/agendamentos/${agendamentoId}/programar-retorno`, {
+      method: 'POST',
+      body: input,
+    });
   }
 
   async concluirAgendamento(
     agendamentoId: number,
     input?: ConcluirAgendamentoInput
   ): Promise<Agendamento> {
-    return this.executarHibrido(
-      async () => {
-        return this.requisicaoApi<Agendamento>(`/agendamentos/${agendamentoId}/concluir`, {
-          method: 'PATCH',
-          body: {
-            observacao: (input?.observacao || input?.observacaoConclusao)?.trim() || undefined,
-            proximaAcao: input?.proximaAcao?.trim() || undefined,
-            dataRetorno: input?.dataRetorno?.trim() || undefined,
-            gerarAgendamentoRetorno:
-              typeof input?.gerarAgendamentoRetorno === 'boolean'
-                ? input.gerarAgendamentoRetorno
-                : input?.programarRetornoAutomatico,
-          },
-        });
+    return this.requisicaoApi<Agendamento>(`/agendamentos/${agendamentoId}/concluir`, {
+      method: 'PATCH',
+      body: {
+        observacao: (input?.observacao || input?.observacaoConclusao)?.trim() || undefined,
+        proximaAcao: input?.proximaAcao?.trim() || undefined,
+        dataRetorno: input?.dataRetorno?.trim() || undefined,
+        gerarAgendamentoRetorno:
+          typeof input?.gerarAgendamentoRetorno === 'boolean'
+            ? input.gerarAgendamentoRetorno
+            : input?.programarRetornoAutomatico,
       },
-      async (estado) => {
-        const agendamento = estado.agendamentos.find((a) => a.id === agendamentoId);
-        if (!agendamento) {
-          throw new Error(`Agendamento com ID ${agendamentoId} não encontrado`);
-        }
-
-        agendamento.status = 'CONCLUIDO';
-        const obsTexto = (input?.observacaoConclusao || input?.observacao)?.trim();
-        if (obsTexto) {
-          agendamento.observacao = [agendamento.observacao, obsTexto]
-            .filter(Boolean)
-            .join(' | ');
-        }
-        agendamento.atualizadoEm = new Date().toISOString();
-
-        // Baixa avisos pendentes vinculados ao agendamento
-        estado.avisos = estado.avisos.map((av) =>
-          av.agendamentoId === agendamentoId
-            ? { ...av, status: 'DISPENSADO' as const, dispensadoEm: new Date().toISOString() }
-            : av
-        );
-
-        await this.salvarEstado(estado);
-        return agendamento;
-      }
-    );
+    });
   }
 
   async sincronizarGoogleCalendar(
     agendamentoId: number
   ): Promise<{ googleCalendarEventId: string; googleCalendarUrl: string; agendamento: Agendamento }> {
-    return this.executarHibrido(
-      async () => {
-        const res = await this.requisicaoApi<{
-          googleCalendarEventId: string;
-          googleCalendarUrl: string;
-          agendamento: Agendamento;
-        }>(`/agendamentos/${agendamentoId}/sincronizar-google-calendar`, {
-          method: 'POST',
-        });
-        return res;
-      },
-      async (estado) => {
-        const agendamento = estado.agendamentos.find((a) => a.id === agendamentoId);
-        if (!agendamento) {
-          throw new Error(`Agendamento com ID ${agendamentoId} não encontrado`);
-        }
-
-        if (!agendamento.dataHora) {
-          throw new Error(
-            'Não é possível sincronizar com o Google Calendar um atendimento sem data e hora definidas'
-          );
-        }
-
-        const dataHora = new Date(agendamento.dataHora);
-        const syncDados = this.gerarDadosGoogleCalendar({
-          id: agendamento.id,
-          titulo: agendamento.titulo,
-          descricao: agendamento.descricao || agendamento.proximaAcao,
-          dataHora,
-          duracaoMinutos: agendamento.duracaoMinutos || 60,
-          clienteNome: agendamento.cliente?.nomeCompleto,
-          imovelEndereco: agendamento.imovel?.endereco,
-        });
-
-        agendamento.sincronizarGoogleCalendar = true;
-        agendamento.googleCalendarEventId = syncDados.googleCalendarEventId;
-        agendamento.googleCalendarUrl = syncDados.googleCalendarUrl;
-        agendamento.atualizadoEm = new Date().toISOString();
-
-        await this.salvarEstado(estado);
-        return {
-          googleCalendarEventId: syncDados.googleCalendarEventId,
-          googleCalendarUrl: syncDados.googleCalendarUrl,
-          agendamento,
-        };
-      }
-    );
+    return this.requisicaoApi<{
+      googleCalendarEventId: string;
+      googleCalendarUrl: string;
+      agendamento: Agendamento;
+    }>(`/agendamentos/${agendamentoId}/sincronizar-google-calendar`, {
+      method: 'POST',
+    });
   }
 
   async obterAvisosProximos(horasAntecedencia = 48): Promise<ResumoAvisosProximos> {
-    return this.executarHibrido(
-      async () => {
-        return this.requisicaoApi<ResumoAvisosProximos>(
-          `/avisos/proximos?horasAntecedencia=${horasAntecedencia}`
-        );
-      },
-      async (estado) => {
-        const agora = Date.now();
-        const limiteFuturo = agora + horasAntecedencia * 3600_000;
-
-        const dispensadosChaves = new Set(
-          estado.avisos
-            .filter((a) => a.status === 'DISPENSADO' && a.agendamentoId)
-            .map((a) => `${a.agendamentoId}:${a.tipoAviso}`)
-        );
-
-        const dispensadosIds = new Set(
-          estado.avisos
-            .filter((a) => a.status === 'DISPENSADO' && a.id !== undefined)
-            .map((a) => a.id)
-        );
-
-        const proximos: AvisoItem[] = [];
-        const atrasados: AvisoItem[] = [];
-        const semData: AvisoItem[] = [];
-
-        const ativos = estado.agendamentos.filter(
-          (a) => a.status === 'PENDENTE' || a.status === 'CONFIRMADO'
-        );
-
-        for (let i = 0; i < ativos.length; i++) {
-          const ag = ativos[i];
-          const dataRef = ag.dataHora || ag.dataRetorno || null;
-
-          if (!dataRef) {
-            const chave = `${ag.id}:TAREFA_SEM_DATA`;
-            if (!dispensadosChaves.has(chave)) {
-              const avisoId = 3000 + ag.id;
-              if (!dispensadosIds.has(avisoId)) {
-                semData.push({
-                  id: avisoId,
-                  tipoAviso: 'TAREFA_SEM_DATA',
-                  titulo: `Retorno/ação sem data: ${ag.titulo}`,
-                  mensagem: ag.proximaAcao
-                    ? `O atendimento de ${ag.cliente?.nomeCompleto || 'cliente'} possui a próxima ação "${ag.proximaAcao}" sem data de retorno definida.`
-                    : `O atendimento "${ag.titulo}" está pendente sem data definida.`,
-                  status: 'PENDENTE',
-                  agendamentoId: ag.id,
-                  agendamento: ag,
-                });
-              }
-            }
-            continue;
-          }
-
-          const instante = new Date(dataRef).getTime();
-
-          if (instante < agora) {
-            const chave = `${ag.id}:RETORNO_ATRASADO`;
-            if (!dispensadosChaves.has(chave)) {
-              const avisoId = 2000 + ag.id;
-              if (!dispensadosIds.has(avisoId)) {
-                atrasados.push({
-                  id: avisoId,
-                  tipoAviso: 'RETORNO_ATRASADO',
-                  titulo: `Compromisso/retorno em atraso: ${ag.titulo}`,
-                  mensagem: `O compromisso "${ag.titulo}" com ${ag.cliente?.nomeCompleto || 'cliente'} estava previsto para ${new Date(dataRef).toISOString()} e continua pendente.`,
-                  status: 'PENDENTE',
-                  agendamentoId: ag.id,
-                  agendamento: ag,
-                });
-              }
-            }
-          } else if (instante <= limiteFuturo) {
-            const chave = `${ag.id}:COMPROMISSO_PROXIMO`;
-            if (!dispensadosChaves.has(chave)) {
-              const avisoId = 1000 + ag.id;
-              if (!dispensadosIds.has(avisoId)) {
-                proximos.push({
-                  id: avisoId,
-                  tipoAviso: 'COMPROMISSO_PROXIMO',
-                  titulo: `Compromisso próximo: ${ag.titulo}`,
-                  mensagem: `${MENSAGEM_BANNER_AVISOS} — "${ag.titulo}" com ${ag.cliente?.nomeCompleto || 'cliente'} via ${ag.canalContato || 'WHATSAPP'}.`,
-                  status: 'PENDENTE',
-                  agendamentoId: ag.id,
-                  agendamento: ag,
-                });
-              }
-            }
-          }
-        }
-
-        const todosAlertas = [...proximos, ...atrasados, ...semData];
-        const possuiAvisos = todosAlertas.length > 0;
-
-        return {
-          possuiAvisos,
-          mensagemBanner: possuiAvisos ? MENSAGEM_BANNER_AVISOS : null,
-          horasAntecedencia,
-          totalAlertas: todosAlertas.length,
-          totalProximos: proximos.length,
-          totalAtrasados: atrasados.length,
-          totalSemData: semData.length,
-          proximos,
-          atrasados,
-          semData,
-          alertas: todosAlertas,
-        };
-      }
+    return this.requisicaoApi<ResumoAvisosProximos>(
+      `/avisos/proximos?horasAntecedencia=${horasAntecedencia}`
     );
   }
 
   async dispararAvisos(horasAntecedencia = 48): Promise<ResumoAvisosProximos> {
-    return this.executarHibrido(
-      async () => {
-        return this.requisicaoApi<ResumoAvisosProximos>(
-          `/avisos/disparar?horasAntecedencia=${horasAntecedencia}`,
-          { method: 'POST' }
-        );
-      },
-      async (estado) => {
-        const resumo = await this.obterAvisosProximos(horasAntecedencia);
-        for (const item of resumo.alertas) {
-          const existente = estado.avisos.find((a) => a.id === item.id);
-          if (!existente) {
-            estado.avisos.push({ ...item });
-          }
-        }
-        await this.salvarEstado(estado);
-        return resumo;
-      }
-    );
+    return this.requisicaoApi<ResumoAvisosProximos>('/avisos/disparar', {
+      method: 'POST',
+      body: { horasAntecedencia },
+    });
   }
 
   async dispensarAviso(avisoId: number): Promise<void> {
-    return this.executarHibrido(
-      async () => {
-        await this.requisicaoApi(`/avisos/${avisoId}/dispensar`, {
-          method: 'PATCH',
-        });
-      },
-      async (estado) => {
-        const aviso = estado.avisos.find((a) => a.id === avisoId);
-        if (aviso) {
-          aviso.status = 'DISPENSADO';
-          aviso.dispensadoEm = new Date().toISOString();
-        } else {
-          estado.avisos.push({
-            id: avisoId,
-            tipoAviso: 'COMPROMISSO_PROXIMO',
-            titulo: 'Aviso dispensado',
-            mensagem: '',
-            status: 'DISPENSADO',
-            dispensadoEm: new Date().toISOString(),
-          });
-        }
-        await this.salvarEstado(estado);
-      }
-    );
-  }
-
-  async resetarDadosDemo(): Promise<void> {
-    const estadoSeed = criarEstadoSeedJunior();
-    estadoSeed.apiBaseUrl = this.apiBaseUrl;
-    estadoSeed.modoOfflineForcado = this.forcarOffline;
-    await domusStorage.setItem(STORAGE_KEY_STATE, estadoSeed);
+    await this.requisicaoApi(`/avisos/${avisoId}/dispensar`, {
+      method: 'PATCH',
+    });
   }
 }
 
