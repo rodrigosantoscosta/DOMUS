@@ -129,6 +129,33 @@ Todos os requisitos tecnicos obrigatorios do item **3.2 (React Native)** estao i
   - Gerar/atualizar o APK Android via `npm run build:apk` ([GUIA_BUILD_APK_E_BACKEND.md](./docs/GUIA_BUILD_APK_E_BACKEND.md));
   - Testar conexao em rede local (`npm run dev:lan`) com o smartphone fisico e validar o fallback automatico em Modo Offline caso a rede da banca bloqueie portas locais.
 
+### Epico 5 `[MEDIA]` — Refinamentos de Usabilidade e Validacoes de Interface (Feedback da Validacao)
+
+*Requisitos cobertos: Criterios `5.4` (Qualidade Tecnica) e `5.5`.*
+
+#### Tela de Imoveis
+
+- [ ] **T5.1 — Icones nos campos do proprietario:** Adicionar icone ao lado dos campos de `CPF` e `Telefone` na secao de selecao de proprietario, para facilitar o entendimento.
+- [ ] **T5.2 — Validacao no cadastro de imovel:** Tornar obrigatorios os campos `inscricao`, `bairro` e `numero` para concluir o cadastro.
+- [ ] **T5.3 — ScrollView na busca de Imoveis Cadastrados:** Adicionar `ScrollView` na lista de pesquisa da aba de Imoveis Cadastrados.
+- [ ] **T5.4 — ScrollView na selecao de proprietario:** Adicionar `ScrollView` na lista de selecao do proprietario.
+- [ ] **T5.5 — Alerta de numero duplicado:** No campo `Numero`, exibir alerta quando o usuario informar numero de imovel ja cadastrado: "Ja existe um imovel cadastrado com este endereco exato. Deseja continuar mesmo assim?".
+
+#### Tela de Clientes
+
+- [ ] **T5.6 — Icones nos campos de Imoveis de Interesse:** Adicionar icone ao lado dos campos de `inscricao do imovel` e `valor do imovel` na selecao de Imoveis de Interesse.
+- [ ] **T5.7 — ScrollView na selecao de Imoveis de Interesse:** Adicionar `ScrollView` na lista de selecao de Imoveis de Interesse.
+- [ ] **T5.8 — ScrollView na busca de Clientes Cadastrados:** Adicionar `ScrollView` na lista de busca de Clientes Cadastrados.
+
+#### Tela de Atendimentos
+
+- [ ] **T5.9 — ScrollView na busca de Atendimentos Cadastrados:** Adicionar `ScrollView` na lista de busca de Atendimentos Cadastrados.
+
+#### Tela de Agendar
+
+- [ ] **T5.10 — Remover referencias RN dos rotulos:** Remover os codigos dos textos: `Cliente (RN10)`, `Imovel obrigatorio (RN08)`, `Cliente e obrigatorio para criar o agendamento (RN10)`, `Sincronizar com Google Calendar (RN16)` e `Imovel (RN08)`.
+- [ ] **T5.11 — Atualizar titulo do atendimento automaticamente:** Corrigir para que o titulo (preenchido quando `tipo de compromisso` + `cliente`/`imovel` sao selecionados) seja recalculado ao trocar cliente ou imovel, sem exigir nova selecao do tipo de compromisso.
+
 ---
 
 ## 3. Matriz de Conformidade com Criterios de Avaliacao e Prevensao de Recusa
