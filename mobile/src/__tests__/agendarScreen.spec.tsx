@@ -307,6 +307,68 @@ describe('AgendarScreen (Fiel ao Wireframe 02 e Regras RN08, RN10, RN16)', () =>
     expect(inputBuscaNovamente).toBeDefined();
   });
 
+  it('recalcula o titulo automatico ao trocar o cliente sem exigir nova selecao do tipo', () => {
+    const mockContext = criarContextoMock();
+    let root: any;
+
+    act(() => {
+      root = renderer.create(
+        <AgendarScreen context={mockContext} clientePreSelecionadoId={1} />
+      );
+    });
+
+    act(() => {
+      root.root.findByProps({ testID: 'tipo-selector-retorno' }).props.onPress();
+    });
+    expect(root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.value).toBe(
+      'Retorno com Carlos Eduardo Mendes'
+    );
+
+    act(() => {
+      root.root.findByProps({ testID: 'btn-trocar-cliente' }).props.onPress();
+    });
+    act(() => {
+      root.root.findByProps({ testID: 'cliente-item-2' }).props.onPress();
+    });
+
+    expect(root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.value).toBe(
+      'Retorno com Mariana Lima de Sousa'
+    );
+  });
+
+  it('recalcula o titulo automatico ao trocar o imovel sem exigir nova selecao do tipo', () => {
+    const mockContext = criarContextoMock();
+    let root: any;
+
+    act(() => {
+      root = renderer.create(
+        <AgendarScreen
+          context={mockContext}
+          clientePreSelecionadoId={1}
+          imovelPreSelecionadoId={10}
+        />
+      );
+    });
+
+    act(() => {
+      root.root.findByProps({ testID: 'tipo-selector-visita' }).props.onPress();
+    });
+    expect(root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.value).toBe(
+      'Visita ao imóvel (APARTAMENTO - Manaira)'
+    );
+
+    act(() => {
+      root.root.findByProps({ testID: 'btn-trocar-imovel' }).props.onPress();
+    });
+    act(() => {
+      root.root.findByProps({ testID: 'imovel-item-20' }).props.onPress();
+    });
+
+    expect(root.root.findByProps({ testID: 'input-agendamento-titulo' }).props.value).toBe(
+      'Visita ao imóvel (CASA - Cabedelo)'
+    );
+  });
+
   it('respeita clientePreSelecionadoId passado como prop inicial', () => {
     const mockContext = criarContextoMock();
     let root: any;
