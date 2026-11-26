@@ -221,8 +221,15 @@ export const ProprietarioChip = React.memo<ProprietarioChipProps>(
             {cliente.nomeCompleto}
           </Text>
           <Text style={styles.imovelChipSub}>
+            <Ionicons name="call-outline" size={13} color={DOMUS_THEME.textSecondary} />{' '}
             {cliente.telefone}
-            {cliente.cpfDocumento ? ` • ${cliente.cpfDocumento}` : ''}
+            {cliente.cpfDocumento && (
+              <>
+                {'  •  '}
+                <Ionicons name="card-outline" size={13} color={DOMUS_THEME.textSecondary} />{' '}
+                {cliente.cpfDocumento}
+              </>
+            )}
           </Text>
         </View>
       </Pressable>
@@ -427,9 +434,8 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
         proprietarioId: proprietarioId ?? undefined,
       });
 
-      const mensagemSucesso = `[OK] Imóvel "${novoImovel.tipoImovel} - ${
-        novoImovel.bairro || novoImovel.endereco
-      }" cadastrado com sucesso!`;
+      const mensagemSucesso = `[OK] Imóvel "${novoImovel.tipoImovel} - ${novoImovel.bairro || novoImovel.endereco
+        }" cadastrado com sucesso!`;
       setSucessoLocal(mensagemSucesso);
       setSucessoBotao(true);
       triggerSuccessHaptic();
@@ -719,7 +725,12 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
                 <Text style={styles.fieldHelper}>
                   Selecione o cliente proprietário deste imóvel:
                 </Text>
-                <View style={styles.imoveisChipsContainer}>
+                <ScrollView
+                  style={styles.proprietariosScroll}
+                  contentContainerStyle={styles.imoveisChipsContainer}
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator
+                >
                   {domus.clientes.map((cliente) => (
                     <ProprietarioChip
                       key={cliente.id}
@@ -728,7 +739,7 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
                       onToggle={toggleProprietario}
                     />
                   ))}
-                </View>
+                </ScrollView>
               </View>
             ) : null}
 
@@ -771,13 +782,17 @@ export const ImoveisScreen: React.FC<ImoveisScreenProps> = ({
               containerStyle={styles.buscaContainer}
             />
 
-            {/* FlashList de Imoveis */}
+            {/* FlashList de Imoveis com rolagem interna limitada */}
             <FlashList
               data={imoveisFiltrados}
               renderItem={renderImovelItem}
               keyExtractor={keyExtractor}
               estimatedItemSize={180}
               testID="imoveis-flash-list"
+              style={styles.imoveisScroll}
+              contentContainerStyle={styles.imoveisScrollContent}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator
               ListEmptyComponent={
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyText}>Nenhum imóvel encontrado.</Text>
@@ -919,6 +934,10 @@ const styles = StyleSheet.create({
   },
   imoveisChipsContainer: {
     gap: 8,
+    paddingRight: 4,
+  },
+  proprietariosScroll: {
+    maxHeight: 200,
   },
   imovelChip: {
     flexDirection: 'row',
@@ -1009,6 +1028,12 @@ const styles = StyleSheet.create({
   },
   buscaContainer: {
     marginBottom: DOMUS_SPACING.md,
+  },
+  imoveisScroll: {
+    maxHeight: 380,
+  },
+  imoveisScrollContent: {
+    paddingBottom: DOMUS_SPACING.sm,
   },
   emptyCard: {
     padding: DOMUS_SPACING.xl,

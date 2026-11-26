@@ -198,15 +198,15 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
     });
   }, [buscaImovel, imoveisDisponiveis, idsImoveisInteresseCliente]);
 
-  const gerarTituloPorTipo = useCallback(
-    (novoTipo: TipoAgendamento): string => {
-      const nomeCliente = clienteSelecionado?.nomeCompleto?.trim();
+  const gerarTitulo = useCallback(
+    (tipoAtual: TipoAgendamento, cliente: Cliente | null, imovel: Imovel | null): string => {
+      const nomeCliente = cliente?.nomeCompleto?.trim();
 
-      switch (novoTipo) {
+      switch (tipoAtual) {
         case 'VISITA': {
-          if (imovelSelecionado) {
-            const parteBairro = imovelSelecionado.bairro ? ` - ${imovelSelecionado.bairro}` : '';
-            return `Visita ao imóvel (${imovelSelecionado.tipoImovel}${parteBairro})`;
+          if (imovel) {
+            const parteBairro = imovel.bairro ? ` - ${imovel.bairro}` : '';
+            return `Visita ao imóvel (${imovel.tipoImovel}${parteBairro})`;
           }
           return 'Visita ao imóvel';
         }
@@ -217,7 +217,23 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
           return nomeCliente ? `Atendimento com ${nomeCliente}` : 'Atendimento';
       }
     },
-    [clienteSelecionado, imovelSelecionado]
+    []
+  );
+
+  const atualizarTituloAutomatico = useCallback(
+    (tipoAtual: TipoAgendamento, cliente: Cliente | null, imovel: Imovel | null) => {
+      setTitulo((prev) => {
+        const prevLimpo = prev.trim();
+        const tituloAutomatico = ['Visita', 'Retorno', 'Atendimento'].some((prefixo) =>
+          prevLimpo.startsWith(prefixo)
+        );
+        if (!prevLimpo || tituloAutomatico) {
+          return gerarTitulo(tipoAtual, cliente, imovel);
+        }
+        return prev;
+      });
+    },
+    [gerarTitulo]
   );
 
   const handleSelecionarTipo = useCallback(
@@ -227,38 +243,41 @@ export const AgendarScreen: React.FC<AgendarScreenProps> = ({
       setErroLocal(null);
 
       // Sugere titulo inteligente com base no tipo de compromisso escolhido
-      setTitulo((prev) => {
-        const prevLimpo = prev.trim();
-        const tituloAutomatico = ['Visita', 'Retorno', 'Atendimento'].some((prefixo) =>
-          prevLimpo.startsWith(prefixo)
-        );
-        if (!prevLimpo || tituloAutomatico) {
-          return gerarTituloPorTipo(novoTipo);
-        }
-        return prev;
-      });
+      atualizarTituloAutomatico(novoTipo, clienteSelecionado, imovelSelecionado);
     },
-    [gerarTituloPorTipo]
+    [atualizarTituloAutomatico, clienteSelecionado, imovelSelecionado]
   );
 
-  const handleSelecionarCliente = useCallback((c: Cliente) => {
-    triggerSelectionHaptic();
-    setClienteId(c.id);
-    setMostrarListaClientes(false);
-    setErroLocal(null);
-  }, []);
+  const handleSelecionarCliente = useCallback(
+    (c: Cliente) => {
+      triggerSelectionHaptic();
+      setClienteId(c.id);
+      setMostrarListaClientes(false);
+      setErroLocal(null);
+
+      // Recalcula o titulo automatico ao trocar o cliente
+      atualizarTituloAutomatico(tipo, c, imovelSelecionado);
+    },
+    [atualizarTituloAutomatico, tipo, imovelSelecionado]
+  );
 
   const handleTrocarCliente = useCallback(() => {
     triggerLightImpact();
     setMostrarListaClientes(true);
   }, []);
 
-  const handleSelecionarImovel = useCallback((imv: Imovel) => {
-    triggerSelectionHaptic();
-    setImovelId(imv.id);
-    setMostrarListaImoveis(false);
-    setErroLocal(null);
-  }, []);
+  const handleSelecionarImovel = useCallback(
+    (imv: Imovel) => {
+      triggerSelectionHaptic();
+      setImovelId(imv.id);
+      setMostrarListaImoveis(false);
+      setErroLocal(null);
+
+      // Recalcula o titulo automatico ao trocar o imovel
+      atualizarTituloAutomatico(tipo, clienteSelecionado, imv);
+    },
+    [atualizarTituloAutomatico, tipo, clienteSelecionado]
+  );
 
   const handleTrocarImovel = useCallback(() => {
     triggerLightImpact();
