@@ -26,7 +26,7 @@ flowchart LR
 | **4.1** | 1a Entrega — Proposta do Projeto | 03/09/2026 | `[CONCLUIDO]` | [Proposta de Projeto](./docs/modelos/MODELO%20PROPOSTA%20DE%20PROJETO%20-%20PDM%20E%20PE.md) e [Wireframes](./docs/prototipos/01-cadastro-cliente.png) |
 | **4.2** | 2a Entrega — Diagnostico e Plano de Intervencao | 24/09/2026 | `[CONCLUIDO]` | [Diagnostico e Plano](./docs/DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.md) e [Entrevista](./docs/entrevistas/entrevista-realizada.md) |
 | **4.3** | 3a Entrega — Versao Beta Funcional (Itens 3.2) | 28/10/2026 | `[CONCLUIDO]` | Modulos `mobile/` e `backend/`, [System Design](./docs/MOBILE_SYSTEM_DESIGN.md) |
-| **4.4** | 4a Entrega — Entrega Final e Apresentacao | 25/11/2026 | `[PENDENTE]` | Epicos 1 a 4 descritos na Secao 2 deste backlog |
+| **4.4** | 4a Entrega — Entrega Final e Apresentacao | 25/11/2026 | `[PENDENTE]` | Epicos 1 a 5 descritos na Secao 2 deste backlog |
 
 ---
 
@@ -129,6 +129,31 @@ Todos os requisitos tecnicos obrigatorios do item **3.2 (React Native)** estao i
   - Gerar/atualizar o APK Android via `npm run build:apk` ([GUIA_BUILD_APK_E_BACKEND.md](./docs/GUIA_BUILD_APK_E_BACKEND.md));
   - Testar conexao em rede local (`npm run dev:lan`) com o smartphone fisico e validar o fallback automatico em Modo Offline caso a rede da banca bloqueie portas locais.
 
+### Epico 5 `[MEDIA]` — Refinamentos de Usabilidade e Validacoes de Interface (Feedback da Validacao)
+
+*Requisitos cobertos: Criterios `5.2` (Validacao com a Comunidade), `5.4` (Qualidade Tecnica) e `5.5` (Impacto Gerado).*
+
+#### Tela de Imoveis
+
+- [ ] **T5.1 — Icones nos campos do proprietario:** Adicionar icone ao lado dos campos de `CPF` e `Telefone` na secao de selecao de proprietario, para facilitar o entendimento.
+- [ ] **T5.2 — Limitar altura do FlashList na busca de Imoveis Cadastrados:** Adicionar limitação de altura maxima do FlashList na lista de pesquisa da aba de Imoveis Cadastrados.
+- [ ] **T5.3 — ScrollView na selecao de proprietario:** Adicionar `ScrollView` na lista de selecao do proprietario.
+
+#### Tela de Clientes
+
+- [ ] **T5.4 — Icones nos campos de Imoveis de Interesse:** Adicionar icone ao lado dos campos de `inscricao do imovel` e `valor do imovel` na selecao de Imoveis de Interesse.
+- [ ] **T5.5 — ScrollView na selecao de Imoveis de Interesse:** Adicionar `ScrollView` na lista de selecao de Imoveis de Interesse.
+- [ ] **T5.6 — Limitar altura do FlashList na busca de Clientes Cadastrados:** Adicionar limitação de altura maxima do FlashList na lista de busca de Clientes Cadastrados.
+
+#### Tela de Atendimentos
+
+- [ ] **T5.7 — Limitar altura do FlashList na busca de Atendimentos Cadastrados:** Adicionar limitação de altura maxima do FlashList na lista de busca de Atendimentos Cadastrados.
+
+#### Tela de Agendar
+
+- [ ] **T5.8 — Remover referencias RN dos rotulos:** Remover os codigos dos textos: `Cliente (RN10)`, `Imovel obrigatorio (RN08)`, `Cliente e obrigatorio para criar o agendamento (RN10)`, `Sincronizar com Google Calendar (RN16)`, `Imovel (RN08)`, `Para agendar uma visita (tipo VISITA), é obrigatório selecionar um imóvel cadastrado (RN08)` e `Para agendar uma visita (tipo VISITA), é obrigatório informar a data e hora do compromisso (RN08)`. *Nota: `mobile/src/__tests__/agendarScreen.spec.tsx` tambem valida essas strings literalmente e precisara ser atualizado na execucao da tarefa.*
+- [ ] **T5.9 — Atualizar titulo do atendimento automaticamente:** Corrigir para que o titulo (preenchido quando `tipo de compromisso` + `cliente`/`imovel` sao selecionados) seja recalculado ao trocar cliente ou imovel, sem exigir nova selecao do tipo de compromisso.
+
 ---
 
 ## 3. Matriz de Conformidade com Criterios de Avaliacao e Prevensao de Recusa
@@ -140,8 +165,8 @@ Todos os requisitos tecnicos obrigatorios do item **3.2 (React Native)** estao i
 | **5.1 Clareza do Problema** | Problema real, bem descrito e relevante? | `[OK]` | [Diagnostico Secao 1](./docs/DIAGN%C3%93STICO%20DA%20PROBLEM%C3%81TICA%20E%20PLANO%20DE%20INTERVEN%C3%87%C3%83O.md) + [Entrevista](./docs/entrevistas/entrevista-realizada.md) |
 | **5.2 Validacao com a Comunidade** | Dialogo real, evidencias e solucao baseada na coleta? | `[PARCIAL]` | Diagnostico inicial `[OK]`; falta validacao pos-MVP (`T1.1`, `T1.3`) |
 | **5.3 Coerencia da Solucao** | Solucao resolve o problema com logica clara? | `[OK]` | Secao 5 do Diagnostico + fluxos de retornos e `AvisoBanner` no app |
-| **5.4 Qualidade Tecnica** | Estrutura, navegacao, componentes, props, organizacao e UI? | `[OK]` | 4 telas RN, 10 componentes, props tipadas, API NestJS e testes; falta atualizar prints (`T2.1`, `T2.2`) |
-| **5.5 Impacto Gerado** | Aplicacao pratica, teste pelo publico e medicao de resultado? | `[PENDENTE]` | Executar sessao pratica e medir os 4 indicadores (`T1.1`, `T1.2`) |
+| **5.4 Qualidade Tecnica** | Estrutura, navegacao, componentes, props, organizacao e UI? | `[OK]` | 4 telas RN, 10 componentes, props tipadas, API NestJS e testes; refinamentos de UI (`T5.1`–`T5.9`); falta atualizar prints (`T2.1`, `T2.2`) |
+| **5.5 Impacto Gerado** | Aplicacao pratica, teste pelo publico e medicao de resultado? | `[PENDENTE]` | Executar sessao pratica e medir os 4 indicadores (`T1.1`, `T1.2`); usabilidade refinada a partir do feedback (`T5.1`–`T5.9`) |
 | **5.6 Apresentacao e Organizacao** | Clareza, dominio do projeto e organizacao documental? | `[PENDENTE]` | Consolidar relatorio final, slides e ensaio tecnico (`T3.1`, `T4.1`–`T4.3`) |
 
 ### 3.2. Prevencao de Motivos de Nao Aceitacao (Item 6 do Plano das Disciplinas)
